@@ -8,19 +8,19 @@ Everything here was worked out by reading save files written by the game. Nothin
 
 Early. Expect gaps and corrections.
 
-This repo is documentation only. It does not ship a parser or editor, and it does not offer support for one. For a working reader and writer, see [tf3-save-editor](https://github.com/TBK/tf3-save-editor).
+The notes are the product. [tools/](tools/) has the small read-only Python scripts used to check them, as reference code with no support. For a working reader and writer, see [tf3-save-editor](https://github.com/TBK/tf3-save-editor).
 
 ## What is covered
 
-Planned, filled in as the notes are written up:
+Start at [docs/README.md](docs/README.md).
 
-- Container: zstd framing and the trailing empty frame.
-- Header: version, money, play-time counter, mod list, preview image, settings.
-- Lua script states.
-- Town records: layout, starting cargo demand, capacities.
+- Container: zstd framing, writing a save back.
+- Header: start year, map size, money, play-time counter, mods, preview image, settings.
+- Lua value encoding and the town rating state.
+- Town records: capacities and starting cargo.
 - Cargo type ids for the temperate economy.
-- Differences between map editor saves and regular saves.
-- Format versions seen in the wild and how they differ.
+- Map editor saves, and converting a regular save into one.
+- Format versions seen in the wild.
 
 ## Evidence
 
@@ -33,7 +33,7 @@ If you uploaded a save that is cited here and want it removed, open an issue.
 
 ## Acknowledgements
 
-The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). Corrections found here are passed back to that project.
+The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). The header reader in `tools/` follows its read order; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Corrections found here are passed back to that project.
 
 ## License
 
