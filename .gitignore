@@ -1,0 +1,22 @@
+# Save files and anything extracted from them stay out of the repo
+*.sav
+*.sav.*
+*.zst
+*.bin
+*.raw
+*.dump
+saves/
+scratch/
+
+# Python (local helper scripts)
+__pycache__/
+*.py[cod]
+.venv/
+
+# Editors and OS
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
