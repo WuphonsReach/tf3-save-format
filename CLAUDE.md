@@ -6,11 +6,12 @@ Public documentation of the Transport Fever 3 `.sav` format. MIT licensed. The n
 
 | Repo | Role |
 |---|---|
-| `../tf3-save-editor` | Fork of TBK/tf3-save-editor (MIT OR Apache-2.0, used here under MIT). Its `docs/FORMAT.md` is the base layout for container, header and Lua states. `tools/save_header.py` follows its `header.rs`; the notice is in `THIRD_PARTY_NOTICES.md`. |
+| `../tf3-save-editor` | Fork of TBK/tf3-save-editor (MIT OR Apache-2.0, used here under MIT). Its `docs/FORMAT.md` is the base layout for container, header and Lua states. Code in `tools/` follows its readers (`header.rs`, `lua.rs`); the notice is in `THIRD_PARTY_NOTICES.md`. |
 
 ## Rules for what goes in
 
 - Facts about the format only. Never commit `.sav` files, decompressed streams, extracted preview images, or screenshots of other people's maps. `.gitignore` blocks the common ones.
+- Images (`*.jpg`, `*.jpeg`, `*.png`, `*.webp`) are gitignored. Add one only when the user asks for that file, with `git add -f`, and only our own work: diagrams, or screenshots of our own saves.
 - Write notes in our own words. Do not copy text from `tf3-save-editor`'s `FORMAT.md`. Link to it and credit it instead. Code ported from it keeps a pointer to `THIRD_PARTY_NOTICES.md`.
 - Cite mod.io catalog saves by mod id and URL. Record only facts read from them (version, map size, start year, mod list, counts). No per-save dumps in the repo.
 - Strip local details before committing: home paths, file mtimes, Steam user ids, install paths. Tool output must not contain them either (`mine_saves.py` keeps size and mtime in a gitignored `.mine_state.json`).

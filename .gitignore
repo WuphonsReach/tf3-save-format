@@ -11,6 +11,13 @@ previews/
 catalog/
 .mine_state.json
 
+# Images: the game's .jpg next to each save, extracted previews, screenshots.
+# Images we mean to publish are added on request with `git add -f` (see CLAUDE.md).
+*.jpg
+*.jpeg
+*.png
+*.webp
+
 # Python (local helper scripts)
 __pycache__/
 *.py[cod]

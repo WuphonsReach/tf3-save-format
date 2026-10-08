@@ -3,6 +3,10 @@
 Usage: town_states.py SAVE.sav [...]
 
 Read only. See docs/town-states.md and docs/lua-values.md. Editor saves have an empty table.
+
+The value reader follows tf3-save-editor (crates/lib/src/lua.rs,
+https://github.com/TBK/tf3-save-editor), Copyright (c) 2026 TBK, MIT licence.
+See THIRD_PARTY_NOTICES.md.
 """
 import os
 import struct

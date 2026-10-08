@@ -1,8 +1,8 @@
 # tf3-save-format
 
-Notes on the Transport Fever 3 `.sav` file format. Unofficial, and not affiliated with or endorsed by Urban Games.
+Notes on the Transport Fever 3 `.sav` file format. Unofficial, and not affiliated with or endorsed by Urban Games or Paradox Interactive.
 
-Everything here was worked out by reading save files written by the game. Nothing comes from the game's code or from Urban Games. The game changes the format between releases, so each note says which format versions it was checked against.
+Everything here was worked out from the outside: by reading saves the game writes, changing saves and loading them in the game, and looking at the game's moddable data files. No game files or code are copied into this repo, and nothing comes from the developer or publisher. The game changes the format between releases, so each note says which format versions it was checked against.
 
 ## Status
 
@@ -29,11 +29,11 @@ Claims are checked against:
 - Saves written on our own install (Linux, Steam).
 - Public savegames on the game's mod.io catalog, cited by mod id and link (for example `6430076`). Only facts read from those saves are recorded here: format version, map size, start year, mod list, record counts, and similar. Their files, preview images and other content are not copied into this repo.
 
-If you uploaded a save that is cited here and want it removed, open an issue.
+If you uploaded a save that is cited here and want it removed, please open an issue.
 
 ## Acknowledgements
 
-The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). The header reader in `tools/` follows its read order; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Corrections found here are passed back to that project.
+The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). Code in `tools/` follows its readers; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Corrections found here are passed back to that project.
 
 ## License
 

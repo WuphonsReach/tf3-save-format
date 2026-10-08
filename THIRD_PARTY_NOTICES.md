@@ -2,7 +2,7 @@
 
 ## tf3-save-editor
 
-`tools/save_header.py` follows the header read order of `crates/lib/src/header.rs` in [tf3-save-editor](https://github.com/TBK/tf3-save-editor), and the format notes in `docs/` build on its `docs/FORMAT.md`. That project is licensed MIT OR Apache-2.0; it is used here under the MIT licence:
+Code in `tools/` follows the readers in `crates/lib/src/` of [tf3-save-editor](https://github.com/TBK/tf3-save-editor), and the format notes in `docs/` build on its `docs/FORMAT.md`. That project is licensed MIT OR Apache-2.0; it is used here under the MIT licence:
 
 ```
 MIT License

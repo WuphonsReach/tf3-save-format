@@ -1,6 +1,6 @@
 # Tools
 
-Small read-only Python scripts used to check the notes in `docs/`. They are reference code, not a supported product: no releases, no promise they work on your saves. Issues with evidence (format version, what you saw) are welcome. Requests for new features are not.
+Small read-only Python scripts used to check the notes in `docs/`. They are reference code, not a supported product: no releases, no promise they work on your saves. Bug reports with evidence (format version, what you saw) are very welcome. We aren't taking feature requests for the scripts, sorry.
 
 Python 3.14 or later, standard library only. Older Python works with the `zstandard` package installed.
 
