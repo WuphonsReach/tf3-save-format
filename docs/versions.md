@@ -30,3 +30,5 @@ The 120 saves above, read with [tools/calendar_speed.py](../tools/calendar_speed
 | 1,440,000 | no slider step | 1 |
 
 `playSpeed` in the same saves: 0 in 49 (written paused), 1 in 35, 2 in 3, 3 in 3, 4 in 29, 8 in 1.
+
+The day table that follows the field ([script-states.md](script-states.md#the-day-table)) parsed in all 120. 88 had consecutive day numbers and rising ticks; 32 had jumps or repeats. 50 were exactly 4000 ticks per day throughout. Start years: 1900 in 64, 2020 in 20, the rest 1910 to 2010 (two saves start on a day other than 1 January).

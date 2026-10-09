@@ -64,6 +64,11 @@ def scan_records(data):
 _GAME_SPEED = re.compile(rb"(?s)\x09\0{7}\x01\0\0\0(.{4})(.{4})\0{8}\x01\0\0\0\x08\0{7}\x01\0\0\0(.{8})\x01(.{8})")
 
 
+def _game_speed_match(data):
+    hits = list(_GAME_SPEED.finditer(data))
+    return hits[0] if len(hits) == 1 else None
+
+
 def find_game_speed(data):
     """The calendar speed field and its neighbours, or None if the pattern is not found once.
 
@@ -72,10 +77,36 @@ def find_game_speed(data):
     values; t1 minus t2 is 200 times play_speed). Found exactly once in every stream checked
     (format 568 to 604); a second match makes this return None rather than guess.
     """
-    hits = list(_GAME_SPEED.finditer(data))
-    if len(hits) != 1:
+    h = _game_speed_match(data)
+    if h is None:
         return None
-    h = hits[0]
     return dict(offset=h.start(1), millis_per_day=struct.unpack("<I", h.group(1))[0],
                 play_speed=struct.unpack("<I", h.group(2))[0],
                 t1=struct.unpack("<Q", h.group(3))[0], t2=struct.unpack("<Q", h.group(4))[0])
+
+
+def find_day_table(data):
+    """The tick-to-date table that follows the game speed component, or None.
+
+    A list of (tick, day) pairs: `day` is a Julian day number (2415021 is 1 January 1900) and
+    `tick` the game clock value at which that day started. See docs/script-states.md. Use
+    `date_of_day` to turn a day number into a date. Entries are appended when the date changes;
+    in a game that never had its date set they are one per day with consecutive day numbers.
+    """
+    h = _game_speed_match(data)
+    if h is None:
+        return None
+    p = h.end()
+    n = struct.unpack_from("<I", data, p)[0]
+    if p + 4 + 12 * n > len(data):
+        return None
+    return [struct.unpack_from("<QI", data, p + 4 + 12 * i) for i in range(n)]
+
+
+def date_of_day(day):
+    """Julian day number (as in the day table) to a datetime.date, or None if out of range."""
+    import datetime
+    try:
+        return datetime.date.fromordinal(day - 1721425)
+    except (ValueError, OverflowError):
+        return None
