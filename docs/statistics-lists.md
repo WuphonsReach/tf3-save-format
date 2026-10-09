@@ -35,6 +35,10 @@ For each cargo `c` in an object's group, `last value of itemsUnloaded<c>` minus 
 - A six-slot warehouse with meat 1, cement 11, clothes 40, tinned food 2 and furniture 52 and a sixth slot with 11: a group with ids 7, 15, 27, 28, 31 and 1 and exactly those differences. The ids agree with the table in [cargo-ids.md](cargo-ids.md).
 - The 15-module warehouse of [warehouses.md](warehouses.md): in two saves the group held 15 cargo ids and the differences matched all eight levels read from the window in the first save (460, 208, 108, 83, 60, 34, 15, 8) and the four that the second save left unchanged (208, 8, 49 and 15) plus the grain and stone levels read there (473 and 362).
 
+- **A second game** ([6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), temperate, 1937, 604; a paused re-save compared with all 23 rows of the Warehouses tab). All 15 rows with something stored had a group whose stock fit: Stored 114, 284 and 13 were rows whose only icon was fish, each a single list of id 6, and 36 was id 6 as well; 84 and 1,017 were id 9 (vegetables in the table; the rows' icon was a green gem), 995 was one list (id 2), 551 was ids 2, 12 and 29 (491, 12 and 48), 2,120 was fuel 20 (488), planks 13 (132) and id 29 (1,500), 520 was id 5 (20) plus glass 32 (500), and the three rows of 500 each had one list (ids 3, 29 and 26). Where several lists gave one total (8, 20 and 500) the row was not pinned to one group. **Observed**, one game. Ids 20, 13 and 32 agree with [cargo-ids.md](cargo-ids.md); the same row put the purple-cube cargo (a goods icon) at 29.
+- **A group may have an `itemsUnloaded<c>` list and no `itemsLoaded<c>`.** Cargo that was never taken out of the warehouse has no loaded list, and the stock is then the last unloaded total. In the second game the 500 of glass and the 1,017 of id 9 were such lists. Treat a missing loaded list as 0 when taking differences (**Observed**; the first game's test cases all had both).
+- **A cargo's stock can pass one module's 500.** The row with 1,017 was a 3-module warehouse (capacity 1,500, 68%) and its group had that single cargo id. So the stock is not held per module; whether several modules were set to the same cargo is **Open**.
+
 Differences are not stocks in every group: in one save about a third of the groups with both lists (143 of 395) had a negative difference somewhere. The rule was checked on warehouses only, so a group is picked by matching window values, not by list names alone.
 
 ## Yearly bars
@@ -54,7 +58,7 @@ The incoming bar for a year is the last total in that year minus the last total 
 ## Finding a warehouse's stock
 
 1. Decompress the stream ([container.md](container.md)) and scan for fields with the pattern above, then chain them into groups (`u32 key`, `u32 n`, `n` fields).
-2. For each group take the cargo ids that have both `itemsUnloaded<c>` and `itemsLoaded<c>`, and compute the differences.
+2. For each group take the cargo ids that have `itemsUnloaded<c>` (and `itemsLoaded<c>` where it exists, else 0), and compute the differences.
 3. Pick the group whose differences equal the figures in the warehouse window. With 15 slots this is unique; with one or two slots it needs a second save with other figures.
 
 A scan of one 940 MB stream took about one minute in Python.
