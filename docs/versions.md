@@ -1,6 +1,6 @@
 # Format versions
 
-The u32 after the `tf**` magic. The game reads older versions; what it does when it re-saves one (upgrade or keep) is **open**.
+The u32 after the `tf**` magic. The game reads older versions. When it re-saves one it writes the current version: a 585 save came back as 604 (**Observed**, one save; the header's `value` field kept 585, see [header.md](header.md)).
 
 ## Seen in the mod.io catalog (2026-10-08)
 

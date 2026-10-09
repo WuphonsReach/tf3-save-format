@@ -7,6 +7,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [container.md](container.md) | zstd framing, writing a save back |
 | [header.md](header.md) | Header fields in order, preview image, settings |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
+| [script-states.md](script-states.md) | Script states: game clock, weather and time, company rank, loans, counters, achievements, subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids in the temperate economy |
