@@ -12,7 +12,7 @@ None of these scripts write a save. For editing, see [tf3-save-editor](https://g
 | `save_header.py SAVE.sav [...]` | Print a save's header: version, start year, map size, money, counter, preview, mods, resources, a few settings. Importable as `read_header(path)` |
 | `town_states.py SAVE.sav [...]` | Print the per-town rating state from the `townStates` table |
 | `save_preview.py OUT_DIR SAVE.sav [...]` | Write each save's preview as a PNG, right way up |
-| `mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]` | Summarise many saves (or mod.io mod directories) into `OUT_DIR/<id>-<name>/summary.json` and `OUT_DIR/index.csv`. Facts only, no local paths |
+| `mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]` | Summarise many saves (or mod.io mod directories, including their editor `maps/`) into `OUT_DIR/<id>-<name>/summary.json` and `OUT_DIR/index.csv`. Facts only, no local paths |
 
 ## Using them on other people's saves
 

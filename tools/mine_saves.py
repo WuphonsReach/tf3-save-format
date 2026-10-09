@@ -5,8 +5,9 @@ Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<id>-<name>/summary.json and
 rebuilds OUT_DIR/index.csv from every summary there. A SAVE_OR_MODDIR can be a
-.sav or a mod.io mod directory (.../mods/<id>) whose savegames/ folder holds
-one. Catalog name, tags, author and link come from mod.io's metadata/state.json
+.sav or a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/
+folder holds one. A map-editor map (maps/) is written to <id>-<name>-map, so a
+mod that ships both a savegame and a map keeps two summaries. Catalog name, tags, author and link come from mod.io's metadata/state.json
 when it is found next to the mods directory.
 
 Safe to re-run while mod.io is still downloading: a save whose size and mtime
@@ -63,13 +64,16 @@ def catalog_profiles(mods_dir):
 
 def find_saves(arg):
     if arg.endswith(".sav"):
-        return [(arg, None, None)]
+        return [(arg, None, None, "savegame")]
     mods_dir = os.path.dirname(os.path.abspath(arg.rstrip("/")))
     mod_id = os.path.basename(os.path.abspath(arg.rstrip("/")))
-    sav_dir = os.path.join(arg, "savegames")
-    if not os.path.isdir(sav_dir):
-        return []  # a content mod, not a savegame
-    return [(os.path.join(sav_dir, f), mod_id, mods_dir) for f in sorted(os.listdir(sav_dir)) if f.endswith(".sav")]
+    found = []
+    for kind, sub in (("savegame", "savegames"), ("map", "maps")):
+        sav_dir = os.path.join(arg, sub)
+        if os.path.isdir(sav_dir):
+            found += [(os.path.join(sav_dir, f), mod_id, mods_dir, kind)
+                      for f in sorted(os.listdir(sav_dir)) if f.endswith(".sav")]
+    return found  # empty for a content mod
 
 
 def slug(s):
@@ -77,15 +81,16 @@ def slug(s):
 
 
 INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
-              "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header"]
+              "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind"]
 
 
-def summarise_save(path, mod_id, mods_dir):
+def summarise_save(path, mod_id, mods_dir, kind="savegame"):
     profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
     name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
     summary = {
         "name": name,
         "mod_id": mod_id,
+        "kind": kind,
         "source_name": os.path.basename(path),
         "source_size": os.stat(path).st_size,
         "author": (profile.get("submitted_by") or {}).get("username"),
@@ -123,11 +128,11 @@ def summarise_save(path, mod_id, mods_dir):
 def index_row(sm):
     tr = sm.get("town_records", {})
     if "error" in sm:
-        return [sm["mod_id"], sm["name"], sm["author"], "", "", "", "", "", "", "", "", "", "", "", "error"]
+        return [sm["mod_id"], sm["name"], sm["author"], "", "", "", "", "", "", "", "", "", "", "", "error", sm.get("kind", "savegame")]
     return [sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
             sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
             len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
-            sm["stream_bytes"], "partial" if sm["header_partial"] else "ok"]
+            sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame")]
 
 
 # Size and mtime of the save last read, one file per summary so parallel runs do not clash.
@@ -151,16 +156,16 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
     done = skipped = failed = 0
     for arg in args:
-        for path, mod_id, mods_dir in find_saves(arg):
+        for path, mod_id, mods_dir, kind in find_saves(arg):
             profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
             name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
-            d = os.path.join(out_dir, f"{mod_id or 'local'}-{slug(name)}")
+            d = os.path.join(out_dir, f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else ""))
             sp = os.path.join(d, "summary.json")
             if os.path.isfile(sp) and up_to_date(d, path):
                 skipped += 1
                 continue
             print("reading", path, file=sys.stderr)
-            summary = summarise_save(path, mod_id, mods_dir)
+            summary = summarise_save(path, mod_id, mods_dir, kind)
             os.makedirs(d, exist_ok=True)
             with open(sp, "w", encoding="utf-8") as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
