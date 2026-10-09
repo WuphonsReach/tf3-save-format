@@ -18,8 +18,9 @@ Each warehouse is a construction record with a list of modules, and each module 
 | `wh_liquid` | chemicals, crude_oil, dyes, fuel |
 
   The build tooltips list more icons than these (8 for bulk, 13 for goods, 6 for flatbed, 4 for liquid), so a warehouse can take more cargos than any one save used.
-- The 15-module record fits the warehouse window by count and by cargo icons, as read by eye from screenshots: the goods slots were fish, plastic, books and tinned food (16, 106, 0 and 12 in the window), and the only liquid slot was fuel. The match of the other slots was not checked one by one.
+- The 15-module record fits the warehouse window by count and by cargo icons, as read by eye from screenshots: the goods slots were fish, plastic, books and tinned food (16, 106, 0 and 12 in the window), and the only liquid slot was fuel. One slot was checked in the game: hovering the open-book icon showed the tooltip "Books", the cargo the record tags on one of its goods modules. The match of the other slots was not checked one by one.
 - The module keys are large numbers (622,502,550 to 672,502,500 seen) that differ by 40 or 50 within a warehouse, in groups. They look like packed two-part positions, since the leading digits step 62, 63, 64, ... across modules and the tail ran from 2,502,340 to 2,502,660. What they encode is **Open**.
+- The module keys also occur as u32 in the entity data after the record (all 15 keys of the 15-module warehouse sat together within 4 KB, starting about 1.3 KB after the record, and again in other places 100 KB to 15 MB further on). The values next to them looked like placement data (f32 16.0 and 1.0 and a run that looks like a transform), not stock. **Observed**, one warehouse in one later save. This means the keys tie a module to its model placement, not to its stock.
 - Before the path the record has a string like `__module_` plus digits and a list of entity ids (12 in the 15-module record, so not one per module). What they are is **Open**.
 
 ## Cost
