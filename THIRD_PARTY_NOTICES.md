@@ -2,7 +2,7 @@
 
 ## tf3-save-editor
 
-Code in `tools/` follows the readers in `crates/lib/src/` of [tf3-save-editor](https://github.com/TBK/tf3-save-editor), and the format notes in `docs/` build on its `docs/FORMAT.md`. That project is licensed MIT OR Apache-2.0; it is used here under the MIT licence:
+Code in `tools/` follows the readers in `crates/lib/src/` of [tf3-save-editor](https://github.com/TBK/tf3-save-editor), and the format notes in `docs/` build on its `docs/FORMAT.md`. That project is licensed MIT OR Apache-2.0, and the derived code here is offered under the same choice. The Apache-2.0 text is in [LICENSE-APACHE](LICENSE-APACHE); the MIT notice is:
 
 ```
 MIT License

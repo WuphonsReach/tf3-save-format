@@ -7,7 +7,7 @@ Only reads; prints one block per save. Importable: read_header(path) returns a d
 Field meanings are in docs/header.md.
 
 The read order is ported from tf3-save-editor (crates/lib/src/header.rs,
-https://github.com/TBK/tf3-save-editor), Copyright (c) 2026 TBK, MIT licence.
+https://github.com/TBK/tf3-save-editor), Copyright (c) 2026 TBK, MIT OR Apache-2.0.
 See THIRD_PARTY_NOTICES.md. Differences: the preview is read whatever its flag
 byte says, and the four u32s after the version and the u32 after the money are
 named by what they hold.

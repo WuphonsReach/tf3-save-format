@@ -1,12 +1,12 @@
 # tf3-save-format
 
-Public documentation of the Transport Fever 3 `.sav` format. MIT licensed. The notes in `docs/` are the product; `tools/` holds read-only reference scripts with no support (see `tools/README.md`).
+Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apache-2.0, matching tf3-save-editor. The notes in `docs/` are the product; `tools/` holds read-only reference scripts with no support (see `tools/README.md`).
 
 ## Related local repos
 
 | Repo | Role |
 |---|---|
-| `../tf3-save-editor` | Fork of TBK/tf3-save-editor (MIT OR Apache-2.0, used here under MIT). Its `docs/FORMAT.md` is the base layout for container, header and Lua states. Code in `tools/` follows its readers (`header.rs`, `lua.rs`); the notice is in `THIRD_PARTY_NOTICES.md`. |
+| `../tf3-save-editor` | Fork of TBK/tf3-save-editor (MIT OR Apache-2.0, used here under both). Its `docs/FORMAT.md` is the base layout for container, header and Lua states. Code in `tools/` follows its readers (`header.rs`, `lua.rs`); the notice is in `THIRD_PARTY_NOTICES.md`. |
 
 ## Rules for what goes in
 
