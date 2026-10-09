@@ -10,6 +10,8 @@ scratch/
 previews/
 catalog/
 .mine_state.json
+# Local-only lists (paths to saves on this machine) and re-check scripts
+local/
 
 # Images: the game's .jpg next to each save, extracted previews, screenshots.
 # Images we mean to publish are added on request with `git add -f` (see CLAUDE.md).
