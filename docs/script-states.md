@@ -37,7 +37,7 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 
 - The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
 - The settings table (see [header.md](header.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
-- **Open**: calendar speed (the 1.00x slider). No key was found for it in either save.
+- **Open**: calendar speed (the 1.00x slider). No key was found for it in either save. Catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604) came up at 2.00x when loaded, so a save by another player restores its speed too (**Observed**, one load). Its shown date, 14 February 2191 from a 1960 start, is 84,416 days from 1 January 1960, while the newest stored timestamp is 95,878 days. The ratio is 0.88, which fits a game played at several speeds and so says nothing about the speed at save time.
 
 ## Company and rank
 
@@ -50,6 +50,7 @@ What goes with what:
 
 - The header's counter equals the first `experience` after the progression path, or is a few points behind it. See [header.md](header.md).
 - `potentialLevel` followed the rank shown in the game (rank 2 was shown as Mechanic). `level` was 1 in a 585 save and 2 after the same game was re-saved by a 604 game, so it may be the rank applied after the game has run. **Open**.
+- Catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604, start year 1960, no mods) has `level` 10 and `potentialLevel` 13 with `experience` 15,808, the same as the header counter. The game showed the rank Vice President at 33% of the way to the next one. `companyLevelUpCount` in the achievements state was 12, which is 13 minus the starting rank 1 and does not fit `level` 10 (9 level-ups). So `potentialLevel` looks like the rank reached and `level` a value that lags behind it. **Observed**. The rank number behind the name Vice President was not read off the game's rank list (the game crashed before that), so the match is not **Confirmed**. A second save, 6429423, has the same split (7 and 8) and was not loaded in the game.
 - `experience` did not change over two weeks of play in which `cargoDeliveredCount` rose by 9. It moved with population, not with deliveries or time.
 - The rank thresholds the game shows ("Reach a Population of N") were not found as stored numbers. **Open**. In one game the first rank's number (1,355) equalled both `basePopulation` and `experience`; in another, `basePopulation` was 1,443 and the second rank's number was 1,622. How the thresholds derive from `basePopulation` is **open**.
 
