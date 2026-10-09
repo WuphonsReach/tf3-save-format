@@ -1,6 +1,6 @@
 """Shared helpers for the TF3 save tools: zstd, cargo ids and the town record scan.
 
-See docs/container.md, docs/cargo-ids.md and docs/town-records.md. Standard library
+See docs/container.md, docs/cargo-ids.md, docs/town-records.md and docs/script-states.md. Standard library
 only (Python 3.14 for zstd; older Python needs the `zstandard` package).
 """
 import math
@@ -57,3 +57,25 @@ def scan_records(data):
                          id={"com": com, "ind": ind},
                          id_off={"com": s + 37, "ind": s + 49}, w_off={"com": s + 41, "ind": s + 53}))
     return recs
+
+
+# The game speed component: ... 09 00.. | 01 00 00 00 | u32 millisPerDay | u32 playSpeed | 8 zero bytes
+# | 01 00 00 00 | 08 00.. | 01 00 00 00 | u64 t1 | 01 | u64 t2. See docs/script-states.md.
+_GAME_SPEED = re.compile(rb"(?s)\x09\0{7}\x01\0\0\0(.{4})(.{4})\0{8}\x01\0\0\0\x08\0{7}\x01\0\0\0(.{8})\x01(.{8})")
+
+
+def find_game_speed(data):
+    """The calendar speed field and its neighbours, or None if the pattern is not found once.
+
+    Returns a dict: `offset` (of the millisPerDay u32), `millis_per_day` (4000 at 1.00x, 0 when
+    the calendar is stopped), `play_speed` (0 when the game was paused), `t1` and `t2` (clock
+    values; t1 minus t2 is 200 times play_speed). Found exactly once in every stream checked
+    (format 568 to 604); a second match makes this return None rather than guess.
+    """
+    hits = list(_GAME_SPEED.finditer(data))
+    if len(hits) != 1:
+        return None
+    h = hits[0]
+    return dict(offset=h.start(1), millis_per_day=struct.unpack("<I", h.group(1))[0],
+                play_speed=struct.unpack("<I", h.group(2))[0],
+                t1=struct.unpack("<Q", h.group(3))[0], t2=struct.unpack("<Q", h.group(4))[0])
