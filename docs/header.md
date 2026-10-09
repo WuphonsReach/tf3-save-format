@@ -13,7 +13,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | map height | u32 | Metres (ours). For example 40960 |
 | ? | u32 | 2,415,021 to 2,835,101 in the 120 catalog saves (568 to 604). The same in three saves of one map, so it describes the map, not the play state. **Open** |
 | money | i64 | Copy of the company balance, shown in the load dialog |
-| counter | u32 | Grows with play, not with game time: 8563 in the first save of a game started on 1 Jan 1900, rising to 16513 over later saves of that game whose autosaves were all named `_1900-01-01`. Probably play time in seconds (ours, **open**). 0 to 59,478 in the 120 catalog saves (568 to 604), 0 in one. FORMAT.md calls it `year` |
+| counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). The first `experience` number in the company progression script state (the one next to `companyState`, `level` and `potentialLevel`) matched the header in 8 of 11 saves and ran 1 to 4 points ahead in the other 3, so the header is probably written just before the state. It grows with play (8563 in the first save of a game started on 1 Jan 1900, rising to 16513 over later saves of that game whose autosaves were all named `_1900-01-01`). 0 to 59,478 in the 120 catalog saves (568 to 604), 0 in one. FORMAT.md calls it `year` |
 | info | Lua table | Holds `company.level` (ours). 1 to 15 in 117 of 120 catalog saves (568 to 604); empty in the other 3 and in editor saves |
 | mods | vec<mod> | Mods the save uses, see below |
 | preview flag | u8 | 0 or 1. Does not say whether a preview is present (ours): 0 in 60 of 120 catalog saves, all with a full preview. Meaning **open** |

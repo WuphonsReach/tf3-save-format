@@ -15,7 +15,7 @@ The notes are the product. [tools/](tools/) has the small read-only Python scrip
 Start at [docs/README.md](docs/README.md).
 
 - Container: zstd framing, writing a save back.
-- Header: start year, map size, money, play-time counter, mods, preview image, settings.
+- Header: start year, map size, money, company experience counter, mods, preview image, settings.
 - Lua value encoding and the town rating state.
 - Town records: capacities and starting cargo.
 - Cargo type ids for the temperate economy.
