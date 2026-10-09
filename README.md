@@ -37,7 +37,7 @@ The container, header and Lua state layout build on [TBK/tf3-save-editor](https:
 
 ## License
 
-Licensed under either of
+Copyright (c) 2026 WuphonsReach. Licensed under either of
 
 * Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
 * MIT license ([LICENSE-MIT](LICENSE-MIT))
