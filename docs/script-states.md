@@ -63,7 +63,7 @@ In the progression state, under `availableLoans` and the table after it. Fields 
 - **Observed** on catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604, calendar speed 0.50x, no loans taken), compared with the Loans tab. The four offers were stored as `Small` 12,000,000, `Medium` 59,000,000, `Large` 82,000,000 and `ExtraLarge` 124,000,000, in that order, with `percentage` 0.03, 0.05, 0.08 and 0.12 (a fraction, shown as 3%, 5%, 8%, 12%).
 - `duration` is in the clock unit (1/4000 of a game day, see above): 1,461,000, 5,844,000, 17,532,000 and 20,454,000. That is 1, 4, 12 and 14 times 365.25 days. The tab showed 6, 24, 72 and 84 months, exactly half of that in years, which is the 0.50x calendar speed applied to the stored duration. So the months shown are the stored duration times the calendar speed, the same rule as for the date. Only 0.50x was seen, so whether the shown months follow the speed at the time of looking was not tested. **Open**.
 - `percentage` is a total, not a yearly rate: the "per Year" figure on each offer was `amount` times (1 + `percentage`) divided by the length in years shown, with one year as the least (12,360,000, 30,975,000, 14,760,000 and 19,840,000).
-- `birthDay` is when the offer was made, as a clock value (383,259,800 against a newest timestamp of about 383,515,000 in the same save, so one to a few days of stored time earlier than the save).
+- `birthDay` is when the offer was made, as a clock value. The four were 383,174,000, 383,247,200, 383,259,800 and 382,834,400, against a newest timestamp of about 383,515,000 in the same save: 64 to 170 days of stored time before the save.
 
 ## Counters and achievements
 
