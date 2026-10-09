@@ -25,7 +25,7 @@ The weight stored with each cargo in a town record is the cargo's `townConsumpti
 
 | Tier | Commercial | Industrial | Weight |
 |---|---|---|---|
-| 0 | fish, meat, vegetables | planks, fuel, bricks | 1.0 |
+| 0 | fish, meat, vegetables | planks, fuel, bricks, cement | 1.0 |
 | 1 | beverages, clothes, tinned_food | furniture, machines, tools | 0.5 |
 | 2 | none | vehicles | 0.25 |
 
@@ -37,7 +37,7 @@ A new town starts with one commercial and one industrial cargo. In a 34-town gam
 
 The header names a climate and an economy (see [header.md](header.md)). They come in matched pairs, plus the all-industries economy:
 
-| Climate | Economy | Saves and maps seen (244 indexed) |
+| Climate | Economy | Saves and maps seen (the 244 of [versions.md](versions.md), 2026-10-09) |
 |---|---|---|
 | `temperate.clima` | `temperate.eco` | 151 |
 | `temperate.clima` | `all.eco` | 16 |
@@ -49,14 +49,14 @@ The header names a climate and an economy (see [header.md](header.md)). They com
 | `mission6_tropical.clima` | `tropic.eco` | 1 |
 | none (568 and 585 headers, which parse only partly) | none | 10 |
 
-- **The ids are the same in every economy** (**Observed**, 585 to 604). The cargo a town record uses in one economy has the same id in all of them. The ids also line up with what each economy leaves out of its town cargo:
+- **The ids are the same in every economy** (**Observed**, 599 to 604; 568 and 585 headers stop before the economy). The cargo a town record uses in one economy has the same id in all of them. The ids also line up with what each economy leaves out of its town cargo:
   - `subarctic.eco` has no bricks and no vegetables: its town records use 6, 7 (commercial tier 0) and 13, 15, 20 (industrial tier 0), never 9 or 33.
   - `tropic.eco` has no bricks, cement or beverages: commercial 6, 7, 9 and 27, 28 (tier 1), industrial 13, 20, never 15, 33 or 8.
   - `dry.eco` has no fish: commercial 7, 9 only (never 6), industrial 13, 20, 33.
   - `temperate.eco` has no cement: 15 never appeared in a temperate economy record, while 33 is common.
   - `all.eco` has everything, and its records used 15 and 33 both.
 - Each of those economy files was read in the game install to see which cargo it removes. The ids themselves are not in those files and are not in the save: no cargo name string sits next to an id in any of the four climates' saves.
-- So the table above works for subarctic, tropical and dry saves too, for the cargo it lists. The other ids (about 1 to 5, 10 to 12, 17 to 19, 21 to 26, 29, 34 to 37) are the remaining cargo (coal, steel, grain and so on). Which id is which is **Open**. A few of them turn up in town records in every economy in small numbers, which is not explained.
+- So the table above works for subarctic, tropical and dry saves too, for the cargo it lists. The other ids (about 1 to 5, 10 to 12, 17 to 19, 21 to 26, 29, 34 to 37) are the remaining cargo (coal, steel, grain and so on). Steel 10, sheet metal 11 and chemicals 19 come from the statistics lists (above, **Observed**, one game). Which of the rest is which is **Open**; [statistics-lists.md](statistics-lists.md) records the icons seen with 9 and 29 in a second game, which did not settle them. A few of them turn up in town records in every economy in small numbers, which is not explained.
 - **Observed** on 604 (three saves): cargo names are in the save, but not as ids. The achievements state's `cargoTypesDelivered` is a table from 1, 2, 3 and so on to a cargo resource path (`::/cargos/wool/wool.cargo`). The numbering is the order the cargo was first delivered in that game, not the town-record id: it holds 28, 29 and 18 entries in three saves, and fish is 4, 2 and 1. Two saves of one game agree. So it gives the list of cargo a game has used, and nothing that fixes an id.
-- **Observed**: the town cargo state (`game_mechanics/towns/town_cargo.gs`) has `cargoDemandsSorted`, a table from 1 to 11 of the town-record ids in this order: 6, 7, 9, 13, 14, 16, 20, 27, 28, 30, 31 (catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3), temperate). These are the same ids as in the table above, so they match without adding new ones, and no names go with them.
+- **Observed**: the town cargo state (`game_mechanics/towns/town_cargo.gs`) has `cargoDemandsSorted`, a table from 1 to 11 of the town-record ids in this order: 6, 7, 9, 13, 14, 16, 20, 27, 28, 30, 31 (catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3), `tropic.eco`). These are the same ids as in the table above, so they match without adding new ones, and no names go with them. Beverages (8), cement (15) and bricks (33) are missing, as `tropic.eco` leaves them out.
 - What the climate changes in the save beyond this (terrain, vegetation, which industries spawn) was not looked at. **Open**.

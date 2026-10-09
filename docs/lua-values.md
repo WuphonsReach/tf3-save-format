@@ -1,6 +1,6 @@
 # Lua values
 
-Used by the header's info table and settings, and by script states. Checked on 604.
+Used by the header's info table and settings, and by script states. Checked on 604. The header's info table and the script states also parse this way on 568 to 604 (the catalog saves of [versions.md](versions.md)).
 
 A value is a u32 tag followed by its payload:
 

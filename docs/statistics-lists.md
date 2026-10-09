@@ -11,7 +11,7 @@ A named list of (time, running total) pairs, stored as two parallel vectors:
 | Part | Encoding |
 |---|---|
 | name | `str`, 3 to 48 characters of `A-Z a-z 0-9 _` |
-| times | `vec<u64>`, ascending, in the game clock unit of [script-states.md](script-states.md) (1/4,000 of a game day) |
+| times | `vec<u64>`, ascending, in the game clock of [calendar.md](calendar.md) (the game's milliseconds, 4,000 a day at 1.00x) |
 | totals | `vec<u64>`, same length as `times`, rising (cumulative) |
 | end | one zero byte |
 
@@ -45,7 +45,7 @@ Differences are not stocks in every group: in one save about a third of the grou
 
 The incoming bar for a year is the last total in that year minus the last total before it, taken from `itemsUnloaded`, and the outgoing bar the same from `itemsLoaded`. An `itemsUnloaded19` list of the test warehouse gave, from 1985 to 2000: 120, 120, 117, 120, 120, 90, 120, 150, 90, 150, 90, 120, 120, 120, 120, 90. The window's tooltips read the same, except 135 for 1991 and 135 for 1992 where the list gave 120 and 150. The outgoing bars for 1996 and 1997 (102 and 150) matched the list of loaded totals too.
 
-- The 15 that moved is one entry (+15) at clock time 134,411,600, which is 0.9 day after the start of 1 January 1992 read as plain calendar days from 1 January 1900. The window counted it in 1991. Moving every year boundary 3,700 to 9,600 units (0.9 to 2.4 days) after the plain calendar start fits all 15 bars; the plain start fits 14. So the game's year for a clock time is not exactly the calendar day count. The day table of [script-states.md](script-states.md#the-day-table) puts that entry on 1 January 1992 too (plain 4000 ticks per day in that game), so the bars are not binned by that table's day alone. Whether the offset comes from the calendar speed setting (all saves here were at 1.00x) or a fixed offset is **Open**.
+- The 15 that moved is one entry (+15) at clock time 134,411,600, which is 0.9 day after the start of 1 January 1992 read as plain calendar days from 1 January 1900. The window counted it in 1991. Moving every year boundary 3,700 to 9,600 units (0.9 to 2.4 days) after the plain calendar start fits all 15 bars; the plain start fits 14. So the game's year for a clock time is not exactly the calendar day count. The day table of [calendar.md](calendar.md#the-day-table) puts that entry on 1 January 1992 too (plain 4000 ticks per day in that game), so the bars are not binned by that table's day alone. Whether the offset comes from the calendar speed setting (all saves here were at 1.00x) or a fixed offset is **Open**.
 - The 2000 bar read 60 in the saves with the ship not yet unloaded and with 17 of 30 unloaded, and 90 once all 30 were in. The list already held 2,754 (77 for the year) in the middle save, so the bar lagged the list by the unloading in progress. Observed once.
 - The station window's unloaded bars equalled the warehouse's incoming bars. Two groups 30 KB apart carry the same `itemsUnloaded` and `itemsUnloaded19` totals, which would explain it; only the one that also has `itemsLoaded19` gave the stock. Which of the two is the station and which the warehouse is **Open**.
 

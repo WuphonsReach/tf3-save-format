@@ -4,7 +4,7 @@
 Usage: calendar_speed.py SAVE.sav [...]
 
 Only reads. The field is the game's `millisPerDay` (4000 at 1.00x); the day table follows it; see
-docs/script-states.md for the pattern it is found by. Importable through
+docs/calendar.md for the pattern it is found by. Importable through
 tf3save.find_game_speed(stream) and find_day_table(stream).
 """
 import os

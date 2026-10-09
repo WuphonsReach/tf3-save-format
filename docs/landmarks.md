@@ -17,7 +17,7 @@ A table `site entity id -> cargo id -> amount`, all numbers f64.
 - Between A and B only these four numbers in the whole state changed (+3, +3, +6 and +3). They equal what left the site's input stocks in the window: planks 56 to 53, furniture 97 to 94, stone 116 to 110. The dye stock went 0 to 2 while dye progress rose by 3, which fits 5 delivered and 3 used (the truck's window showed 5 of 30 dye on board before it unloaded). So the stock is used up one for one as progress. **Observed**, one delivery.
 - The save held six more sites, with round totals: 200, 400, 600, 800, 1,000 or 1,200 per cargo. Whether these are finished sites was not checked. **Open**.
 - The requirements (300 and 600 here) were not found as stored numbers. **Open**.
-- The input stocks themselves (0/150 dyes, 56/150 planks, 116/300 stone, 97/150 furniture) were not found. Searching for the four values and capacities as f32, f64 or u32 close together found nothing in either save. They are probably in the site's entity data. **Open**.
+- The input stocks themselves (0/150 dyes, 56/150 planks, 116/300 stone, 97/150 furniture) were not found. Searching for the four values and capacities as f32, f64 or u32 close together found nothing in either save. They are probably in the site's entity data. Warehouse stocks turned out to be differences of running totals in the `items*` statistics lists ([statistics-lists.md](statistics-lists.md)); whether a site's stocks are kept the same way was not tried. **Open**.
 
 ## `town2carrier2modifiers`
 

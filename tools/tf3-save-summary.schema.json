@@ -213,7 +213,7 @@
         "null"
       ],
       "additionalProperties": false,
-      "description": "Calendar state from the GAME_SPEED component and the day table after it. null if the pattern was not found exactly once. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#the-calendar-speed-field",
+      "description": "Calendar state from the GAME_SPEED component and the day table after it. null if the pattern was not found exactly once. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/calendar.md#the-calendar-speed-field",
       "properties": {
         "date": {
           "type": [

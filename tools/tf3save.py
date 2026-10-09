@@ -1,6 +1,6 @@
 """Shared helpers for the TF3 save tools: zstd, cargo ids and the town record scan.
 
-See docs/container.md, docs/cargo-ids.md, docs/town-records.md and docs/script-states.md. Standard library
+See docs/container.md, docs/cargo-ids.md, docs/town-records.md, docs/calendar.md and docs/script-states.md. Standard library
 only (Python 3.14 for zstd; older Python needs the `zstandard` package).
 """
 import math
@@ -60,7 +60,7 @@ def scan_records(data):
 
 
 # The game speed component: ... 09 00.. | 01 00 00 00 | u32 millisPerDay | u32 playSpeed | 8 zero bytes
-# | 01 00 00 00 | 08 00.. | 01 00 00 00 | u64 t1 | 01 | u64 t2. See docs/script-states.md.
+# | 01 00 00 00 | 08 00.. | 01 00 00 00 | u64 t1 | 01 | u64 t2. See docs/calendar.md.
 _GAME_SPEED = re.compile(rb"(?s)\x09\0{7}\x01\0\0\0(.{4})(.{4})\0{8}\x01\0\0\0\x08\0{7}\x01\0\0\0(.{8})\x01(.{8})")
 
 
@@ -89,7 +89,7 @@ def find_day_table(data):
     """The tick-to-date table that follows the game speed component, or None.
 
     A list of (tick, day) pairs: `day` is a Julian day number (2415021 is 1 January 1900) and
-    `tick` the game clock value at which that day started. See docs/script-states.md. Use
+    `tick` the game clock value at which that day started. See docs/calendar.md. Use
     `date_of_day` to turn a day number into a date. Entries are appended when the date changes;
     in a game that never had its date set they are one per day with consecutive day numbers.
     """

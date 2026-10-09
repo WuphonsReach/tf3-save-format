@@ -15,10 +15,12 @@ The notes are the product. [tools/](tools/) has the small read-only Python scrip
 Start at [docs/README.md](docs/README.md).
 
 - Container: zstd framing, writing a save back.
-- Header: start year, map size, money, company experience counter, mods, preview image, settings.
-- Lua value encoding and the town rating state.
-- Town records: capacities and starting cargo.
-- Cargo type ids for the temperate economy.
+- Header: start year, date shown, map size, money, company experience counter, mods, preview image, settings.
+- Calendar: the game clock, calendar speed and the day table.
+- Lua value encoding, and the script states: town ratings, weather, company rank, loans, counters, subsidies, landmarks.
+- Entity data: town records, warehouses, the statistics lists behind stocks and yearly charts, entity names, and searches that failed.
+- The Finances tab against the money journal.
+- Cargo type ids and how climates and economies pair.
 - Map editor saves, and converting a regular save into one.
 - Format versions seen in the wild.
 

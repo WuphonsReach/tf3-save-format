@@ -35,7 +35,7 @@ What is read:
 - settings: every New Game setting as "stored (label)", for example
   "3 (100%, default)", from tf3save.SETTING_OPTIONS. Needs the full header
   (599 to 604); 568 and 585 have none.
-- calendar (docs/script-states.md): the date shown, the start date, the
+- calendar (docs/calendar.md): the date shown, the start date, the
   calendar speed (millisPerDay) and play speed, the clock and the day table.
 - company, counters, cycles, subsidies, town_states: from the script states
   of the company, achievements, game time, subsidy and town scripts. A save
