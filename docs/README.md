@@ -1,6 +1,6 @@
 # Format notes
 
-Unofficial notes on Transport Fever 3 `.sav` files, worked out by reading saves. Each note says which format versions it was checked on.
+Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside: reading saves, testing changes in the game, and looking at the game's moddable data files. Each note says which format versions it was checked on.
 
 | File | Covers |
 |---|---|
