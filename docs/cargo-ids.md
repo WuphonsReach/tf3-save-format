@@ -17,6 +17,7 @@ Checked on 604 (the town-record counts below also use 585 to 604 saves). The ids
 
 - Cement (15) was seen as a starting industrial cargo in catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet), which uses `::/economy/all.eco`. That save's towns use 6, 7, 9 (commercial) and 13, 15, 20, 33 (industrial).
 - Glass (32) was seen in one hand-built town in [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods).
+- The statistics lists in [statistics-lists.md](statistics-lists.md) carry the cargo id in a name such as `itemsUnloaded19`. In a subarctic game (catalog save [6417707](https://mod.io/g/transportfever3/m/333151)) they gave steel 10, sheet metal 11 and chemicals 19 (matched to a flatbed warehouse's window and to a ship's chemicals), and agreed with meat 7, cement 15, clothes 27, tinned food 28 and furniture 31 from the table above. **Observed**, one save series.
 
 ## Tiers and weights
 

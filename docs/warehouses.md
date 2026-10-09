@@ -31,4 +31,4 @@ Each warehouse is a construction record with a list of modules, and each module 
 
 ## Not found
 
-The stock levels in each slot and the yearly incoming and outgoing totals are not in this record. They are not stored as plain numbers elsewhere either, see [entity-stats.md](entity-stats.md).
+The stock levels in each slot and the yearly incoming and outgoing totals are not in this record. They are not stored as plain numbers elsewhere either: a stock is the difference of two running totals and the yearly bars are differences of the same totals, see [statistics-lists.md](statistics-lists.md). Searches that failed first are in [entity-stats.md](entity-stats.md).
