@@ -12,11 +12,11 @@ Checked on 604 (three saves of one game) and 585 (two saves). The `experience` k
 
 ## Game clock
 
-Times in the script states are numbers of **1/4000 of a game day**, counted from 1 January of the start year (**Observed** on 604, three saves of one game saved on 6 February, 20 February and 18 March 2060 with start year 1900; every timestamp of a past event fell on or before the save day, and the newest was 0.7 of a day into the last one; each save was written with the game paused). The 585 saves give dates in the right year but were not checked to the day.
+At calendar speed 1.00x, times in the script states are numbers of **1/4000 of a game day**, counted from 1 January of the start year (**Observed** on 604, three saves of one game saved on 6 February, 20 February and 18 March 2060 with start year 1900; every timestamp of a past event fell on or before the save day, and the newest was 0.7 of a day into the last one; each save was written with the game paused). The 585 saves give dates in the right year but were not checked to the day.
 
 - Every save checked here started in 1900, so "from 1 January 1900" and "from the start year" can't be told apart. **Open**.
-- Whether the scale depends on the calendar speed setting is **Open**. Both games ran at 1.00x.
-- No field holding the current time was found. The newest timestamp in the file is a lower bound for the save time.
+- **The scale follows the calendar speed** (**Observed** on 604, two cases in one game). Set to 4.00x and run from 18 March to 17 September 2060 on screen (183 days), the newest timestamp in the file moved by 45.6 days on the 1/4000 scale, a ratio of 4.01. Set to 2.00x and run to 9 March 2061 (173 days shown), it moved by 86.6 days, a ratio of 2.00. So stored time runs slower than the date shown by the calendar speed factor, and at any speed other than 1.00x a date can't be worked out from a timestamp alone. The game's slider offers fixed steps, so no other values were tried. How the game restores the shown date on load, and whether it is stored (the game_time state has a `lastYear` number that matched the year on screen, 2060 and then 2061), is **Open**.
+- No field holding the current time was found, and no number in the Lua states changed from 1 to 4 between the 1.00x and 4.00x saves, so the calendar speed itself was not found either (**Open**). The newest timestamp in the file is a lower bound for the save time.
 - Keys that hold a time: `lastIncomeUpdateTime`, `birthDay` and `lastPayDay` (loans), `nextChange`, `nextTimeOfDayChange`, `spawnNextUfoAtGameTime`, and `timestamp` and `lastApplyTime` in notification entries. `lastIncomeUpdateTime` trailed the save time by 1 to 4 days, so it is not "now".
 - The header's start year is the only calendar value in the header. The date shown in the game is not stored there.
 
@@ -26,16 +26,17 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 
 | Key | Holds |
 |---|---|
-| `timeOfDayMode`, `weatherMode` | Strings, `Dynamic` or `Constant` |
+| `timeOfDayMode`, `weatherMode` | Strings. Seen: `Dynamic`, `Constant`, and `Automatic` (time of day only). The game's Cycle menu showed Dynamic, Continuous and Custom. Time of day: `Dynamic` is `Dynamic`, `Continuous` is `Automatic`, `Custom` is `Constant`. Weather: `Dynamic` is `Dynamic`, `Custom` is `Constant`. A Continuous weather option was not tried |
 | `timeOfDayTarget` | Number from 0 to 86,400, seconds of the day (43,200 in a map pinned to noon) |
 | `timeOfDayTargetSpeed` | 60 or 90 seen |
 | `cloudCoverageTarget` | 0 to 1, clear to rain |
 | `cloudCoverageTargetSpeed` | 0.001 or 0.0025 seen |
 | `currentTimeOfDayState`, `currentWeatherState` | Small whole numbers |
-| `nextChange`, `nextTimeOfDayChange` | Times, see above |
+| `nextChange`, `nextTimeOfDayChange` | Times, see above. `nextTimeOfDayChange` was 0 with `Automatic` |
+| `lastYear` | Number, the year shown in the game (2060, 2061 seen). What it is used for is **open** |
 
-- The state is a snapshot at save time. Slider positions in the game's Weather and Time window were close to the stored targets but not equal, because the game keeps running after the load.
-- The settings table (see [header.md](header.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant` and in saves whose state said `Dynamic`, so they don't mirror the state. Read the state for the mode.
+- The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
+- The settings table (see [header.md](header.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
 - **Open**: calendar speed (the 1.00x slider). No key was found for it in either save.
 
 ## Company and rank
@@ -85,4 +86,4 @@ State of the notifications script. A subsidy is a notification entry, **Observed
 
 ## Money
 
-**Observed** on 604: in three saves of one game the header money equalled the Account figure in the game exactly, including once when the account was negative. See [header.md](header.md) for the cases where the header disagrees.
+**Observed** on 604: in five saves of one game the header money equalled the Account figure in the game exactly, including once when the account was negative. See [header.md](header.md) for the cases where the header disagrees.
