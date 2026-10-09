@@ -13,7 +13,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | map height | u32 | Metres (ours). For example 40960 |
 | ? | u32 | 2,415,021 to 2,835,101 in the 120 catalog saves (568 to 604). The same in three saves of one map, so it describes the map, not the play state. **Open** |
 | money | i64 | Copy of the company balance, shown in the load dialog |
-| counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). The first `experience` number in the company progression script state (the one next to `companyState`, `level` and `potentialLevel`) matched the header in 14 of 17 saves and ran 1 to 4 points ahead in the other 3, so the header is probably written just before the state. It grows with play (8563 in the first save of a game started on 1 Jan 1900, rising to 16513 over later saves of that game whose autosaves were all named `_1900-01-01`). 0 to 59,478 in the 120 catalog saves (568 to 604), 0 in one. FORMAT.md calls it `year` |
+| counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). The first `experience` number in the company progression script state (the one next to `companyState`, `level` and `potentialLevel`) matched the header in 16 of 19 saves and ran 1 to 4 points ahead in the other 3, so the header is probably written just before the state. It grows with play (8563 in the first save of a game started on 1 Jan 1900, rising to 16513 over later saves of that game whose autosaves were all named `_1900-01-01`). 0 to 59,478 in the 120 catalog saves (568 to 604), 0 in one. FORMAT.md calls it `year` |
 | info | Lua table | Holds `company.level` (ours). 1 to 15 in 117 of 120 catalog saves (568 to 604); empty in the other 3 and in editor saves |
 | mods | vec<mod> | Mods the save uses, see below |
 | preview flag | u8 | 0 or 1. Does not say whether a preview is present (ours): 0 in 60 of 120 catalog saves, all with a full preview. Meaning **open** |
@@ -27,7 +27,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | config resources | vec<(str, str)> | Keys `climate`, `economy`, `nameList`, each a path such as `::/economy/all.eco` |
 | config params | vec<(str, Lua table)> | The entry with the empty key holds the game settings, see below |
 | mission, kind | str, str | |
-| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: five saves of one 604 game, each written with the game paused after a stretch at 4x (the last two after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
+| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: seven saves of one 604 game, each written with the game paused after a stretch at 4x (the last four after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
 | value | u32 | The format version the save was first written under, probably (ours, **Observed** on 585 to 604). Equal to the version in 604 saves; 596 to 601 in 601 saves; 585 in a 604 save that was a re-save of a 585 save. Never above the save's own version in 15 saves checked. One editor map (604) held 256 (**open**) |
 | id | str | |
 
@@ -55,7 +55,7 @@ The params entry with the empty key is a nested Lua table. Flattened with dots, 
 
 ## Money in the header
 
-**Observed** on 604: in five saves of one game the header money equalled the Account figure in the game exactly, so the lag below does not always show. A third save of that game, with the account at -2,598,471, also matched, so a negative header value can be the true balance.
+**Observed** on 604: in six saves of one game the header money equalled the Account figure in the game exactly, so the lag below does not always show. A third save of that game, with the account at -2,598,471, also matched, so a negative header value can be the true balance.
 
 **Observed**: in one played save the header said 8,932,346 when the game showed 8,920,255, so it tracks the balance but can lag. In catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) the header holds 0 while the game shows -18,153,221. Why is **open**: negative values are stored too.
 
