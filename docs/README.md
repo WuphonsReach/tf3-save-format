@@ -9,6 +9,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
 | [script-states.md](script-states.md) | Script states: game clock, weather and time, company rank, loans, counters, achievements, subsidies |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
+| [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
+| [entity-stats.md](entity-stats.md) | Stocks and yearly figures looked for in the entity data and not found, with what was tried |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
 | [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns |
