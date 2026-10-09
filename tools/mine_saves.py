@@ -3,8 +3,10 @@
 
 Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
 
-Reads only. For every save it writes OUT_DIR/<id>-<name>/summary.json and
-rebuilds OUT_DIR/index.csv from every summary there. A SAVE_OR_MODDIR can be a
+Reads only. For every save it writes OUT_DIR/<id>-<name>/tf3-save-summary.json
+(layout: tf3-save-summary.schema.json next to this script) and rebuilds
+OUT_DIR/index.csv from every summary there. A summary.json left by an older
+version in the same folder is removed. A SAVE_OR_MODDIR can be a
 .sav or a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/
 folder holds one. A map-editor map (maps/) is written to <id>-<name>-map, so a
 mod that ships both a savegame and a map keeps two summaries. Catalog name, tags, author and link come from mod.io's metadata/state.json
@@ -17,8 +19,9 @@ summary and is retried next run. The size and mtime are kept in a
 no local paths or timestamps. About 8 s per save; for many saves run several
 at once, for example with `xargs -P4`.
 
-Each summary records `tools_commit`, the last git commit that changed tools/
-(with "-dirty" if tools/ has uncommitted changes, null outside a git checkout).
+Each summary records `tools_commit`, the last git commit that changed a script
+in tools/ (with "-dirty" if one has uncommitted changes, null outside a git
+checkout). Changes to the README or the schema alone do not count.
 A save is read again when that commit differs from the one its summary was
 built with, so summaries follow the scripts; a dirty build is always redone.
 
@@ -37,6 +40,9 @@ What is read:
 - company, counters, cycles, subsidies, town_states: from the script states
   of the company, achievements, game time, subsidy and town scripts. A save
   without one of them (editor maps) has null there.
+
+Every key of the schema is written, null where the save has no value or could
+not be read (then `error` says why).
 """
 import collections
 import csv
@@ -55,11 +61,11 @@ TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def tools_commit():
-    """Short hash of the last commit that changed tools/, "-dirty" if tools/ has changes, or None."""
+    """Short hash of the last commit that changed a tools/*.py, "-dirty" if one has changes, or None."""
     try:
         git = ["git", "-C", TOOLS_DIR]
-        h = subprocess.run(git + ["log", "-1", "--format=%h", "--", "."], capture_output=True, text=True, check=True)
-        st = subprocess.run(git + ["status", "--porcelain", "--", "."], capture_output=True, text=True, check=True)
+        h = subprocess.run(git + ["log", "-1", "--format=%h", "--", "*.py"], capture_output=True, text=True, check=True)
+        st = subprocess.run(git + ["status", "--porcelain", "--", "*.py"], capture_output=True, text=True, check=True)
     except (OSError, subprocess.CalledProcessError):
         return None
     return (h.stdout.strip() or None) and h.stdout.strip() + ("-dirty" if st.stdout.strip() else "")
@@ -190,6 +196,17 @@ def slug(s):
     return re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower() or "save"
 
 
+SUMMARY_FILE = "tf3-save-summary.json"
+OLD_SUMMARY_FILE = "summary.json"
+SCHEMA_URL = "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/tf3-save-summary.schema.json"
+SCHEMA_VERSION = 1
+# Every key, in the order written (tf3-save-summary.schema.json).
+FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
+          "url", "tools_commit", "error", "version", "first_version", "start_year", "map_w_m", "map_h_m",
+          "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
+          "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records",
+          "settings", "mods"]
+
 INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
               "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "tools_commit"]
@@ -198,7 +215,10 @@ INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "m
 def summarise_save(path, mod_id, mods_dir, kind="savegame"):
     profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
     name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
-    summary = {
+    summary = dict.fromkeys(FIELDS)
+    summary.update({
+        "$schema": SCHEMA_URL,
+        "schema_version": SCHEMA_VERSION,
         "name": name,
         "mod_id": mod_id,
         "kind": kind,
@@ -208,7 +228,7 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
         "tags": [t["name"] for t in profile.get("tags", [])],
         "url": profile.get("profile_url"),
         "tools_commit": tools_commit(),
-    }
+    })
     try:
         data = decompress(open(path, "rb").read())
         h = read_header(path, data)
@@ -222,11 +242,10 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
             "map_h_m": h["map_h_m"],
             "header_money": h["money"],
             "header_counter": h["counter"],
-            "climate": os.path.basename(res.get("climate", "")),
+            "climate": os.path.basename(res["climate"]) if "climate" in res else None,
             "economy": res.get("economy"),
             "name_list": res.get("nameList"),
             "is_map_editor": s.get("isMapEditor"),
-            "map_size_setting": s.get("map.size"),
             "header_partial": h["partial"],
             "stream_bytes": h["stream_len"],
             "calendar": summarise_calendar(data),
@@ -242,8 +261,8 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
 
 
 def index_row(sm):
-    tr = sm.get("town_records", {})
-    if "error" in sm:
+    tr = sm.get("town_records") or {}
+    if sm.get("error"):
         return ([sm["mod_id"], sm["name"], sm["author"]] + [""] * 11 + ["error", sm.get("kind", "savegame")]
                 + [""] * 4 + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
@@ -284,7 +303,7 @@ def main():
             profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
             name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
             d = os.path.join(out_dir, f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else ""))
-            sp = os.path.join(d, "summary.json")
+            sp = os.path.join(d, SUMMARY_FILE)
             if os.path.isfile(sp) and up_to_date(d, path, commit):
                 skipped += 1
                 continue
@@ -294,8 +313,11 @@ def main():
             with open(sp, "w", encoding="utf-8") as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
                 f.write("\n")
+            old = os.path.join(d, OLD_SUMMARY_FILE)
+            if os.path.exists(old):
+                os.remove(old)
             state = os.path.join(d, STATE_FILE)
-            if "error" in summary:
+            if summary["error"]:
                 failed += 1
                 if os.path.exists(state):
                     os.remove(state)  # retry next run
@@ -306,7 +328,7 @@ def main():
                     json.dump(file_key(path, summary["tools_commit"]), f)
     rows = []
     for sub in sorted(os.listdir(out_dir)):
-        sp = os.path.join(out_dir, sub, "summary.json")
+        sp = os.path.join(out_dir, sub, SUMMARY_FILE)
         if os.path.isfile(sp):
             rows.append(index_row(json.load(open(sp, encoding="utf-8"))))
     idx = os.path.join(out_dir, "index.csv")

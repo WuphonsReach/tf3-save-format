@@ -170,7 +170,7 @@
         "string",
         "null"
       ],
-      "description": "Climate file name, for example temperate.clima. Empty string when the header tail is not read (568, 585)."
+      "description": "Climate file name, for example temperate.clima."
     },
     "economy": {
       "type": [
