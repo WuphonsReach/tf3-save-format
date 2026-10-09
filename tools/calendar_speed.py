@@ -11,15 +11,10 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tf3save import date_of_day, decompress, find_day_table, find_game_speed  # noqa: E402
+from tf3save import calendar_speed_label, date_of_day, decompress, find_day_table, find_game_speed  # noqa: E402
 
 
-def label(millis_per_day):
-    """Calendar speed as the game shows it, or None for a value that is no slider step."""
-    if millis_per_day == 0:
-        return "Paused (date stopped)"
-    speed = 4000 / millis_per_day
-    return f"{speed:g}x" if millis_per_day in (1000, 2000, 4000, 8000, 16000) else None
+label = calendar_speed_label  # kept for scripts that import it
 
 
 def main():

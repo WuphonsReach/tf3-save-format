@@ -110,3 +110,132 @@ def date_of_day(day):
         return datetime.date.fromordinal(day - 1721425)
     except (ValueError, OverflowError):
         return None
+
+
+def calendar_speed_label(millis_per_day):
+    """Calendar speed as the game shows it, or None for a value that is no slider step."""
+    if millis_per_day == 0:
+        return "Paused (date stopped)"
+    speed = 4000 / millis_per_day
+    return f"{speed:.2f}x" if millis_per_day in (1000, 2000, 4000, 8000, 16000) else None
+
+
+def day_table_regular(table):
+    """True if the day table is one entry per day: consecutive day numbers and rising ticks."""
+    return all(d2 == d1 + 1 and t2 > t1 for (t1, d1), (t2, d2) in zip(table, table[1:]))
+
+
+# Lua values (docs/lua-values.md): u32 tag, then 0 nil, 1 bool (u8), 2 number (f64), 3 string
+# (`str`), 4 table (u8 flag; 1 is followed by a u32 pair count and the pairs). The same encoding
+# tf3-save-editor reads in `lua.rs` (see THIRD_PARTY_NOTICES.md).
+def lua_value(data, p):
+    """The Lua value at byte p as (value, end). Tables become dicts, numbers floats."""
+    tag = struct.unpack_from("<I", data, p)[0]
+    p += 4
+    if tag == 0:
+        return None, p
+    if tag == 1:
+        return bool(data[p]), p + 1
+    if tag == 2:
+        return struct.unpack_from("<d", data, p)[0], p + 8
+    if tag == 3:
+        n = struct.unpack_from("<I", data, p)[0]
+        if p + 4 + n > len(data):
+            raise ValueError(f"string past the end at {p}")
+        return bytes(data[p + 4:p + 4 + n]).decode("utf-8", "replace"), p + 4 + n
+    if tag == 4:
+        if not data[p]:
+            return None, p + 1
+        return _lua_pairs(data, p + 1)
+    raise ValueError(f"unknown lua tag {tag} at {p - 4}")
+
+
+def _lua_pairs(data, p):
+    n = struct.unpack_from("<I", data, p)[0]
+    p += 4
+    if n > (len(data) - p) // 8:
+        raise ValueError(f"pair count {n} too large at {p - 4}")
+    out = {}
+    for _ in range(n):
+        k, p = lua_value(data, p)
+        out[k], p = lua_value(data, p)
+    return out, p
+
+
+def script_state(data, path):
+    """The state table of the script at `path` as a dict, or None if it is not found.
+
+    `path` as stored, for example "game_mechanics/company/company.gs". In the saves checked the
+    path string (`str`) is followed by one byte, a u32 pair count and the pairs, with no leading
+    table tag (docs/script-states.md). Each hit is parsed and the first that reads as a table with
+    string keys is taken. Checked on 585 to 604.
+    """
+    pat = struct.pack("<I", len(path)) + path.encode()
+    pos = data.find(pat)
+    while pos != -1:
+        try:
+            state, _ = _lua_pairs(data, pos + len(pat) + 1)
+            if all(isinstance(k, str) for k in state):
+                return state
+        except (ValueError, struct.error, IndexError, RecursionError):
+            pass
+        pos = data.find(pat, pos + 1)
+    return None
+
+
+# Rank names as the company window lists them (English UI, 604); `potentialLevel` is the rank
+# shown. See docs/script-states.md.
+RANKS = ["Junior", "Mechanic", "Engineer", "Coordinator", "Expert", "Team Leader", "Supervisor", "Manager",
+         "Director", "Senior Director", "CEO", "Chairperson", "Vice President", "President", "Tycoon"]
+
+# New Game options: settings key -> (default index, labels in screen order). Taken from the
+# game's base/mod.json (604 build, desktop lists; where a key has a longer list for the
+# experimental map features, that one). A stored setting is its list position plus 1
+# (docs/header.md). English UI names.
+SETTING_OPTIONS = {
+    "map.size": (2, ["Tiny", "Small", "Medium", "Large", "Very Large", "Huge", "Megalomaniac", "Gigantomaniac"]),
+    "map.format": (0, ["1 : 1", "1 : 2", "1 : 3", "1 : 4", "1 : 5"]),
+    "locations.towns.frequency": (2, ["Sparse", "Scattered", "Medium", "Dense", "Packed"]),
+    "locations.towns.populationDensity": (2, ["50%", "75%", "100%", "150%", "200%"]),
+    "locations.industry.initialIndustryDensity": (2, ["Sparse", "Scattered", "Medium", "Dense", "Packed"]),
+    "locations.industry.targetIndustryDensity": (2, ["Sparse", "Scattered", "Medium", "Dense", "Packed"]),
+    "locations.industry.industryProductivity": (2, ["50%", "75%", "100%", "150%", "200%"]),
+    "advancedOptions.vehiclePurchaseCostScale": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.passengerIncome": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.cargoIncome": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.reforestation": (1, ["Off", "On"]),
+    "advancedOptions.infrastructurePurchaseCostScale": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.infrastructureMaintenanceScale": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.vehicleMaintenanceScale": (2, ["50%", "75%", "100%", "125%", "150%"]),
+    "advancedOptions.vehicleMaintenanceEffectScale": (2, ["None", "Low", "Medium", "High", "Very High"]),
+    "economy.industryDevelopment.closureProbability": (1, ["Never", "Rarely", "Sometimes", "Often", "Very Often"]),
+    "economy.townDevelopment.cargoNeedsPerTown": (1, ["2 Cargo Types", "Up to 4 Cargo Types", "Up to 6 Cargo Types"]),
+    "advancedOptions.trafficSpeedSensitivityScale": (4, ["0%", "25%", "50%", "75%", "100%", "125%", "150%", "175%", "200%"]),
+    "advancedOptions.subventionMode": (2, ["Never", "Rarely", "Sometimes", "Often", "Very Often"]),
+    "advancedOptions.subventionRisk": (1, ["None", "Fair", "Risky", "Very Risky"]),
+    "advancedOptions.landmarkResources": (2, ["None", "Low", "Normal", "High", "Very High"]),
+    "advancedOptions.inflationFactor": (2, ["None", "Low", "Normal", "High", "Very High"]),
+    "townConfig.sensitivityUrbanCare": (1, ["Off", "On"]),
+    "townConfig.sensitivityTrafficCongestion": (3, ["Off", "Very Low", "Low", "Normal", "High", "Very High", "Extreme"]),
+    "townConfig.sensitivityPeopleHappiness": (3, ["Off", "Very Low", "Low", "Normal", "High", "Very High", "Extreme"]),
+    "townConfig.sensitivityCargoDelivery": (3, ["Off", "Very Low", "Low", "Normal", "High", "Very High", "Extreme"]),
+    "townConfig.sensitivityNoise": (3, ["Off", "Very Low", "Low", "Normal", "High", "Very High", "Extreme"]),
+    "townConfig.sensitivityPollution": (3, ["Off", "Very Low", "Low", "Normal", "High", "Very High", "Extreme"]),
+    "weatherConfig.dynamicWeather": (0, ["Dynamic", "Sunny", "Cloudy", "Rainy"]),
+    "gameTimeConfig.timeOfDayMode": (0, ["Dynamic", "Continuous", "Local Time", "Morning", "Day", "Evening", "Night"]),
+    "guideSystemConfig.tutorial": (1, ["Off", "On"]),
+}
+
+
+def setting_label(key, value):
+    """A stored setting as "3 (100%, default)": the stored number, then its label in the game's
+    list. Values of unknown keys, or out of the list, are returned as they are (whole floats as int).
+    """
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    if key not in SETTING_OPTIONS or not isinstance(value, int) or isinstance(value, bool):
+        return value
+    default, labels = SETTING_OPTIONS[key]
+    if not 1 <= value <= len(labels):
+        return value
+    return f"{value} ({labels[value - 1]}{', default' if value - 1 == default else ''})"
