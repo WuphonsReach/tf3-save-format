@@ -27,7 +27,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | config resources | vec<(str, str)> | Keys `climate`, `economy`, `nameList`, each a path such as `::/economy/all.eco` |
 | config params | vec<(str, Lua table)> | The entry with the empty key holds the game settings, see below |
 | mission, kind | str, str | |
-| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not simply a paused bit: three saves of one 604 game read 1 whether the game was running at 1x or paused when the screens were taken (**Observed**; the speed at the moment of saving was not logged). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
+| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: three saves of one 604 game, each written with the game paused after a stretch at 4x, all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
 | value | u32 | The format version the save was first written under, probably (ours, **Observed** on 585 to 604). Equal to the version in 604 saves; 596 to 601 in 601 saves; 585 in a 604 save that was a re-save of a 585 save. Never above the save's own version in 15 saves checked. One editor map (604) held 256 (**open**) |
 | id | str | |
 

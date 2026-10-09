@@ -12,7 +12,7 @@ Checked on 604 (three saves of one game) and 585 (two saves). The `experience` k
 
 ## Game clock
 
-Times in the script states are numbers of **1/4000 of a game day**, counted from 1 January of the start year (**Observed** on 604, three saves of one game saved on 6 February, 20 February and 18 March 2060 with start year 1900; every timestamp of a past event fell on or before the save day, and the newest was 0.7 of a day into the last one, saved while paused). The 585 saves give dates in the right year but were not checked to the day.
+Times in the script states are numbers of **1/4000 of a game day**, counted from 1 January of the start year (**Observed** on 604, three saves of one game saved on 6 February, 20 February and 18 March 2060 with start year 1900; every timestamp of a past event fell on or before the save day, and the newest was 0.7 of a day into the last one; each save was written with the game paused). The 585 saves give dates in the right year but were not checked to the day.
 
 - Every save checked here started in 1900, so "from 1 January 1900" and "from the start year" can't be told apart. **Open**.
 - Whether the scale depends on the calendar speed setting is **Open**. Both games ran at 1.00x.
@@ -67,7 +67,7 @@ State of `game_mechanics/achievements/achievements.gs`. **Observed** on 585 and 
 | `cargoTypesDelivered` | Table |
 | `totalIncome`, `subventionSuccess`, `subventionSuccessStreak`, `townLevelUpCount`, `placedTrees`, `vehiclesUsed` | More counters in the same area (not all present in every save) |
 
-- **Confirmed** on one 604 save: the game's bottom bar showed the same passenger and cargo totals as `passengerTransportedCount` and `cargoDeliveredCount`. In a second save the cargo total on screen was one higher than in the file, which fits a delivery between the save and the screenshot. In a third, taken while the game was paused, both totals matched exactly.
+- **Confirmed** on one 604 save: the game's bottom bar showed the same passenger and cargo totals as `passengerTransportedCount` and `cargoDeliveredCount`. In a second save the cargo total on screen was one higher than in the file; the screenshot was taken with the game running again, which fits a delivery after the save. In a third, screenshotted while still paused, both totals matched exactly.
 - The game's Done marks for achievements are **not** in the save: no achievement names or flags were found, and two saves with very different counters (zero deliveries and thousands) showed the same seven achievements as Done. So completion looks account-wide, not per save. **Observed** on two 585 saves (an inference from the screens).
 
 ## Notification types
