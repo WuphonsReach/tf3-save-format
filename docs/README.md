@@ -10,7 +10,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [script-states.md](script-states.md) | Script states: game clock, weather and time, company rank, loans, counters, achievements, subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
-| [cargo-ids.md](cargo-ids.md) | Cargo type ids in the temperate economy |
+| [cargo-ids.md](cargo-ids.md) | Cargo type ids, and how climates and economies pair |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |
 | [versions.md](versions.md) | Format versions seen in the wild |
 

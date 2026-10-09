@@ -20,7 +20,7 @@ except ImportError:
 # The game writes the data frame followed by this empty frame.
 EMPTY_FRAME = bytes.fromhex("28b52ffd2000010000")
 
-# Cargo type ids as seen in saves from this install (temperate economy).
+# Cargo type ids as seen in saves (the same ids hold in every economy; see docs/cargo-ids.md).
 KNOWN_IDS = {"fish": 6, "meat": 7, "beverages": 8, "vegetables": 9, "planks": 13, "vehicles": 14,
              "machines": 16, "fuel": 20, "clothes": 27, "tinned_food": 28, "tools": 30,
              "furniture": 31, "glass": 32, "bricks": 33, "cement": 15}
