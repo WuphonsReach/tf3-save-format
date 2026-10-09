@@ -37,7 +37,7 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 
 - The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
 - The settings table (see [header.md](header.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
-- **Open**: calendar speed (the 1.00x slider). No key was found for it in either save. Catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604) came up at 2.00x when loaded, so a save by another player restores its speed too (**Observed**, one load). Its shown date, 14 February 2191 from a 1960 start, is 84,416 days from 1 January 1960, while the newest stored timestamp is 95,878 days. The ratio is 0.88, which fits a game played at several speeds and so says nothing about the speed at save time.
+- **Open**: calendar speed (the 1.00x slider). No key was found for it in either save. Catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604) showed 0.50x in the Weather and Time window after loading, and the game came up running at its 2x play speed (the author saved it unpaused). A copy re-saved paused from that game, reloaded, came up paused and showed 0.50x again (**Observed**, one round trip), so the calendar speed is restored from a save written by another player too. The loan offers fit the same speed, see Loans. Its shown date, 14 February 2191 from a 1960 start, is 84,416 days from 1 January 1960, while the newest stored timestamp is 95,878 days. The ratio is 0.88, which fits a game played at several speeds and so says nothing about the speed at save time.
 
 ## Company and rank
 
@@ -58,7 +58,12 @@ What goes with what:
 
 ## Loans
 
-In the progression state, under `availableLoans` and the table after it. Fields seen: `amount`, `birthDay`, `duration`, `percentage`, `type` (`Small`, `Medium`, `Large`, `ExtraLarge`), `freeId`, and on a taken loan `lastPayDay` and `timesPaid`. **Observed** on 585 and 604. Which table is which, and the meaning of `duration`, are **open**.
+In the progression state, under `availableLoans` and the table after it. Fields seen: `amount`, `birthDay`, `duration`, `percentage`, `type` (`Small`, `Medium`, `Large`, `ExtraLarge`), `freeId`, and on a taken loan `lastPayDay` and `timesPaid`. **Observed** on 585 and 604. Which table is which is **open**.
+
+- **Observed** on catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604, calendar speed 0.50x, no loans taken), compared with the Loans tab. The four offers were stored as `Small` 12,000,000, `Medium` 59,000,000, `Large` 82,000,000 and `ExtraLarge` 124,000,000, in that order, with `percentage` 0.03, 0.05, 0.08 and 0.12 (a fraction, shown as 3%, 5%, 8%, 12%).
+- `duration` is in the clock unit (1/4000 of a game day, see above): 1,461,000, 5,844,000, 17,532,000 and 20,454,000. That is 1, 4, 12 and 14 times 365.25 days. The tab showed 6, 24, 72 and 84 months, exactly half of that in years, which is the 0.50x calendar speed applied to the stored duration. So the months shown are the stored duration times the calendar speed, the same rule as for the date. Only 0.50x was seen, so whether the shown months follow the speed at the time of looking was not tested. **Open**.
+- `percentage` is a total, not a yearly rate: the "per Year" figure on each offer was `amount` times (1 + `percentage`) divided by the length in years shown, with one year as the least (12,360,000, 30,975,000, 14,760,000 and 19,840,000).
+- `birthDay` is when the offer was made, as a clock value (383,259,800 against a newest timestamp of about 383,515,000 in the same save, so one to a few days of stored time earlier than the save).
 
 ## Counters and achievements
 
