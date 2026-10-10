@@ -61,6 +61,38 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
   The Overview chart "Revenue" bar read 2,493,270,050 (the `OTHER` booking counts as revenue) and "Debt + Cash" 2,493,188,193, the balance less the 18,000,000 debt. Header money was not checked in the game.
 
+### A first build-out, row by row
+
+**Observed** on 604, the same game after buying two small ports, two ship depots, a road depot, a specialised fish warehouse, a truck stop, three road vehicles and four ships, and building a short road (calendar paused at 1 January 1900, so every booking carries the same time, 1000). The journal grew from 3 to 20 bookings (editor labels in quotes), and every figure on the company window's Finances tab matched the bookings in its category to the dollar:
+
+| Tab row | Value | Bookings |
+|---|---|---|
+| Investments, Roads | -66,002 | "Construction - streets (Road)": 30,000 + 30,000 + 6,002 |
+| Investments, Infrastructure | -2,183,875 | "stations" (Water 144,973 and 145,484; Road 74,664) and "depots" (Water 81,857, 838,203 and 700,522; Road 198,172) |
+| Investments, Warehouses | -305,973 | one "Construction - warehouses" booking |
+| Investments, Vehicles | -1,206,864 | "Vehicle purchase": 3 x 60,912 (Road) and 4 x 256,032 (Water) |
+| Investments | -3,762,714 | the four rows above |
+| Summary, Earnings | 2,489,507,336 | all bookings except `LOAN`: the +2,493,270,050 `OTHER` booking less Investments |
+| Account | 2,507,507,336 | Earnings plus the 18,000,000 loan |
+
+- Depots count under Infrastructure on the tab, not under a row of their own. The existing table above lists only `STATION` and `OTHER` for that row, so the depot booking's category value was not read from the bytes here. **Open**.
+- Investments, Warehouses is a row the table above lacks. It held one booking (305,973), for the one warehouse the player bought, a specialised fish warehouse (so the row is not limited to the general warehouse). **Observed**, one build.
+- The header money after saving (2,507,507,336) equalled the Account figure.
+
+### Running costs, upkeep, loan payments and income over ten minutes
+
+**Observed** on 604, the same game after about 570 seconds of play (the header's clock at 569,800, the date still 1 January 1900 with the date stopped, see [calendar.md](calendar.md)): the journal held 210 bookings. The loan of 18,000,000 and the first build-out were still in it, then:
+
+- **Upkeep comes in a batch every 60,000 clock units.** There were 9 batches (at 60,000 to 540,000), each of 20 bookings: 11 `MAINTENANCE` / `INFRASTRUCTURE` (5 road, 5 water, 1 carrier `OTHER` for the warehouse), 2 vehicle maintenance (one road, one water) and 7 vehicle running costs (one per vehicle). The period is in clock units, not days: the date did not move while these were booked. The sums per batch ran from -23,886 to -25,158.
+- **A batch is a fraction of a year.** The warehouse's window showed $50,000/Year, and its booking per batch (carrier `OTHER`) was -2,053. A year is 1,461,000 units ([above](#periods)), so 24.35 batches make a year, and 24.35 x 2,053 = 49,990, within rounding of the window. **Observed**, one warehouse. The same window showed 21 fish in stock with 18 incoming and 8 outgoing in its chart, which do not add up (18 - 8 = 10); the chart bars may count something else than the stock does. **Open**.
+- **Per-booking values.** Infrastructure and vehicle maintenance repeated exactly in every batch (for example a water depot -4,106, road vehicles -315 in total, water vehicles -1,755). Running costs varied between batches: a ship booked -1,752 in most, -1,472, -1,402 or -1,262 in some, and a horse cart -284 to -417. The bookings carry no vehicle or line id (the five category bytes are all there is), but within a batch they come in vehicle order: summed over the nine batches, the fourth water running-cost booking came to 15,138, which is exactly Ship 4's last-year running costs in its window (the first three summed to 15,278, 14,998 and 14,508). **Observed**, one ship, but a match to the dollar. So a vehicle's yearly running costs can be rebuilt from the journal by its place in the batch. Why one batch's cost for a vehicle differs from another's is **Open** (a vehicle not moving for part of the period is a guess).
+- **Loan payments.** First at 122,800, then every 121,800 units (the loan was booked at 1,000, so the first fell 121,800 after it): four so far, each a `LOAN` booking of -214,286 plus an `INTEREST` booking of -19,286. 214,286 is 18,000,000 / 84. The interest stayed 19,286 on all four, so it did not fall as the principal was repaid, at least over four payments.
+- **Income arrives as one booking per carrier, at one time.** Two bookings at 552,000: Income (Road) +4,554 and Income (Water) +20,771. 552,000 is not a batch time (540,000 and 600,000 are). The booking has no cargo, line or town field. The road line's window showed income 4,554 and the ship line's 20,771, exactly the two bookings.
+- **Line windows against the journal.** Line 1 (three horse carts) showed income 4,554, running costs 9,792, balance -5,238; Line 2 (four ships) showed 20,771, 59,922 and -39,151. 9,792 and 59,922 are the sums of all road and all water vehicle-running-cost bookings. So a line's balance is income minus vehicle running costs only, with vehicle maintenance and infrastructure upkeep left out. With one line per carrier this is a match by carrier. Whether it holds with several lines per carrier is untested. **Observed**, one save.
+- **One delivery paid both lines.** In this game the player saw no income until the fish had left the cart at the town, and then both lines showed income, although the ships' leg ends at a warehouse. The journal fits that: one pair of income bookings, one per carrier, at one time, so a single delivery was paid out split between the road and the water carrier. The journal cannot say whether the payment came at unloading or when the cart departed, or how the split is worked out (82% water here). **Observed**, one delivery.
+- Vehicle age in the line window (9m 28s) is the time since purchase in clock units read as seconds: 569,800 - 1,000 units is 568.8 s. **Observed**.
+- The header money (2,506,375,464) equalled the journal balance, which equals the previous balance less these bookings.
+
 ## The balance history run
 
 **Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.
