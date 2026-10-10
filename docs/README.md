@@ -13,12 +13,12 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |
 | [versions.md](versions.md) | Format versions seen in the wild, with dated counts |
 | [platform.md](platform.md) | Whether a save says which platform made it |
-| [calendar.md](calendar.md) | Game clock, calendar speed, the day table that turns clock values into dates, the date in the header |
+| [calendar.md](calendar.md) | Game clock (and its rate against real time at each play speed), calendar speed, what the autosave interval counts, the day table that turns clock values into dates, the date in the header |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
 | [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
 | [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
-| [notifications.md](notifications.md) | The notification entries, their types |
+| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn and stuck-vehicle entries |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
@@ -27,7 +27,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids, tiers and weights, starting cargo |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
-| [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals |
+| [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
 | [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns |
 | [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds |
