@@ -47,7 +47,7 @@ Checked against it, none of these split the 182 saves into 0 and 1 (the best sin
 
 ## Settings
 
-The params entry with the empty key is a nested Lua table. Flattened with dots, keys include `isMapEditor`, `map.size`, `advancedOptions.*` and `townConfig.*`.
+The params entry with the empty key is a flat Lua table: one layer, with the dotted names stored as the keys (**Observed** on 599 to 604, 22 catalog saves and ours). Keys include `isMapEditor`, `map.size`, `advancedOptions.*` and `townConfig.*`.
 
 - `isMapEditor` is `true` in map editor saves. See [editor-saves.md](editor-saves.md).
 - **A setting is stored as its position in the option list plus 1** (**Confirmed** on 604). The option lists, defaults and difficulty presets are in [settings.md](settings.md).

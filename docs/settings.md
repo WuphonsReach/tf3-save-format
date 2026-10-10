@@ -14,7 +14,7 @@ The game settings of a save: the options of the New Game screen (and of the Sett
 
 ## The options
 
-Keys as they appear after flattening the Lua table with dots. Screen names are English, read from the New Game and Load Game screens (604). The default is bold. The list is the 604 build's `base/mod.json`, desktop lists; where a key has a longer list for the experimental map features, the longer one is shown. `tools/tf3save.py` carries the same data as `SETTING_OPTIONS` and turns a stored number into a label with `setting_label`.
+Keys as stored: the settings table is flat and the dotted names are the keys (see [header.md](header.md#settings)). Screen names are English, read from the New Game and Load Game screens (604). The default is bold. The list is the 604 build's `base/mod.json`, desktop lists; where a key has a longer list for the experimental map features, the longer one is shown. `tools/tf3save.py` carries the same data as `SETTING_OPTIONS` and turns a stored number into a label with `setting_label`.
 
 | Key | Screen name | List (default in bold) |
 |---|---|---|
