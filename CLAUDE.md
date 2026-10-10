@@ -25,6 +25,11 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Standard library only (Python 3.14 for zstd; older Python needs `zstandard`). Shared code is in `tools/tf3save.py`; new scripts import it. Some private scripts import it too, so keep its function names and return shapes stable.
 - Test against real saves before committing, with output to a scratch directory outside the repo.
 
+## Game install
+
+- Modder-facing files may be read: `api/tealdef/`, `base/tealdef/`, `base/mod.json`, `vscode-template/`.
+- Never read, dump or analyse the native binaries: the `TransportFever3` executable, `model_editor/ModelEditor`, `extra/` and the bundled `.so` libraries. No `strings`, hex dumps, disassemblers, debuggers, or greps that scan them (use `grep -I` in the install). `.claude/hooks/tf3-no-binaries.py` blocks the common forms; it is best effort, so the rule stands without it.
+
 ## Testing in the game
 
 - The user's own saves (tests, re-saves) are in the game's `local/save/` folder under Steam userdata for app id 3493540, next to `settings.lua`. The full path on this machine, and how to find it again, are in the gitignored `local/README.md`; never write it, or the Steam id in it, into a committed file. Read these saves, never write them.
