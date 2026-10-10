@@ -14,7 +14,7 @@ Checked on 604 (one game played into 2061, and catalog saves [6417707](https://m
 
 Times in the script states are values of the game clock: the game's own milliseconds since the start date, 4000 a day at calendar speed 1.00x. The clock, the calendar speed and how to turn a time into a date are in [calendar.md](calendar.md).
 
-- Keys that hold a time: `lastIncomeUpdateTime`, `birthDay` and `lastPayDay` (loans), `nextChange`, `nextTimeOfDayChange`, `spawnNextUfoAtGameTime`, and `timestamp` and `lastApplyTime` in notification entries. `lastIncomeUpdateTime` trailed the save time by 1 to 4 days, so it is not "now".
+- Keys that hold a time: `lastIncomeUpdateTime`, `birthDay` and `lastPayDay` (loans), `nextChange`, `nextTimeOfDayChange`, `spawnNextUfoAtGameTime`, `nextSpawnTime` (the hot air balloon, [fun-elements.md](fun-elements.md)), and `timestamp` and `lastApplyTime` in notification entries. `lastIncomeUpdateTime` trailed the save time by 1 to 4 days, so it is not "now".
 - No Lua number holds the current date or the calendar speed (**Observed**, see [calendar.md](calendar.md#the-game-clock)).
 
 ## Weather and time of day
