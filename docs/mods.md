@@ -10,7 +10,7 @@ What a save records about the mods a game uses: the entry in the header's mod li
 | Header, `config mods` | The ids of the same mods | [below](#the-mod-list-entry) |
 | Header, `config params` | One entry per mod keyed by its id, holding the mod's options (an empty table when it has none) | [below](#mod-options) |
 | Script states | A mod with scripts keeps its state under its own script path, with the mod id string just before it | [script-states.md](script-states.md#mod-script-states-and-stored-errors) |
-| Model table | A mod's models carry the mod's id in the source field | [models.md](models.md#the-model-table) |
+| Model table | A mod's models carry the mod's id in the source field | [models.md](models.md#the-model-table), and [below](#seven-mods-in-one-new-game) |
 | Notification entries | The `type` of a mod's notification carries the mod id before `::` | [notifications.md](notifications.md) |
 
 A mod that is switched off before a load leaves nothing at all ([below](#switching-mods-on-and-off-when-loading)).
@@ -48,9 +48,29 @@ The Load Game screen has a Mods tab next to the Settings tab described in [setti
 
 A mod with scripts keeps its state in the same layout as the game's scripts: the script's path string, then its table. How to find and read one is in [script-states.md](script-states.md#finding-a-table), and the mod-specific part is [there too](script-states.md#mod-script-states-and-stored-errors): the mod's id sits just before the path, and a mod can keep a Lua error message whose chunk name is a path on the player's machine. That path can hold an account name. Don't copy it into notes; write it as `<path>/mod.io/10640/mods/<id>/...`.
 
+## Seven mods in one new game
+
+A new game (604, subarctic, Normal difficulty) with seven mods active, saved at once, shows what each kind of mod leaves. **Observed**, one save.
+
+| Mod | Header | Models in the table | Script state |
+|---|---|---|---|
+| Deluxe Upgrade (`urbangames_deluxe_upgrade_pack`) | yes | 31 | `fun_elements/balloon.gs` and a notification script entry, `balloon_notification.script` ([fun-elements.md](fun-elements.md)) |
+| Early Road Vehicles (`ug_legacy_road_1850`) | yes | 8 | none seen |
+| Early Trams (`ug_legacy_trams_1850`) | yes | 5 | none seen |
+| Early Wagons (`ug_legacy_waggon_1850`) | yes | 3 | none seen |
+| Early European Locomotives (`ug_legacy_rail_eu_1850`) | yes | 5 | none seen |
+| Boathouse (`ingo_boathouse_asset`) | yes | 12 | none seen |
+| Vehicles: No End Year (`urbangames_vehicles_no_end_year_1`) | yes | 0 | none |
+
+- Every mod's id occurs three times in the header (mod list, config mods, config params). All seven params entries were empty tables.
+- The model table, 272 KB after the header, held 4,537 entries: the base game's 4,473 (ids 0 to 4472) and then the mods' in the order of the table above (ids 4473 to 4536), each mod's models in one run. A mod's id then also occurs once per model in the table. The legacy vehicle mods add the vehicles' `_v2.mdl` models; Boathouse adds the boathouse and its fittings.
+- Vehicles: No End Year has no models and no state, so it is only in the header, as the switching test above found. A mod that adds only rules or only data may leave nothing else.
+- Mapzilla was installed and not activated, and left no trace.
+- The mod entries are listed in the order the mods were activated in the game's mod list, and the config params entries come in the reverse order (**Observed**, this save; the order in the catalog was not checked against the activation order).
+
 ## Mods with notes of their own
 
-- **Deluxe Upgrade** (`urbangames_deluxe_upgrade_pack`): the hot air balloon's script state, notification and model instance in [fun-elements.md](fun-elements.md); its 31 models in [models.md](models.md#the-model-table); the bison, boar and Komodo dragon it adds to the animal list in [animals.md](animals.md).
+- **Deluxe Upgrade** (`urbangames_deluxe_upgrade_pack`): the hot air balloon's script state, notification and model instance in [fun-elements.md](fun-elements.md); its music playlist in [script-states.md](script-states.md#the-music-player-state); its 31 models in [models.md](models.md#the-model-table); the bison, boar and Komodo dragon it adds to the animal list in [animals.md](animals.md).
 - **Mapzilla** (mod.io 6423494): adds a terrain generator and `mz_*` sliders to the New Game screen. Installing it adds nothing to the save. See [terrain.md](terrain.md#generators-and-the-mapzilla-mod).
 - **Auto Passenger Cameras** (`dome_wagon_cameras`, mod.io 6422630): the `camera_bridge.gs` state and the error messages it keeps, in [script-states.md](script-states.md#mod-script-states-and-stored-errors).
 - **Toll mods** (for example `epod_pay_your_tolls_tf3_1`, script `pyt/pyt_toll.gs`): a `toll` option in the params entry (above) and a script state under the mod's path.

@@ -13,7 +13,7 @@ u32  id
 ```
 
 - The ids run 0, 1, 2 and so on in table order. They are the index into the table, and they depend on the models installed, so read them from the save and do not carry them from one save to another.
-- The base game's 4,473 models come first, sorted by path, so the 28 models under `animal/` are ids 0 to 27. A mod's models follow and carry the mod's id: `urbangames_deluxe_upgrade_pack` adds 31, among them `animal/bison/bison.mdl`, `animal/boar_m/boar_m.mdl` and `vehicle/zeppelin/hot_air_balloon/hot_air_balloon.mdl`.
+- The base game's 4,473 models come first, sorted by path, so the 28 models under `animal/` are ids 0 to 27. A mod's models follow, one run per mod in the order of the mod list, and carry the mod's id (a save with seven mods, [mods.md](mods.md#seven-mods-in-one-new-game), had 4,473 base models and 64 from six mods, and one of the seven added none): `urbangames_deluxe_upgrade_pack` adds 31, among them `animal/bison/bison.mdl`, `animal/boar_m/boar_m.mdl` and `vehicle/zeppelin/hot_air_balloon/hot_air_balloon.mdl`.
 - An earlier reading as `u64 id, str path` fits the base game's models only because their source string is empty: the previous entry's id and the next entry's empty string make eight bytes. The three-field layout is the right one.
 
 ## The model instance record

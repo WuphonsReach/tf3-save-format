@@ -27,6 +27,7 @@ Script paths as they appear in the stream, and where each is described. A mod's 
 | `landmarks/landmarks.gs` | [landmarks.md](landmarks.md) |
 | `game_mechanics/fun_elements/fun_elements.gs`, `fireworks.gs` | [fun-elements.md](fun-elements.md#other-fun-element-states) |
 | `game_mechanics/industries/industries.gs` | [Industries](#industries) |
+| the music player's table (not a script path) | [The music player state](#the-music-player-state) |
 
 `game_mechanics/celebrations/celebrations.gs`, `industries/industry_workers.gs`, `mission/mission.gs`, `terrain/reforestation.gs` and `vehicle/vehicle_modifier.gs` also occur and are not described in these notes. In the saves of [landmarks.md](landmarks.md#finding-it) they sat near the end of the stream in that order, with `landmarks/landmarks.gs` between the second and the third (**Observed**, 604).
 
@@ -75,6 +76,15 @@ State of `game_mechanics/achievements/achievements.gs`. **Observed** on 585 and 
 - **Confirmed** on one 604 save: the game's bottom bar showed the same passenger and cargo totals as `passengerTransportedCount` and `cargoDeliveredCount`. In a second save the cargo total on screen was one higher than in the file; the screenshot was taken with the game running again, which fits a delivery after the save. In a third, screenshotted while still paused, both totals matched exactly.
 - **Confirmed** on a paused re-save (604, catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) saved again with the game paused): `passengerTransportedCount` 444,636 and `cargoDeliveredCount` 1,016,977 matched the bottom bar exactly, and the original catalog save's counts (444,627 and 1,016,962) were a little lower, from play between its save and the pause.
 - The game's Done marks for achievements are **not** in the save: no achievement names or flags were found, and two saves with very different counters (zero deliveries and thousands) showed the same seven achievements as Done. So completion looks account-wide, not per save. **Observed** on two 585 saves (an inference from the screens).
+
+## The music player state
+
+The last thing in the stream is a table with the music player's state, with the same layout in a save with no mods and one with seven. **Observed** on 604, two saves. It starts about 4.5 KB before the end of the stream and the key `trackLists` lies 4,317 bytes from the end in both. Its keys:
+
+- `contextTags` and `ProgressPage` (with a `saved` flag), which belong to the game's music logic.
+- `trackLists`: per list a `playlist` (a path such as `::/music/...plist`), `repeat`, a `state` with `currentTrackTime`, `isPlaying`, `trackIndex` and `variantIndex` (-1 when none), and a `tracks` list whose entries hold `enableRepeat`, `filepath`, `instantTransition`, `name` and `variants`.
+
+Deluxe Upgrade adds its own playlist and tracks, whose paths start with the mod's id and `::`, so its id occurs a few times at the very end of the stream. That is the music, not a script state. Which of the keys changes while music plays is **Open**.
 
 ## Mod script states and stored errors
 

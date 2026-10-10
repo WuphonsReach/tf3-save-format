@@ -66,7 +66,17 @@ The ground height is a grid of `u16` per tile, matching the `TerrainTileHeightma
 
 Find it by its count and first length together, `c0 00 00 00 81 10 00 00` here (192 and 4225), then step 8,454 bytes per tile. It ends 0.46 to 0.63 MB before the end of the stream in these saves, long after the terrain record.
 
-The map format setting does not change the grid here: the tropical saves store `map.format` 3 and the others 4, and both have 8 x 24 tiles of 2048 x 6144 m (**Observed**, Tiny only).
+The map format setting does not change the grid here: the tropical saves store `map.format` 3 and the others 4, and both have 8 x 24 tiles of 2048 x 6144 m (**Observed**, Tiny only; a Small 1 : 3 map has 18 x 54 tiles, see [below](#a-small-subarctic-map)).
+
+## A Small subarctic map
+
+One new game on the stock Subarctic generator, **Small** 1 : 3 (4608 x 13824 m), saved at once, format 604, Normal difficulty, seven mods. The sliders were Water Small, Swamps Medium and Mountains Dense, the seed was typed, and every value was read back against the New Game screen. **Observed**, one save, so it adds sizes and names but cannot tie a slider to a map.
+
+- **The sliders are not stored.** The seed occurs once in the stream, in the header. None of the slider keys (`water`, `swamps`, `mountains`) occurs in it as a string of its own (`water` appears only inside longer words, `swamps` and `mountains` not at all). The generator file `climates/subarctic/subarctic.gen.lua` (in `climates.zip`) lists exactly these three, each with five steps and the third as default; Water runs Very Small to Very Large, the other two Sparse to Packed. The picks were steps 2, 3 and 4. Their effect is only in the generated data below, as on the other climates.
+- **The terrain record** has the fields of [the table above](#the-terrain-record), starting 26.7 MB after the header: `size` 18 x 54 (4608 / 256 and 13824 / 256), `baseLevels` 6, the usual resolution, `highLevels` 8, `offsetZ` -100 and `waterLevel` 0. The eight data maps are 144 x 432 (one value per 32 m), as 4608 / 32 by 13824 / 32. Their names, in stored order: `forest_mask`, `biome3`, `biome1`, `biome4`, `biome0`, `mountain_mask`, `swamp_mask`, `biome2`. So this climate has a mask for mountains and one for swamps but none for water.
+- **Their values.** All stay between 0 and 1 (`swamp_mask` up to 1.005). `mountain_mask` is non-zero in 38% of the cells, `swamp_mask` in 9.5%, `forest_mask` in 43%.
+- **The heightmap** follows the layout of [the heightmap section](#the-heightmap) with 972 tiles (18 x 54) of 65 x 65 `u16`. Its count and first length are `cc 03 00 00 81 10 00 00`; it starts 54.4 MB after the header and ends 2.5 MB before the end of the stream. Heights run from -100 m (value 0, deep water) to 299.5 m; the median is 44 m, the 10th percentile -3 m and the 90th 197 m, and 11.7% of the points are below the water level (value 2000).
+- **What the next saves would show.** Which map each slider moves needs three saves with this seed, each changing one slider. The Water slider is the unclear one, since no map carries its name.
 
 ## Lakes on a temperate map
 
@@ -87,6 +97,6 @@ A game made with the stock **Temperate** generator while the mod was installed (
 
 - What `baseLevels` (6) and `highLevels` (8) mean, and whether the heightmap has coarser levels stored elsewhere. 1.5 MB to 6.1 MB after the header is still float-like records (periods of 24, 72 and 73 bytes) of unknown purpose.
 - The list that follows the heightmap. It also starts with the tile count (`c0 00 00 00 16 00 00 00 ...`). The API has a per-tile brush record (`TerrainTileBrush`); that this list is it is a guess.
-- How the tile count follows map size and format; only Tiny was checked.
+- How the tile count follows map size and format. Tiny 1 : 4 and 1 : 3 (8 x 24) and Small 1 : 3 (18 x 54) were checked; in all three it is the map's metres divided by 256.
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
 - Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.
