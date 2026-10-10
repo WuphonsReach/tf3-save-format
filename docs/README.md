@@ -35,6 +35,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
 | [animals.md](animals.md) | The animals list, which animals they are, how many there are |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |
+| [developer/vscode-schema.md](developer/vscode-schema.md) | Clearing VS Code's "untrusted schema" warning on the summaries' `$schema` line |
 
 The money journal and the script-state container are documented in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). These notes do not repeat them.
 

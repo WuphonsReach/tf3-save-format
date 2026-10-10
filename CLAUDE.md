@@ -20,6 +20,18 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Label how sure a format claim is: Confirmed, Observed or Open (defined in `docs/README.md`). `docs/versions.md` (dated counts) is exempt.
 - Offsets move between saves. Describe how to find a structure by pattern, never by a fixed offset.
 
+## Keeping the indexes current
+
+`docs/README.md` (notes) and `tools/README.md` (scripts) are the navigation layer: read them first to find where a fact lives, and grep from there.
+
+- A new note in `docs/` gets a row in the `docs/README.md` table in the same commit. The "Covers" cell names what the note holds, not just its topic. Add a row for a new script to `tools/README.md` the same way.
+- When a note's scope changes (a section added, split or moved to another note), update its "Covers" cell and the links that pointed at the old place.
+- Before adding a fact, grep for it. Each fact has one home note; other notes link to it instead of repeating it.
+- Renaming or deleting a note: fix every link to it and its row in the index.
+- Run `python3 -I tools/check_links.py` before committing a change to any `.md` file. It must report 0 problems. It flags dead links and anchors, notes missing from `docs/README.md` and scripts missing from `tools/README.md`.
+- Put no counts or dates in the README tables (see Conventions); they belong in `docs/versions.md`.
+- A graph or index tool's output (for example a generated knowledge graph) stays out of git. Add its output folder to `.gitignore` before the first run.
+
 ## Tools
 
 - Never write or modify a `.sav`. Output (PNGs, JSON summaries) goes to a directory the caller names.
