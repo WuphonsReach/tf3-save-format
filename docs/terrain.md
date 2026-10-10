@@ -32,7 +32,7 @@ Layout, all little-endian:
 
 | Part | Content |
 |---|---|
-| prefix | `u32 1`, `u32 0xffffffff`, `u32 50`, `u32 0`, then `u32 N`, the number of animals |
+| prefix | `u32 1`, `u32 0xffffffff`, a `u32` that differs between maps (49, 50 and 51 seen), `u32 0`, then `u32 N`, the number of animals |
 | each animal | 15 values of 4 bytes, then `vec<vec3 f32>` (a `u32` count and 12 bytes per item) |
 
 The 15 values, in the order of the `Animal` record:
@@ -61,25 +61,38 @@ What this explains:
 - On the temperate map, Lakes Packed against Lakes Sparse moved some animals by under a metre and changed their direction, which fits animals being put somewhere slightly different, not a change of the animals themselves.
 - The animal list is not the heightmap; that is a separate grid, described below.
 
-Find it by the prefix (`01 00 00 00 ff ff ff ff 32 00 00 00 00 00 00 00` and then the count) at the end of the name tables. What the second list of `u32` after the animals holds (it starts with the same count, then 16 and a short list of numbers up to about 3,100) is **Open**.
+Find it by the prefix `01 00 00 00 ff ff ff ff ?? 00 00 00 00 00 00 00`, then the count, at the end of the name tables; the first match after the model table is the one. The `??` byte was 50 (`32`) in every save of seed `ktb5aEVwZg`, desert and temperate, 49 (`31`) in a desert save of seed `sJn73SmfYh` and 51 (`33`) in the tropical saves of seed `RaazVnK55w`; what it holds is **Open**. What the second list of `u32` after the animals holds (it starts with the same count, then 16 and a short list of numbers up to about 3,100) is **Open**.
 
 ### Which animals they are
 
-The `Animal` record has no model. Each animal also has a model instance (the `ModelInstanceList` component and `ModelInstance` record in `api/tealdef`: a model id, the transform at the previous frame, the transform), and its model id indexes the model table at the start of the stream. **Observed** on 604 in nine saves (A to G and the temperate pair).
+The `Animal` record has no model. Each animal also has a model instance (the `ModelInstanceList` component and `ModelInstance` record in `api/tealdef`: a model id, the transform at the previous frame, the transform), and its model id indexes the model table at the start of the stream. **Observed** on 604 in eighteen test saves: A to G, a desert save of another seed, the temperate pair and eight tropical saves of one seed.
 
 - **The model table** is the first thing after the header: a `u32` count, then per model `str` source mod (empty for the base game), `str` path, `u32` id. The ids run 0, 1, 2 and so on in table order. The base game's 4,473 models come first, sorted by path, so the 28 models under `animal/` are ids 0 to 27; a mod's models follow and carry the mod's id (`urbangames_deluxe_upgrade_pack`, 31 models, among them `animal/bison/bison.mdl` and `animal/boar_m/boar_m.mdl`).
 - **The link.** About 2.7 to 3.9 MB after the header there is one record per animal, in the same order as the animal list. A record is a `u32` count of instances, one for the animal plus one per flock offset, then the instances of 137 bytes each, and 9 bytes from one record to the next count (so 146 bytes for an animal without a flock). An instance starts with the `u32` model id, then two 4 x 4 `f32` matrices one byte apart, with the translation in floats 12 to 14; for the first instance both translations equal the animal's `worldPosition`. Find a record by searching for the 12 bytes of an animal's position after the animal list; the model id is the `u32` 52 bytes before it. The other bytes of an instance are **Open**.
-- **What they are**, in list order, 13 of each species:
+- **What they are**, in list order:
 
 | Map | Animals |
 |---|---|
 | Desert, no mods (A) | `bird_eagle`, `cougar` |
 | Desert, Deluxe Upgrade (B to G) | `bird_eagle`, `cougar`, `bison` (mod) |
 | Temperate, Deluxe Upgrade | `bird_crane`, `wildlife_bear`, `wildlife_deer`, `wildlife_fox`, `wolf`, `boar_m` (mod) |
+| Tropical, Deluxe Upgrade | `bird_crane` 13, `bird_gull` 4, `cr_fish_01` to `_04` 7, 8, 7 and 9, `wildlife_fox` 13, `comodo_dragon` (mod) 13 |
+
+Each species on the desert and temperate maps has exactly 13, and so does the desert save of the other seed. The count is explained [below](#how-many-animals).
 
 The 26 temperate animals with flock offsets are the cranes and the boars.
 
-The model files' metadata matches the values in the animal list (`base/content/animal.zip`, read for these facts only): `bird_eagle.mdl` has `heightOffset` 60 and a flying speed of 4.5 at 80 degrees per second, `bird_crane.mdl` has `heightOffset` 40, speed 4 at 40 degrees and a flock name, and the base game's ground animals (`cougar`, `wildlife_bear`, `wildlife_deer`, `wildlife_fox`, `wolf`) have `heightOffset` 0; the mod's model files were not read. The water animals in the archive (`fish_salmon`, `cr_fish_01` to `_04`) carry `water` 2001 with `heightOffset` -1.6; 2001 is one height unit above the heightmap's water level (see [the heightmap](#the-heightmap)), so `water` may be in heightmap units (**Open**). None of the saves holds fish. Why there are 13 of each, and which species a climate picks, are **Open**.
+The model files' metadata matches the values in the animal list (`base/content/animal.zip`, read for these facts only): `bird_eagle.mdl` has `heightOffset` 60 and a flying speed of 4.5 at 80 degrees per second, `bird_crane.mdl` has `heightOffset` 40, speed 4 at 40 degrees and a flock name, and the base game's ground animals (`cougar`, `wildlife_bear`, `wildlife_deer`, `wildlife_fox`, `wolf`) have `heightOffset` 0; the mod's model files were not read. The water animals in the archive (`fish_salmon`, `cr_fish_01` to `_04`) have `heightOffset` -1.6. Only the tropical saves hold fish. Which species a climate picks is **Open**.
+
+### How many animals
+
+The count follows a density per km², not the seed. Facts from the game's files: `base/mod.script.tl` in `base/content/base.zip` sets `baseConfig.animal` with `populationDensityMultiplier = 1`, `useLocalSpawning = true` and `localTileSize = 1000`. The `BaseConfig.Animal` record in `api/tealdef/api/type.d.tl` describes the multiplier as applying to each animal's density in exemplars per km², and local spawning as filling boxes of `localTileSize` squared. In `animal.zip` every land and bird model above has `density` 1, `cr_fish_01` to `_04` have 2 each, and `fish_salmon` has 4.
+
+- **Where the habitat allows it, a species reaches its density times the map area.** The Tiny map is 2.048 x 6.144 km = 12.58 km², so density 1 gives 12.6, and every density-1 land or bird species has 13: eagle, cougar, crane, bear, deer, fox, wolf, and the mod's bison, boar and Komodo dragon (their model files were not read, so their density of 1 is inferred). The same 13 in a desert save of another seed shows that the seed does not set the count. Whether the game rounds up or to the nearest whole number cannot be told from 12.58. **Observed**, 604, Tiny only.
+- **Water animals fall short.** On the tropical map the gull (density 1) has 4, not 13, and the four discus models (density 2 each, so 25 each by area) have 31 between them. Each model has a block of spawn weights (`bias`, `civilisation`, `fish`, `forest`, `predator`, `ship`, `shore`, `water`). The discus fish have `bias` -2000, `shore` -5000 and `water` 2001; the gull has `water` 300, `shore` 200 and `ship` 60000; the fox (the one land animal whose block was read) has -1000 for `water`, `shore` and `ship`. So the density is a target that the habitat can hold a species below. How the weights turn into a count, and how much water the tropical map has, are **Open**.
+- **Not herds.** The 13 are separate animals spread over the whole map; a herd or flock is one entry with `flock` offsets. `animal/animal.script.lua` only shapes those flocks (a crane V of 3 to 5 birds per side, a discus school of 10 to 15 fish, each a random one of the four models) and sets no count.
+
+To confirm, a Small or Medium game saved at once should hold about its area in km² (from the header's map size) of each land species. **Open** until then.
 
 ## The terrain record
 
@@ -146,5 +159,6 @@ A game made with the stock **Temperate** generator while the mod was installed (
 - The list that follows the heightmap. It also starts with the tile count (`c0 00 00 00 16 00 00 00 ...`). The API has a per-tile brush record (`TerrainTileBrush`); that this list is it is a guess.
 - How the tile count follows map size and format; only Tiny was checked.
 - What the list after the animals holds.
+- How the animal count scales with map size (see [how many animals](#how-many-animals)).
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
 - Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.
