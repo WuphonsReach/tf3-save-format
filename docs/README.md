@@ -25,11 +25,11 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
 | [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories; the balance history |
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids, tiers and weights, starting cargo |
-| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, the town building component and its Historic Preservation flag |
+| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, the town building component and its Historic Preservation flag, building records replaced or changing level in play |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
-| [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list |
+| [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list, one fish chain read window by window (port, warehouse, truck line), the `itemsAtEdge` totals that show a queue |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
-| [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns, what a rename of an industry, line or person does, households in consecutive slots |
+| [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns, what a rename of an industry, line, stop or person does, households in consecutive slots |
 | [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds, the trip-plan records (a line with two stops and a vehicle, or a building), the stop names in vehicle windows |
 | [models.md](models.md) | The model table and the model instance records, vehicles, people and animals in one run, matching road vehicles to instance slots by depot and maintenance-station positions |
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
