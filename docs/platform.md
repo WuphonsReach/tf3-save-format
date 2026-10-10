@@ -7,7 +7,7 @@ Checked 2026-10-10 on the 244 catalog entries of [versions.md](versions.md#summa
 
 Two ways a save can still give its platform away:
 
-- **A stored Lua error.** A mod can keep a Lua error message in its script state, and the message starts with the mod file's install path. In [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) the path is under a Windows user folder. In [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601) it starts `R:/mod.io/10640/`. Both come from one mod. Layout, search and counts are in [script-states.md](script-states.md#mod-script-states-and-stored-errors). **Observed**, two saves.
-- **Mods from outside mod.io.** Mods whose URL points to modwerkstatt.com appear only in PC saves (7 saves, all 604). Consoles probably load mods from mod.io only, so such a mod suggests a PC save (**Open**). A save without one says nothing.
+- **A stored Lua error.** A mod can keep a Lua error message in its script state, and the message starts with the mod file's install path. In [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) the path is under a Windows user folder. In [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601) it starts `R:/mod.io/10640/`. Both come from one mod. Layout, search and counts are in [script-states.md](script-states.md#mod-script-states-and-stored-errors); the mod notes are in [mods.md](mods.md). **Observed**, two saves.
+- **Mods from outside mod.io.** Mods whose URL points to modwerkstatt.com appear only in PC saves (7 saves, all 604; the mod list entry is in [mods.md](mods.md#the-mod-list-entry)). Consoles probably load mods from mod.io only, so such a mod suggests a PC save (**Open**). A save without one says nothing.
 
 Since console and PC saves also differ in format version (601 against 604), the only same-version comparison so far has two PC saves. A platform code hidden in a field not yet described is not ruled out (**Open**).

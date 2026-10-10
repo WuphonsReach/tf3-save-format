@@ -5,7 +5,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | File | Covers |
 |---|---|
 | [container.md](container.md) | zstd framing, writing a save back |
-| [header.md](header.md) | Header fields in order, mod entries and options, preview image, settings |
+| [header.md](header.md) | Header fields in order, preview image, settings |
+| [mods.md](mods.md) | What a save records about a mod: the mod list entry, options, switching mods on and off when loading, script states |
 | [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log |
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
 | [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |

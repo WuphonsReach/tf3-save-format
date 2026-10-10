@@ -9,7 +9,7 @@ The game settings of a save: the options of the New Game screen (and of the Sett
 - A game made on the Easy preset (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1)): the screen showed industry productivity 150%, industry closing Never, vehicle maintenance effect Low, subsidies Often, subsidy risk None, landmark resources Low, inflation Low, every town sensitivity Low and vehicle costs 50%. The save held 4, 1, 2, 4, 1, 2, 2, 3 and 1 for those keys.
 - A game left on the defaults (catalog save [6417707](https://mod.io/g/transportfever3/m/333151)) held 3 for the options whose default is the third entry, and 4 for the sensitivities, which default to Normal, the fourth of seven.
 - The same options can have lists of different length, so a number alone does not say what it means. The percentage options list 50, 75, 100, 125 and 150%, so 1 is 50% and 3 is 100%. The game does not store which amount an entry stands for.
-- Values are Lua numbers (f64) apart from the bool `isMapEditor`. Mod options in the same list are covered in [header.md](header.md#mod-options).
+- Values are Lua numbers (f64) apart from the bool `isMapEditor`. Mod options in the same list are covered in [mods.md](mods.md#mod-options).
 - `map.size` does not give one size. A value of 3 was 11264 x 11264, 6656 x 19968 and 8192 x 16384 in different saves. Use the header's width and height ([header.md](header.md)) for the real size.
 
 ## The options
@@ -92,24 +92,16 @@ Each preset was clicked in turn on one test game (Easy, Normal, Hard, Very Hard,
 
 ### The Mods tab
 
-The same screen has a Mods tab, where a mod can be switched on before loading (its heading gains a count and an asterisk once something is changed). **Confirmed** on 604, one load: a mod.io script mod, Overpass Builder ([6050917](https://mod.io/g/transportfever3/m/overpass-builder)), was activated on a save with two mods and the game was saved under a new name. Against the save before it:
+The Load Game screen also has a Mods tab. A mod switched on or off there is added to or dropped from the header's mod list, the config-mods list and the params list in the next save (**Confirmed** on 604, one load each). Details: [mods.md](mods.md#switching-mods-on-and-off-when-loading).
 
-- The header's mod list got a third entry after the existing two: id `move_it_probe_overpass`, source `mod.io`, path `6050917` (the mod.io id as text), the display name, the mod's page URL and flags 0 (see [header.md](header.md#mod-entries)).
-- The config-mods list got the id appended.
-- The config params got a new entry keyed by the id, holding an empty table (the mod has no options), placed just before the entry with the empty key. The two existing entries kept their order.
-- The settings table, the resources, the money, the counter, the seed and the map size were unchanged. The header grew by 182 bytes.
-- The mod's id occurs three times in the stream, all in the header (mod list, config-mods list, params key). Nothing after the header names it. The rest of the stream differs from the save before by 32 bytes in length and by some blocks, as every re-save does, and I did not check whether any of that is mod related.
-
-**Switching a mod off** (**Confirmed** on 604, one load): on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. Whether a mod that has options loses them (the params table) the same way was not tested, as these two mods had none.
-
-So, like the settings, a save's mod list reflects the last load, not the game's start. The Load Game list shows the loaded save's own values: its Difficulty row read "Very Hard" for a save written right after the Very Hard preset, so the label is derived from the stored values, not read from a stored preset name (**Observed**, one save). It also shows the saved climate, map size and format, date, population, rank and counts of stations, lines and vehicles.
+The Load Game list shows the loaded save's own values: its Difficulty row read "Very Hard" for a save written right after the Very Hard preset, so the label is derived from the stored values, not read from a stored preset name (**Observed**, one save). It also shows the saved climate, map size and format, date, population, rank and counts of stations, lines and vehicles.
 
 ## Open
 
 - Whether the changes act in play: for example whether a higher infrastructure upkeep applies to buildings that already exist, or only to new ones. The in-play effect was not tested.
-- What a mod adds to the script states once it has run in the game, and whether a deactivated mod with options is dropped with its options. Only mods with no options were switched on and off.
+- What a mod adds to the script states once it has run in the game, and whether a deactivated mod with options is dropped with its options. Only mods with no options were switched on and off ([mods.md](mods.md#open)).
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
 - Where the "Achievements cannot be earned" state is kept, if it is kept at all.
 - Whether `townConfig.sensitivityUrbanCare` is the Reputation toggle, and what `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
-- Whether mod options follow the position-plus-1 rule ([header.md](header.md#mod-options)).
+- Whether mod options follow the position-plus-1 rule ([mods.md](mods.md#mod-options)).

@@ -13,7 +13,7 @@ Checked on 604 (one game played into 2061, and catalog saves [6417707](https://m
 
 ## States seen
 
-Script paths as they appear in the stream, and where each is described. A mod's states are listed under its own id ([Mod script states](#mod-script-states-and-stored-errors)).
+Script paths as they appear in the stream, and where each is described. A mod's states are listed under its own id ([Mod script states](#mod-script-states-and-stored-errors)); what else a save records about a mod is in [mods.md](mods.md).
 
 | Script | Described in |
 |---|---|

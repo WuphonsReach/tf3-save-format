@@ -15,7 +15,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | money | i64 | Copy of the company balance, shown in the load dialog |
 | counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). It can trail the state by a few points or by more, and grows with play. FORMAT.md calls it `year`. Details and numbers: [company.md](company.md#the-header-counter) |
 | info | Lua table | Holds `company.level` (ours). 1 to 15 in 117 of 120 catalog saves (568 to 604); empty in the other 3 and in editor saves |
-| mods | vec<mod> | Mods the save uses, see below |
+| mods | vec<mod> | Mods the save uses: per mod id, source, path, display name and extra (`str`), then flags (u32). See [mods.md](mods.md#the-mod-list-entry) |
 | preview flag | u8 | 0 or 1. Does not say whether a preview is present (ours): 0 in 60 of 120 catalog saves, all with a full preview. Meaning **open** |
 | preview width, height | u32, u32 | 640 x 360 in every save checked (120 catalog saves, 568 to 604) |
 | preview | str | Raw RGB8, width x height x 3 bytes, **bottom row first** (ours) |
@@ -23,26 +23,15 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | stats | i32 x 11, vec<(u32, u32)>, u32 x 2, i64 x 9, u32 x 2 | **Open** |
 | labels | vec<(str, u32)> | Text such as `"%d Point(s) for Company Value"` with a number |
 | stats | u32, i64 x 2, u32 | **Open** |
-| config mods | vec<str> | The ids of the save's mods, the same set as the mod list above (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604) |
+| config mods | vec<str> | The ids of the save's mods, the same set as the mod list above (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). See [mods.md](mods.md#the-mod-list-entry) |
 | config resources | vec<(str, str)> | Keys `climate`, `economy`, `nameList`, each a path such as `::/economy/all.eco` |
-| config params | vec<(str, Lua table)> | The entry with the empty key holds the game settings; every other entry is one mod's own options, keyed by its id. See below |
+| config params | vec<(str, Lua table)> | The entry with the empty key holds the game settings; every other entry is one mod's own options, keyed by its id. See [mods.md](mods.md#mod-options) |
 | mission, kind | str, str | |
 | flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: seven saves of one 604 game, each written with the game paused after a stretch at 4x (the last four after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
 | value | u32 | The format version the save was first written under, probably (ours, **Observed** on 585 to 604). Equal to the version in 604 saves; 596 to 601 in 601 saves; 585 in a 604 save that was a re-save of a 585 save. Never above the save's own version in the catalog saves and maps summarised in [versions.md](versions.md). One editor map (604) held 256 (**open**) |
 | id | str | The **map seed**: the text of the Seed box in the New Game dialog (ours, **Confirmed** on 604). Details, the catalog's seeds and the game's log: [seed.md](seed.md) |
 
 Lua tables are encoded as in [lua-values.md](lua-values.md).
-
-## Mod entries
-
-Each mod is five `str` and a u32: id, source, path, display name, extra, flags. Observed on the 120 catalog saves (568 to 604):
-
-- `extra` holds the mod's mod.io page URL in 2,661 of 3,019 entries. It is empty in the rest: every `DLC` entry and most `BuiltInMods` entries.
-- `flags` is 0, 1 or 2. Always 1 for source `DLC`, mostly 0 for `BuiltInMods`, any of the three for `mod.io`. Meaning **open**.
-
-### Mod options
-
-- **Mods keep their options in the config params list** (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). Besides the empty key there is exactly one entry per mod, keyed by the mod's id, so the list has one more entry than the config mods. All 3,002 mod entries matched an id in that save's mod list. A mod without options has an empty table; one with options holds its own keys, for example a toll mod's `toll` or a train mod's `acceleration`, `braking` and `curves`. The values are Lua numbers (f64), like the game settings, which are numbers apart from the bool `isMapEditor`. Whether mod values follow the same position-plus-1 rule is **Open**. The order is neither the mod list's order (it matched in 39 of 110 saves) nor sorted, so look entries up by key.
 
 ## Preview
 

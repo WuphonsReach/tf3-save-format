@@ -15,7 +15,8 @@ The notes are the product. [tools/](tools/) has the small read-only Python scrip
 Start at [docs/README.md](docs/README.md).
 
 - Container: zstd framing, writing a save back.
-- Header: start year, date shown, map size, money, mods, preview image, settings, the map seed.
+- Header: start year, date shown, map size, money, preview image, settings, the map seed.
+- Mods: the mod list entry, mod options, switching mods on and off when loading, the states and errors a mod keeps.
 - Settings and the climate and economy pairs.
 - Calendar: the game clock, calendar speed and the day table.
 - Lua value encoding, and the script states: weather, company rank and loans, inflation, counters, notifications, subsidies, town ratings, landmarks, mod states.
