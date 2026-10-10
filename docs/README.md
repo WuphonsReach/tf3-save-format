@@ -29,8 +29,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
 | [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
-| [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns |
-| [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds, the passenger records (line, origin and destination stop, vehicle), the stop names in vehicle windows |
+| [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns, what a rename of an industry, line or person does |
+| [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds, the trip-plan records (a line with two stops and a vehicle, or a building), the stop names in vehicle windows |
 | [models.md](models.md) | The model table and the model instance records, vehicles, people and animals in one run, matching road vehicles to instance slots by depot and maintenance-station positions |
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
 | [animals.md](animals.md) | The animals list, which animals they are, how many there are |
