@@ -16,6 +16,10 @@ None of these scripts write a save. For editing, see [tf3-save-editor](https://g
 | `save_preview.py OUT_DIR SAVE.sav [...]` | Write each save's preview as a PNG, right way up |
 | `mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]` | Summarise many saves (or mod.io mod directories, including their editor `maps/`) into `OUT_DIR/<id>-<name>/tf3-save-summary.json` and `OUT_DIR/index.csv`: header (including the map seed), settings as `"3 (100%, default)"`, shown date, calendar and play speed, rank, counters, subsidies. Each summary names the commit of the `tools/` scripts that built it and is rebuilt when that changes. Facts only, no local paths |
 
+## Editor setup
+
+VS Code shows an "untrusted schema" warning on the `$schema` line of the summaries. How to clear it: [docs/developer/vscode-schema.md](../docs/developer/vscode-schema.md).
+
 ## Using them on other people's saves
 
 Previews and saves belong to the people who made them. The scripts read them on your machine; do not republish their output without checking. The summaries from `mine_saves.py` hold only facts (version, sizes, counts) plus the catalog name, author and link that mod.io already shows publicly.
