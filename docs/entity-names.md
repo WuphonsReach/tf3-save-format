@@ -48,7 +48,7 @@ There is no marker for the table. A way that worked on both saves:
 
 ## Not found
 
-- How a line refers to its vehicles. The tram's id appeared 34 times in the first save, mostly in sorted lists of u64 entity ids (an id then four zero bytes), none close to a candidate line id.
+- How a line refers to its vehicles. (For road vehicles in 604 a first answer is in [lines.md](lines.md#a-vehicles-line-and-the-leg-it-is-on-604); the tram case below was not rechecked.) The tram's id appeared 34 times in the first save, mostly in sorted lists of u64 entity ids (an id then four zero bytes), none close to a candidate line id.
 - Where a vehicle keeps its model. The tram model's id, read from the model table ([models.md](models.md#the-model-table)), was not within 400 bytes of the tram's own id. Animals keep their model id in a model instance record with their transform ([models.md](models.md#the-model-instance-record)), not next to their own entity id, and vehicles do the same: see [models.md](models.md#vehicles-people-and-animals-in-one-run).
 - A table of resource paths mapped to numbers (cargos first, then vehicle models) sits late in the stream as a Lua table. The number for each model is not the model id. **Open**.
 
