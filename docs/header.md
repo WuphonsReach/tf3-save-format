@@ -29,7 +29,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | mission, kind | str, str | |
 | flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: seven saves of one 604 game, each written with the game paused after a stretch at 4x (the last four after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
 | value | u32 | The format version the save was first written under, probably (ours, **Observed** on 585 to 604). Equal to the version in 604 saves; 596 to 601 in 601 saves; 585 in a 604 save that was a re-save of a 585 save. Never above the save's own version in the catalog saves and maps summarised in [versions.md](versions.md). One editor map (604) held 256 (**open**) |
-| id | str | |
+| id | str | The **map seed**: the text of the Seed box in the New Game dialog (ours). **Confirmed** on 604: a game started with the typed seed `RaazVnK55w` and saved at once holds exactly that string. **Observed** on 599 to 604 in the 110 catalog saves whose header reads to the end: 104 hold 10 random letters and digits (the form the game offers), 6 hold typed text such as a town name or `0`. Unchanged across re-saves and autosaves of one game, and equal in two catalog saves and the re-saves made from them. 94 distinct values in 110 saves, so not unique. The sliders (ocean, islands, mountains) that went with it are not in the stream (**Observed**, 604: no `mz_layout`, `oceans` or generator path), so the seed alone may not rebuild the same map (**Open**) |
 
 Lua tables are encoded as in [lua-values.md](lua-values.md).
 

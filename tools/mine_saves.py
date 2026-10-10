@@ -202,7 +202,7 @@ SCHEMA_URL = "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/mai
 SCHEMA_VERSION = 1
 # Every key, in the order written (tf3-save-summary.schema.json).
 FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
-          "url", "tools_commit", "error", "version", "first_version", "start_year", "map_w_m", "map_h_m",
+          "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
           "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records",
           "settings", "mods"]
@@ -237,6 +237,7 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
         summary.update({
             "version": h["version"],
             "first_version": h.get("value"),
+            "map_seed": h.get("id"),
             "start_year": h["start_year"],
             "map_w_m": h["map_w_m"],
             "map_h_m": h["map_h_m"],

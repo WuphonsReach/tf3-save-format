@@ -20,6 +20,7 @@
     "error",
     "version",
     "first_version",
+    "map_seed",
     "start_year",
     "map_w_m",
     "map_h_m",
@@ -129,6 +130,13 @@
         "null"
       ],
       "description": "The header's `value` field, probably the format version the save was first written under. null for 568 and 585, whose header tail is not read. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md"
+    },
+    "map_seed": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The header's last field, `id`: the map seed string typed in the New Game dialog, or the 10-character random one the game offers. null for 568 and 585, whose header tail is not read. Empty or not seed-shaped in a few saves (see docs/header.md). See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md"
     },
     "start_year": {
       "type": [
