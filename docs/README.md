@@ -18,7 +18,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
 | [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
 | [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
-| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn and stuck-vehicle entries |
+| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn, industry-closing (deadline field on the industry) and stuck-vehicle entries |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
@@ -31,7 +31,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
 | [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns |
 | [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds |
-| [models.md](models.md) | The model table and the model instance records |
+| [models.md](models.md) | The model table and the model instance records, vehicles, people and animals in one run, matching road vehicles to instance slots by depot and maintenance-station positions |
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
 | [animals.md](animals.md) | The animals list, which animals they are, how many there are |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |
