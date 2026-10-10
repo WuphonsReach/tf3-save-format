@@ -68,7 +68,7 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 
 ## The same three towns after play (604)
 
-**Observed** on 604 in the same game at clock 5,989,000 (save `1246`), against the three town windows.
+**Observed** on 604 in the same game at clock 5,997,000 (save `1246`), against the three town windows.
 
 - **All three records matched their windows by cargo.** The first record (fish and cement) is the town whose supplies panel showed fish and cement, the second (meat and planks) the one showing meat and planks, the third (fish and fuel, see below) the one showing fish, a tin and fuel. The records are still in the order Retford, Bromsgrove, Todmorden, as the names table has the towns. The three target capacities were unchanged from the new game (396 / 418 / 268, 164 / 98 / 115, 282 / 209 / 275), so they are fixed targets and not live counts, at least in a game of this length.
 - **A town can gain a commercial cargo and its record grows.** The third record (Todmorden, a "Village" of 482 people, growing) now holds two commercial cargos, fish with weight 1.0 and tinned_food (id 28) with 0.5, so it is 8 bytes longer than the other two (86 against 78). Its supplies panel showed a tin icon beside the fish with its own demand (88 against fish 177, the weights' 1 : 2). It was a 78-byte record in the new game with fish only. The other two records stayed at 78 bytes. `scan_records` in [tools/tf3save.py](../tools/tf3save.py) keeps only records with exactly one cargo in each list, so it finds only the first two of these three.
