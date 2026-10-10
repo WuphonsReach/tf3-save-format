@@ -38,6 +38,7 @@ Lua tables are encoded as in [lua-values.md](lua-values.md).
 - Read the preview string whatever the flag before it says. In about half the saves checked the flag is 0 and a full 640 x 360 image is present. Treat it as a preview when its length is `width * height * 3`.
 - Rows are stored bottom-up. Flipped, the image matches the `.jpg` next to the save better than as stored in all 113 catalog saves that have one (568 to 604): mean pixel difference 0.9 to 12.5 flipped, 3.9 to 71.9 as stored. Channel order is RGB (closer than red and blue swapped in all 113).
 - To write a save back byte for byte, keep the original flag byte.
+- A crash save has no preview (**Observed**, 604, one save). After an in-game assertion failure the game wrote `crash_<save name>_<date>.sav` in the save folder. Its preview size reads 0 x 0 with an empty preview string, so the header ends after a few KB instead of about 700 KB, and no `.jpg` was written beside it. The Load Game screen lists it as "Recovery Save" and draws a flat blue-violet square in place of the picture. Whether the label comes from the `crash_` prefix or from something in the file is **open**; the rest of the header reads as in any other 604 save. A save made from it in the game, after loading it and pausing two game days later, had the normal 640 x 360 preview and a `.jpg` beside it, so the empty preview is not carried over (**Observed**, 604).
 
 ### The two flags
 

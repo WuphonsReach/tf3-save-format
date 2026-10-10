@@ -28,7 +28,7 @@ KNOWN_IDS = {"fish": 6, "meat": 7, "beverages": 8, "vegetables": 9, "planks": 13
 TEMPERATE_NAMES = {i: n for n, i in KNOWN_IDS.items()}
 
 _CARGO_LIST_FIRST = struct.pack("<I", 34) + b"cargos/passengers/passengers.cargo"
-_CARGO_PATH = re.compile(rb"cargos/([A-Za-z0-9_]+)/\1\.cargo\Z")
+_CARGO_PATH = re.compile(rb"cargos/(?:[A-Za-z0-9_]+/)*([A-Za-z0-9_]+)\.cargo\Z")
 
 
 def cargo_entries(data):
@@ -36,7 +36,7 @@ def cargo_entries(data):
 
     The list sits near the start of the stream: a u32 count, then that many entries of `str`
     source (the id of the mod that adds the cargo, empty for base cargo), `str` path
-    (`cargos/<name>/<name>.cargo`) and a u32 id. The ids are 0 to count - 1, each once, in list
+    (`cargos/<name>/<name>.cargo` for base cargo, a mod may put the file elsewhere, such as `cargos/<name>.cargo`) and a u32 id. The ids are 0 to count - 1, each once, in list
     order. A game with a cargo mod has more entries and different ids from the base game. Other
     places in the stream also hold a `cargos/passengers` string, so a list needs at least two
     entries. See docs/cargo-ids.md.

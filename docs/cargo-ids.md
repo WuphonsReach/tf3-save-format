@@ -70,12 +70,14 @@ The statistics lists in [statistics-lists.md](statistics-lists.md) carry the car
 | Field | Meaning |
 |---|---|
 | `str` source | the id of the mod that adds the cargo, empty (a zero u32) for base cargo |
-| `str` path | `cargos/<name>/<name>.cargo` |
+| `str` path | `cargos/<name>/<name>.cargo` for base cargo; a mod can put its files elsewhere (`cargos/<name>.cargo` was seen), so the name is the file name without `.cargo` |
 | `u32` id | the cargo's id, equal to its position in the list from 0 |
 
 So the u32 right after the count is passengers' empty source. The list ends at the last cargo (tires in the base game); an unrelated list of edge add-on paths follows. In a subarctic base save the list held all 37 cargo, tires and rubber included, so it is not cut down to the economy, which is why the ids are the same in every economy (above). `tf3save.cargo_entries(stream)` reads it as `(id, name, source)` and `cargo_list(stream)` as the names by id.
 
 **Mods shift the ids.** A save with the Sugar Cane Industry mod (`kussie_sugar_industry_1`, mod.io 6417537) has a list of 41: sugarcane sits after grain, sugar after beverages, rum after sugar and molasses after fuel, each at the place its `order` gives, and each carries the mod's id in its source field. Every base cargo after an inserted one moves up, so in that game fish is 7, vegetables 12 and bricks 37. The towns of that save ([6436164](https://mod.io/g/transportfever3/m/222222)) check it: their cargo ids 7, 8 and 12 (commercial) and 16, 23 and 37 (industrial) are fish, meat and vegetables, then planks, fuel and bricks, exactly the tier 0 cargo. Read with the base table they would be meat, beverages, logs, machines, clay and nothing. So **a cargo id means nothing without that save's own list**. The table above and `KNOWN_IDS` in `tools/tf3save.py` are right for base-only games and wrong for a game with a cargo mod. The `mine_saves.py` summaries from schema version 3 name town cargo from each save's list and carry it as `cargo_list` and `cargo_from_mods`; version 2 used the base table, and only for temperate economies. The ids called unknown above in modded maps may be shifted known ones; a rebuild of the catalog summaries shows which.
+
+**Mod cargo in the catalog.** **Observed**, 244 catalog saves (568 to 604), summaries rebuilt with the list reader: 6 have cargo from a mod, the others have the 37 base cargo. The mods that add cargo are the sugar mod above (4), `silicon_frontier_1` (7, in two saves), a food mod `lebensmittel_3` (6), `r3dk_research_tree_1` (3 research-point cargo, whose files sit at `cargos/<name>.cargo`) and the built-in `urbangames_campaign_mission_06` (coconut and medicine). With the list read, every town cargo id in those summaries has a name. The numeric ids that looked unexplained before (1 to 5, 10 to 12, 17 to 19, 21 to 26, 29, 34 to 37) were base cargo, mostly in editor maps whose towns start on any cargo.
 
 **Evidence for the order rule in base games**:
 
