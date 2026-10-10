@@ -44,3 +44,23 @@ Every savegame and editor map in the catalog's mod directories, summarised with 
 | 599 | 4 | 0 |
 | 585 | 3 | 0 |
 | 568 | 7 | 0 |
+
+## Versions and releases (2026-10-10)
+
+The 244 entries above, joined with the upload record that mod.io keeps for each mod in its local cache (`metadata/state.json`: the modfile's upload date and its `metadata_blob`). The blob always names `uploadedFromPlatform`. From launch it also carries `buildVersion`, which is the game version number that Urban Games' [PC release notes](https://wiki.transportfever3.com/doku.php?id=releasenotes) use: 40408 (Steam) and 40393 (Epic and GOG) for the initial release on 29 September 2026, and 40420 for the stability update on 8 October 2026.
+
+| Format | Uploaded (UTC) | Uploaded from | Game build in the blob |
+|---|---|---|---|
+| 568 | 2026-05-27 to 06-02 | Windows 1, PS5 2, Xbox 4 | none |
+| 585 | 2026-07-03 to 07-09 | PS5 3 | none |
+| 599 | 2026-09-04 to 09-16 | Linux 1, Xbox 3 | none |
+| 601 | 2026-09-16 to 10-10 | PS5 22, Xbox 17, Windows 1, Linux 1 | none |
+| 604 | from 2026-09-29 | Windows 173, Mac 10, Linux 6 | 40408 in 162, 40393 in 1, 40420 in 26 |
+
+An upload date is the latest date a save could have been made, not the date it was made.
+
+- **604 is the PC release format** (**Observed**). Every upload that carries a build is 604, and it is 604 on the release builds 40408 and 40393 as well as on 40420. The stability update did not change the format: ten of our own saves made on 40408, before the update installed, are 604, the same as the ones made after it.
+- **601 is the console format** (**Observed**). 39 of the 41 entries at 601 came from a PS5 or an Xbox. Console uploads are still 601 after the 8 October update (for example [6436540](https://mod.io/g/transportfever3/m/gehr), uploaded on 9 October), and no console upload is 604. The release notes say the update is not yet out on consoles. Both PC uploads at 601 were made before launch.
+- **568 to 599 are pre-release** (**Observed**). Every upload at these versions was made before 29 September. Their dates match the closed beta rounds that Urban Games announced in April 2026, including a console round. Uploads from before launch carry no build number, so these formats cannot be tied to game builds.
+- **There are older numbers in the header's `value` field** (see [header.md](header.md)). Some 604 saves hold 543, 555 or 596 there, which suggests their games were started under those versions, so the pre-release numbers seen run at least 543, 555, 568, 585, 596, 599 and 601. No save at 543, 555 or 596 is in the catalog.
+- **Builds before release** (**Open**). Mods other than saves carry builds 40358 (uploaded 15 September) and 40380 (22 September), before launch, possibly from early access. Builds 40419 (2 uploads) and 40420 appear from 6 October, two days before the update was released, possibly from a test branch.
