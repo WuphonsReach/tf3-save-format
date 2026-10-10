@@ -64,4 +64,6 @@ The params entry with the empty key is a nested Lua table. Flattened with dots, 
 
 **Observed**: in one played save the header said 8,932,346 when the game showed 8,920,255, so it tracks the balance but can lag. In catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) the header holds 0 while the game shows -18,153,221. Why is **open**: negative values are stored too.
 
+**Observed** on 604, one game (a temperate test game with nothing built and no loan taken): the header money was 0 in saves on 1 January 1900, 20 September 1900 and 2 January 1901, and the game's Account read 0 with Earnings $0 on 2 January 1901. That game had no starting capital, and with nothing built the balance did not move over a year. Which setting gives a start with no capital is **Open**.
+
 **Observed** on the 120 catalog saves (568 to 604): the header money is 0 in 53 and negative in 13. Several negatives are round numbers (-25,000,000 in four saves, -100,000,000, -24,000,000), so the header may not always hold the balance. The real balance is in the money journal (see FORMAT.md).
