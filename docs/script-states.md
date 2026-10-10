@@ -47,17 +47,44 @@ What goes with what:
 
 - The header's counter equals the first `experience` after the progression path, or trails it: by 1 to 4 points in the saves of [header.md](header.md), by 242 in catalog save 6417707 (below).
 - `potentialLevel` is the rank **earned** and `level` the rank **claimed**. From the game's scripts (`game_mechanics/company/company_growth.script.tl` and `company.tl` in `base/content/game_mechanics.zip`, 604 build):
-  - The game works out `potentialLevel` from `experience` and `basePopulation`, raises a rank-up notification for each rank gained, and sets `ticketPriceMultiplier` in the same `companyState` from it, through a per-rank lookup in `company_progression_util.tl`.
+  - The game works out `potentialLevel` from `experience` and `basePopulation`, raises a rank-up notification for each rank gained, and sets `ticketPriceMultiplier` in the same `companyState` from it (see [the income multiplier](#the-income-multiplier) below).
   - `level` rises only when the player opens an earned but unclaimed rank in the company window, which sends an `applyLevel` event and plays the unlock animation. It is never set above `potentialLevel`. Rank rewards such as permits are counted from `level`.
   - The company window draws ranks up to `level` as unlocked, ranks above that up to `potentialLevel` as earned but not claimed, and the rest as locked. A new company starts with both at 1.
 - **Observed** on 568 to 604: `potentialLevel` followed the rank shown in the game (rank 2 was shown as Mechanic). `level` was never above `potentialLevel`. It was equal in 117 and behind in 60 of the 177 catalog saves that hold the state, and 48 of those 60 were still at 1, 12 of them with Tycoon earned (for example [6387008](https://mod.io/g/transportfever3/m/my-1st-sandbox-with-mods-v7), 601). `level` was 1 in a 585 save and 2 after the same game was re-saved by a 604 game, which fits a rank claimed in between. Claiming a rank and comparing the saves before and after was not tested in the game (**Open**).
 - `companyLevelUpCount` in the achievements state counts ranks earned, not claimed: it equalled `potentialLevel` minus 1 in 157 of those 177 saves, whatever `level` was. It was 0 in 19 saves from 568 to 601, and 1 at rank 1 in one 604 save (**Observed**).
 - The game's company window lists 15 ranks in this order: Junior, Mechanic, Engineer, Coordinator, Expert, Team Leader, Supervisor, Manager, Director, Senior Director, CEO, Chairperson, Vice President, President, Tycoon. Rank 2 is Mechanic, as above, and the last is Tycoon, rank 15 (listed in a 604 game; names are the English UI).
 - **Confirmed** on catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) (604, start year 1960, no mods): `level` 10, `potentialLevel` 13, `experience` 15,808 (equal to the header counter). The game showed Vice President, which is rank 13 in the list above, so `potentialLevel` is the rank shown and `level` is not: three earned ranks had not been claimed. `companyLevelUpCount` in the achievements state was 12, which is 13 minus the starting rank 1. A second save, 6429423, has the same split (7 and 8) and was not loaded in the game.
-- In the same game the Vice President entry read "Reach a Population of 14,842" with the bar full, and `basePopulation` was 1,685. The ratio is 8.81. One point only, so the formula is still **Open**.
+- In the same game the Vice President entry read "Reach a Population of 14,842" with the bar full, and `basePopulation` was 1,685. The formula below gives 14,842.
 - `experience` did not change over two weeks of play in which `cargoDeliveredCount` rose by 9. It moved with population, not with deliveries or time.
-- **Observed** on catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (604): `experience` 23,547 equalled the rank screen's progress figure ("23,547/24,037" toward President), `level` and `potentialLevel` were both 13 (Vice President, which the bottom bar showed), and `basePopulation` was 2,301. The header counter was 23,305, 242 behind `experience`, so "a few points behind" above is not a fixed gap. The President entry's 24,037 is 10.45 times `basePopulation`, against 8.81 for the Vice President entry in the other save, so the thresholds are not one multiple of it. The bottom bar read 88%, not 23,547 / 24,037 (98%). If it shows progress inside the current rank, the Vice President threshold would be about 19,800 to 20,100, which is 8.6 to 8.7 times `basePopulation`. That was not checked against the game's own Vice President entry. **Open**.
-- The rank thresholds the game shows ("Reach a Population of N") were not found as stored numbers. **Open**. In one game the first rank's number (1,355) equalled both `basePopulation` and `experience`; in another, `basePopulation` was 1,443 and the second rank's number was 1,622. How the thresholds derive from `basePopulation` is **open**.
+- **Observed** on catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (604): `experience` 23,547 equalled the rank screen's progress figure ("23,547/24,037" toward President), `level` and `potentialLevel` were both 13 (Vice President, which the bottom bar showed), and `basePopulation` was 2,301. The header counter was 23,305, 242 behind `experience`, so "a few points behind" above is not a fixed gap. The bottom bar read 88%, not 23,547 / 24,037 (98%): it shows progress inside the current rank. The formula below puts Vice President at 19,949 and President at 24,037, and (23,547 − 19,949) / (24,037 − 19,949) is 0.88.
+
+### Rank thresholds
+
+The thresholds the game shows ("Reach a Population of N") are not stored. The game computes them from `basePopulation` each time (`company_progression_util.tl` in `game_mechanics.zip`, growth factor in `scripts/util/town_growth_function.tl` in `scripts.zip`, 604 build). **Confirmed** on 604 against four figures read from company windows in different games:
+
+- Rank 1 needs `basePopulation` itself.
+- For rank r, the game takes a base that slides from a fixed 725 at rank 1 to `basePopulation` at rank 15, multiplies it by a growth factor, a cubic in r that is 1 at rank 1 and 12.5 at rank 15 (coefficients 0.001, 0.027398, 0.14221 and 0.829392 for r³, r², r and 1), and adds the difference between `basePopulation` and that base. The base and the product are rounded down.
+- Checks: rank 1 at 1,355 with `basePopulation` 1,355; rank 2 at 1,622 with 1,443; Vice President (13) at 14,842 with 1,685 (6428935); President (14) at 24,037 with 2,301 (6417707), plus that save's 88% bar above. All four match exactly.
+- The rank is the highest whose threshold `experience` has reached. That gives `potentialLevel`.
+
+### The income multiplier
+
+`ticketPriceMultiplier` in `companyState` is the cut that the Inflation option (`advancedOptions.inflationFactor`, see [settings.md](settings.md)) makes to income. In the game's scripts (604 build) it is applied to every vehicle's ticket price, which covers passengers and cargo alike. Each Inflation level sets the multiplier reached at Tycoon. Between rank 1 (no cut) and rank 15 the multiplier falls in a straight line: 1 + (rank − 1) × (f − 1) / 14, where f is the value at Tycoon. It is computed from `potentialLevel`, the rank earned, not the rank claimed. (Sources: `base/difficulty_util.tl` and `base/mod.script.tl` in `base.zip`, which write f into `game_mechanics/company/company_growth_config.res`; `company_progression_util.tl` and `company_growth.script.tl` in `game_mechanics.zip`.)
+
+| Inflation | f in the 604 scripts | f seen in 599 and 601 saves |
+|---|---|---|
+| None | 1 (key absent) | 1 (key absent) |
+| Low | 0.9 | 0.8 |
+| Normal | 0.75 | 0.6 |
+| High | 0.6 | not seen |
+| Very High | 0.5 | not seen |
+
+- **Observed** in 120 catalog saves (one per catalog entry, 568 to 604), 117 of which hold the state:
+  - **604**: 51 saves hold the key, and every value equals the formula with the 604 values above (Low 13, Normal 33, High 5 saves). No Very High save had reached rank 2.
+  - **599 and 601**: 11 saves hold the key, and every value fits the same straight line with f = 0.6 for Normal (9 saves) and 0.8 for Low (2). So the cut was harsher before 604.
+  - The key is **absent** at rank 1 and when Inflation is None, as the scripts say (the multiplier is then nil, which removes the key). The 568 and 585 saves have no key even at ranks up to 15. Their header settings were not read (see [header.md](header.md)), so whether the mechanism postdates them or Inflation was None in all ten is **Open**.
+- An absent key means no cut, not a missing value.
+- The upkeep side of "inflation" is a separate date table, not this option. See [warehouses.md](warehouses.md) for the year multipliers.
 
 ## Loans
 
