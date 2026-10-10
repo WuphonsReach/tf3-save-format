@@ -1,6 +1,6 @@
 # Terrain, the seed and the map sliders
 
-What a save holds of the generated map, found by comparing saves of one seed. All of it is **Observed** on format 604 (Tiny 1 : 4, a 2 x 6 km map, start year 1900), from one save per case, so none of it is **Confirmed**. Sizes are counted from the end of the header (see [header.md](header.md)) to the end of the stream. The location of the heightmap is **Open**.
+What a save holds of the generated map, found by comparing saves of one seed. All of it is **Observed** on format 604 (Tiny 1 : 4, a 2 x 6 km map, start year 1900), from one save per case, so none of it is **Confirmed**. Sizes are counted from the end of the header (see [header.md](header.md)) to the end of the stream. The terrain record and the heightmap are described [below](#the-terrain-record).
 
 ## What was compared
 
@@ -39,7 +39,7 @@ The 15 values, in the order of the `Animal` record:
 
 | Index | Field | Seen |
 |---|---|---|
-| 0 to 2 | `worldPosition` x, y, z (metres; z is the ground height there) | x within about plus or minus 900, y within about plus or minus 3000 |
+| 0 to 2 | `worldPosition` x, y, z (metres) | x within about plus or minus 900, y within about plus or minus 3000; z is the ground height, or a fixed height above it for the first 13 (see below) |
 | 3, 4 | `lookingAt` (a unit vector) | |
 | 5, 6 | `targetCoord` x, y | 3 to 4 m from the position when an animal has just been placed |
 | 7 | `movementSpeed` | 4.5 on the desert map, 4.0 on temperate, 1.0, 2.0 and 4.0 later in play |
@@ -56,11 +56,56 @@ The list parses cleanly with this layout in all five (39 animals on the desert m
 What this explains:
 
 - The positions move: 17 of 39 desert animals were more than 50 m away after the 11-day run (D against E), and a save made a few seconds after another differs by a few metres. So the animals' places are not fixed by the seed, and the "feature points" I first took them for were animals.
-- z is the ground height under each animal. It followed the Mountains slider (123 m for the first animal on Sparse, 154 on Scattered, 226 on Dense, 227 on Packed), so the animals give 39 or 78 samples of the terrain height, nothing more.
+- z follows the terrain. Checked against the heightmap (below) in nine saves: every animal after the first 13 stands on the ground (within 0.4 m of a straight interpolation between grid points), and the first 13 sit at a fixed height above it, 60 m on the desert map and 40 m on the temperate one (one of them is 1 m off in three saves). The first 13 are also the ones with a speed and a turn rate in a fresh save; the others start at speed 0 and only move after time has run (E). So the first 13 are probably flying animals (**Open** until the models are known). The first animal's z followed the Mountains slider (123 m on Sparse, 154 on Scattered, 226 on Dense, 227 on Packed) because the ground under it did.
+- Save A, the one without the mod, has 26 animals (13 and 13) where B to G have 39. Whether the mod or something else sets the count is **Open**.
 - On the temperate map, Lakes Packed against Lakes Sparse moved some animals by under a metre and changed their direction, which fits animals being put somewhere slightly different, not a change of the animals themselves.
-- The animal list is not the heightmap.
+- The animal list is not the heightmap; that is a separate grid, described below.
 
 Find it by the prefix (`01 00 00 00 ff ff ff ff 32 00 00 00 00 00 00 00` and then the count) at the end of the name tables. Which animals (models) they are, and what the second list of `u32` after the animals holds (it starts with the same count, then 16 and a short list of numbers up to about 3,100), are **Open**.
+
+## The terrain record
+
+The fields match the `Terrain` record in `api/tealdef/api/engine.d.tl`, in its order. **Observed** on 604 in eighteen test saves (eight desert, two temperate, eight tropical; all Tiny, 2048 x 6144 m), 5.2 to 7.5 MB after the header:
+
+| Field | Type | Seen |
+|---|---|---|
+| `size` | 2 x `u32` | 8, 24: the map in tiles of 256 m (2048 / 256, 6144 / 256) |
+| `baseLevels` | `u32` | 6 |
+| `baseResolution` | 3 x `f32` | 4.0, 4.0, 0.05: metres per grid step in x and y, metres per height unit |
+| `highLevels` | `u32` | 8 |
+| `offsetZ` | `f32` | -100.0 |
+| `waterLevel` | `f32` | 0.0 |
+| `dataMaps` | `vec` of (`str` name, `u32` w, `u32` h, `vec<f32>` of w x h) | 9 to 11 maps of 64 x 192, one value per 32 m |
+
+Find it by the resolution, `00 00 80 40 00 00 80 40 cd cc 4c 3d`; the two `u32` of the size sit 12 bytes before it. On this map:
+
+```
+08 00 00 00 18 00 00 00 06 00 00 00 00 00 80 40 00 00 80 40 cd cc 4c 3d
+08 00 00 00 00 00 c8 c2 00 00 00 00 0b 00 00 00 0a 00 00 00 72 69 76 65 72 5f 6d 61 73 6b
+```
+
+The data maps are named by the climate's generator. Desert (`dry`): `river_mask`, `lakes`, `mesas`, `coast_hills`, `mountains`, `monument_valley` and `biome0` to `biome4`. Temperate: `forest_mask`, `river_mask`, `biome4_mountains`, `biome4_no_mountains` and `biome0` to `biome4`. Tropical: `highway`, `forest_mask`, `volcano`, `mountains` and `biome0` to `biome4`. The `biome` maps hold weights from 0 to 1; `mesas`, `mountains` and `monument_valley` hold values up to about 195. Their order is not fixed (`biome0` and `mountains` swap places between B and C). What each map does in the game is **Open**.
+
+Moving Mountains from Scattered to Sparse (B against C) changed `mesas`, `mountains` and three of the biome maps; on Sparse `mesas` and `mountains` are all zero. Lakes changed none of them on either climate (F against G, and the temperate pair).
+
+## The heightmap
+
+The ground height is a grid of `u16` per tile, matching the `TerrainTileHeightmap` record in `api/tealdef/api/engine.d.tl` (a list of integers per 256 m tile on a 4 m grid). **Observed** on 604 in the same eighteen saves, all with 192 tiles.
+
+| Part | Content |
+|---|---|
+| prefix | `ff ff ff ff 0e 00 00 00` and 12 zero bytes |
+| count | `u32`: the number of tiles, `size` x times y (192 here) |
+| each tile | `vec<u16>` of 4225 values (65 x 65), 8,454 bytes |
+
+- **Order.** Tiles go in rows along x: tile `ty * 8 + tx`. Inside a tile, value `r * 65 + c` is column c (x) of row r (y). Each tile has 65 points per side, so it repeats the last row and column of its neighbours; in every save checked, all 352 shared edges match exactly. Stitched together this gives a 513 x 1537 grid.
+- **Position.** Grid point (c, r) of the whole map is at x = -1024 + 4c, y = -3072 + 4r, the map's centre being 0, 0. This orientation (not flipped) is the only one that puts the animals on the ground.
+- **Height.** z = `offsetZ` + v x `baseResolution` z, so z = -100 + 0.05 v metres, and v = 2000 is the water level. The non-flying animals all fall on this to within 0.4 m (see above). Heights seen: 0.8 to 262 m on the desert map with Mountains Dense, 1.6 to 142 m on Sparse, 0.15 to 478 m on the temperate map.
+- **What changes it.** The grid is identical for the same seed and sliders (A against B), after 11 days of play (D against E), and with Lakes moved (F against G, and the temperate pair). Mountains Scattered against Sparse (B against C) changes 45% of the values; another seed changes nearly all.
+
+Find it by its count and first length together, `c0 00 00 00 81 10 00 00` here (192 and 4225), then step 8,454 bytes per tile. It ends 0.46 to 0.63 MB before the end of the stream in these saves, long after the terrain record.
+
+The map format setting does not change the grid here: the tropical saves store `map.format` 3 and the others 4, and both have 8 x 24 tiles of 2048 x 6144 m (**Observed**, Tiny only).
 
 ## Lakes on a temperate map
 
@@ -69,7 +114,7 @@ Two new games on the stock Temperate generator (see below), seed `ktb5aEVwZg`, T
 - The headers are identical, but the body is 10,784 bytes longer with Lakes Packed (13,976,271 against 13,987,055).
 - 257 of 3,412 4 KB blocks differ, against 35 for the same change on a desert map. About 195 of them are the simulation arrays (the stretch near 0.67 to 1.48 MB), which also differ on a desert map when the two saves are made at different moments, so they do not count as an effect of Lakes.
 - The rest: a stretch of about 650 KB (3.48 to 4.12 MB) that starts with one record whose count changes from 2 to 1 and then runs shifted by the length change, so most of its bytes differ, and short differences (55 bytes each, about 150 bytes apart) in the list of 78 animals that starts 283 KB after the header, where an animal's position moved by under a metre and its direction changed.
-- So Lakes does something on a temperate map (it changes how much data the save holds) and nothing on a desert map. What the extra 10.8 KB are is **Open**.
+- So Lakes does something on a temperate map (it changes how much data the save holds) and nothing on a desert map. The heightmap and the terrain data maps are identical in the two saves (see [below](#the-terrain-record)), so the extra 10.8 KB are not terrain shape; what they are is **Open**.
 
 ## Generators and the Mapzilla mod
 
@@ -79,7 +124,9 @@ A game made with the stock **Temperate** generator while the mod was installed (
 
 ## Open
 
-- Where the heightmap is. Not a smooth 16-bit grid that I could find; 1.5 MB to 6.1 MB after the header is float-like records (periods of 24, 72 and 73 bytes), and 6.4 MB, 6.9 MB and 7.2 MB are near-constant data.
+- What `baseLevels` (6) and `highLevels` (8) mean, and whether the heightmap has coarser levels stored elsewhere. 1.5 MB to 6.1 MB after the header is still float-like records (periods of 24, 72 and 73 bytes) of unknown purpose.
+- The list that follows the heightmap. It also starts with the tile count (`c0 00 00 00 16 00 00 00 ...`). The API has a per-tile brush record (`TerrainTileBrush`); that this list is it is a guess.
+- How the tile count follows map size and format; only Tiny was checked.
 - Which animal models the list holds, and what the list after it holds.
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
 - Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.
