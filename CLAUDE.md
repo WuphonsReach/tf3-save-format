@@ -59,6 +59,13 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - To find what an unnamed field holds, ask for a save made with a distinctive typed value and search the decompressed stream for it. The map seed sat in an undescribed header field (`id`) until a typed seed was searched for; searching for the word "seed" found only construction records.
 - Hash a save (sha256) before it is loaded again, so a later re-hash shows whether a load changed it.
 
+## Test maps and reference maps
+
+- A **test map** is a game the user loads in the game and re-saves, one change per save. A **reference map** is a save we only read, or run scripts against, to check an idea: mostly mod.io catalog saves, never loaded or re-saved. A reference map becomes a test map when the user starts re-saving it.
+- A game is identified by its map seed plus climate (header `map_seed` and the `climate` resource), not by the save-name prefix: series letters repeat across games, and one seed can be played in two climates.
+- The gitignored `local/games/` holds one folder per test map, `<seed>-<climate>-<label>/part-N.md`. Reference maps get no folder; they live in `local/saves.txt`, `local/summaries/` and `local/recheck/`. Both are indexed in `local/README.md`; `local/games_by_seed.py` lists saves by seed.
+- Facts from either kind go to `docs/` as format facts. Cite a reference map by mod id (see the catalog rule above).
+
 ## Conventions
 
 - Integers are little-endian unless stated. Use the notation `str` (u32 length + bytes) and `vec<T>` (u32 count + items), matching `FORMAT.md`, so readers can move between the two.
