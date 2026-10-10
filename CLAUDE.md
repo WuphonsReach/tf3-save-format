@@ -27,6 +27,7 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 
 ## Testing in the game
 
+- The user's own saves (tests, re-saves) are in the game's `local/save/` folder under Steam userdata for app id 3493540, next to `settings.lua`. The full path on this machine, and how to find it again, are in the gitignored `local/README.md`; never write it, or the Steam id in it, into a committed file. Read these saves, never write them.
 - Tests are saves the user makes in the game, one change per save, named by what changed. Compare a save with the one it was loaded from, not with the New Game screen: the Load Game screen rewrites settings and mods in the next save.
 - To find what an unnamed field holds, ask for a save made with a distinctive typed value and search the decompressed stream for it. The map seed sat in an undescribed header field (`id`) until a typed seed was searched for; searching for the word "seed" found only construction records.
 - Hash a save (sha256) before it is loaded again, so a later re-hash shows whether a load changed it.
