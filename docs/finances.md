@@ -41,6 +41,26 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - The tab splits the infrastructure upkeep into roads and buildings (or tracks and buildings). The booking has no field that does that, so the split is not in the five category bytes. Only the sum was checked. **Open**.
 - The bookings in an old period are far fewer than in a recent one: about 220 in each of the two earliest periods above against about 10,000 in each of the last two. Older bookings seem to be merged. **Observed**, so do not use the booking count as a measure of activity.
 
+## A new game's journal
+
+**Observed** on 604, one new game (Small 1 : 3 subarctic, Normal difficulty, seven mods, paused at 1900-01-01) saved four times:
+
+- A new game starts with header money 0 and **no bookings**: no starting capital is booked, unlike the catalog save above. The journal is then an empty list with balance 0, and the stream holds over a thousand zero-balance journal-shaped runs, so the search for a journal by balance ([above](#finding-the-journal)) finds many and the tf3-save-editor CLI calls money read-only.
+- After a loan was taken, the journal held one booking, type `LOAN`, amount +18,000,000, and the header money was 18,000,000. The search then found exactly one journal.
+- Placing the free Boathouse asset (price "Free" in the build menu) changed neither the journal nor the header money.
+- Placing the depot-type Boathouse (price $80,000 in the build menu) added one booking of -81,857, construction type "depots (Water)". The extra 1,857 over the menu price is the cost of the terrain work done for the foundation (reported by the player). The header money fell to 17,918,143, the sum of the two bookings.
+- Setting the balance with the editor's `money --set` adds one `OTHER` booking for the difference and rewrites the header money. **Confirmed** on 604, one save: the edited save loaded and the bottom bar's Account read the new balance (2,511,188,193). The Finances tab showed the figures below, so the journal is what the windows read, and no other copy of the balance had to be changed:
+
+  | Window | Shown | Source |
+  |---|---|---|
+  | Earnings Details, Other | 2,493,270,050 | the added `OTHER` booking |
+  | Earnings Details, Investments | -81,857 | the depot booking |
+  | Summary, Earnings (also the bottom bar) | 2,493,188,193 | those two, the loan booking left out |
+  | Loan Transactions, Debt | 18,000,000 and -18,000,000 | the `LOAN` booking and the loan itself |
+  | Bank Account, Account | 2,511,188,193 | the sum of all three bookings |
+
+  The Overview chart "Revenue" bar read 2,493,270,050 (the `OTHER` booking counts as revenue) and "Debt + Cash" 2,493,188,193, the balance less the 18,000,000 debt. Header money was not checked in the game.
+
 ## The balance history run
 
 **Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.
