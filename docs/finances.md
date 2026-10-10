@@ -134,6 +134,22 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
 The -200 among the -1,752s and -3,004s of every batch is therefore Ship 5. The other variations (-1,262, -1,402, -1,472 and -1,682 against -1,752 for a small ship, -2,403 to -2,764 against -3,004 for a large one) were not explained.
 
+### A ship's running cost follows its condition (604)
+
+**Observed** on 604 in the Small 1 : 3 game, from the journal of save `1416` (clock 10,720,600, paused; batches at 10,440,000 to 10,680,000) and the ship windows in the player's screenshots of 14:21. The window's "Condition" bar has five steps and a label; its yearly cost line (`$N/Year`) is the batch booking times about 24.35 (a year of 1,460,000 units in 60,000-unit batches).
+
+| Ship (nth water running-cost booking) | Window label | Window `$/Year` | Booking | Against the same model at Very Good |
+|---|---|---|---|---|
+| Ships 2 and 4, Canadian Trawler (2nd, 4th) | Very Good | 42,672 | -1,752 | 1.00 |
+| Ships 6, 9 and 10, Sydfart (6th, 9th, 10th) | Very Good | 73,152 | -3,004 | 1.00 |
+| Ships 8 and 11, Sydfart (8th, 11th) | Good | 76,810 | -3,154 | 1.05 |
+| Ship 16, Canadian Trawler (16th) | Very Bad, with the warning "The condition of Ship 16 is very bad" | 51,206 | -2,103 | 1.20 |
+
+- **The tiers are exact.** 3,154 / 3,004 = 1.050 and 2,103 / 1,752 = 1.200. Two more tiers show in the bookings without a window read: -3,305 (1.100 of 3,004: Ship 8 from the batch at 10,560,000 on, after -3,154 at 10,500,000, so its condition fell one step within one batch period) and -1,928 (1.100 of 1,752: Ship 17 in all five batches). No 1.15 booking was seen. A booking is the model's base cost times a tier, not a smooth function of wear.
+- **Ships 12 to 16 and 19 sat at the 1.20 tier in all five batches** (-2,103 each) and Ship 17 at 1.10. These are the eight trawlers bought together at 6,000,000 for TOD Fishery 3, which each booked the base -1,752 then (see above). Ships 1 to 4 stayed at -1,752 apart from short dips. The game's API names the quantity: a maintenance state number per vehicle (`getVehicleMaintenanceState`) with emission, comfort, top-speed and running-cost penalties derived from it (`api/engine/util.d.tl`), and a `maintenanceStation` entity in the vehicle's transport component (`api/engine.d.tl`).
+- **This explains part of the variation noted above.** A run of -2,103 in place of -1,752 is a condition penalty. The odd single values (-2,644, -2,884 and -2,776 against -3,004; -1,766 and -1,935 against -2,103) are in the range of a ship that spent part of a batch parked at the 5% rate, but that was not checked against positions.
+- **Where the state is kept is Open.** The ship's model instance and its journal rows carry nothing of it. A test: send one of the very-bad ships to a depot (or its maintenance station) and make a save just before and one just after, paused each time; the value that moves from near zero to near one in that vehicle's record is the state.
+
 ## The balance history run
 
 **Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.
