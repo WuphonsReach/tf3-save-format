@@ -2,7 +2,7 @@
 
 The header starts the decompressed stream. Fields in order. Checked in full on 599, 601 and 604. Format 568 and 585 match up to and including the preview image, then differ (see [versions.md](versions.md)).
 
-The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). The meanings marked "ours" were worked out here and are being passed upstream.
+The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). The meanings marked "ours" were worked out here and are being passed upstream. Where a field's name or reading here differs from that file's, [tf3-save-editor.md](tf3-save-editor.md) lists it.
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -13,10 +13,10 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | map height | u32 | Metres (ours). For example 40960. The settings' `map.size` does not give the size, see [settings.md](settings.md#how-a-setting-is-stored) |
 | date | u32 | The date shown in the game, as a Julian day number (ours). Equal to the day table's last day in the 120 catalog saves (568 to 604, **Observed**) and to the date on screen in three (**Confirmed** on 604). See [calendar.md](calendar.md#the-date-in-the-header) |
 | money | i64 | Copy of the company balance, shown in the load dialog |
-| counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). It can trail the state by a few points or by more, and grows with play. FORMAT.md calls it `year`. Details and numbers: [company.md](company.md#the-header-counter) |
+| counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). It can trail the state by a few points or by more, and grows with play. Details and numbers: [company.md](company.md#the-header-counter) |
 | info | Lua table | Holds `company.level` (ours). 1 to 15 in 117 of 120 catalog saves (568 to 604); empty in the other 3 and in editor saves |
 | mods | vec<mod> | Mods the save uses: per mod id, source, path, display name and extra (`str`), then flags (u32). See [mods.md](mods.md#the-mod-list-entry) |
-| preview flag | u8 | 0 or 1. Does not say whether a preview is present (ours): 0 in 60 of 120 catalog saves, all with a full preview. Meaning **open** |
+| flag before the preview | u8 | 0 or 1, meaning **open**. It does not say whether a preview follows: 0 in 60 of 120 catalog saves, all with a full preview. Always equal to the u8 `flag` further down ([below](#the-two-flags)). [tf3-save-editor.md](tf3-save-editor.md#the-flag-before-the-preview) has the name it was given elsewhere |
 | preview width, height | u32, u32 | 640 x 360 in every save checked (120 catalog saves, 568 to 604) |
 | preview | str | Raw RGB8, width x height x 3 bytes, **bottom row first** (ours) |
 | stats | i64 x 6 | Index 3 is another copy of the money (equal in all 120 catalog saves) |
@@ -27,7 +27,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | config resources | vec<(str, str)> | Keys `climate`, `economy`, `nameList`, each a path such as `::/economy/all.eco` |
 | config params | vec<(str, Lua table)> | The entry with the empty key holds the game settings; every other entry is one mod's own options, keyed by its id. See [mods.md](mods.md#mod-options) |
 | mission, kind | str, str | |
-| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: seven saves of one 604 game, each written with the game paused after a stretch at 4x (the last four after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Meaning **open** |
+| flag | u8 | 1 in two saves started at normal speed, 0 in one started paused. Not the pause state at save time: seven saves of one 604 game, each written with the game paused after a stretch at 4x (the last four after changing the calendar speed and the cycle modes), all read 1 (**Observed**). 0 and 1 are about equally common in the catalog. Calendar speed is not stored here. Always equal to the flag before the preview ([below](#the-two-flags)). Meaning **open** |
 | value | u32 | The format version the save was first written under, probably (ours, **Observed** on 585 to 604). Equal to the version in 604 saves; 596 to 601 in 601 saves; 585 in a 604 save that was a re-save of a 585 save. Never above the save's own version in the catalog saves and maps summarised in [versions.md](versions.md). One editor map (604) held 256 (**open**) |
 | id | str | The **map seed**: the text of the Seed box in the New Game dialog (ours, **Confirmed** on 604). Details, the catalog's seeds and the game's log: [seed.md](seed.md) |
 
@@ -35,9 +35,15 @@ Lua tables are encoded as in [lua-values.md](lua-values.md).
 
 ## Preview
 
-- Read the preview string whatever the flag byte says. In about half the saves checked the flag is 0 and a full 640 x 360 image is present. Treat it as a preview when its length is `width * height * 3`.
+- Read the preview string whatever the flag before it says. In about half the saves checked the flag is 0 and a full 640 x 360 image is present. Treat it as a preview when its length is `width * height * 3`.
 - Rows are stored bottom-up. Flipped, the image matches the `.jpg` next to the save better than as stored in all 113 catalog saves that have one (568 to 604): mean pixel difference 0.9 to 12.5 flipped, 3.9 to 71.9 as stored. Channel order is RGB (closer than red and blue swapped in all 113).
 - To write a save back byte for byte, keep the original flag byte.
+
+### The two flags
+
+The flag before the preview and the u8 `flag` after `mission, kind` always hold the same value. **Observed** on 599 to 604 in 182 saves: 110 catalog saves and 72 of our own, 73 with both 0 and 109 with both 1, none that differ. Formats 568 and 585 were not compared, because their headers do not read to that point. That they are one value stored twice, or two views of one state, is a guess from the match. What it records is **open**, and neither flag says anything about the preview.
+
+Checked against it, none of these split the 182 saves into 0 and 1 (the best single setting still got about 30% wrong): format version, platform (see [platform.md](platform.md)), the map editor setting, number of mods, climate, economy, autosave or not, start year, map size and every stored game setting, so it does not follow the difficulty options. Saves of one game keep the value through a series of re-saves, including re-saves made after a load. One new game (604, Small 1 : 3, subarctic, seven mods, Normal difficulty, saved at once) read 0, and whether it started paused was not noted, so "0 means started paused" from the `flag` row above is not settled. A test that would settle it: two new games with identical settings, one started paused and one not, each saved at once.
 
 ## Settings
 

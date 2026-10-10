@@ -238,8 +238,8 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
         res = dict(h.get("resources", []))
         summary.update({
             "version": h["version"],
-            "first_version": h.get("value"),
-            "map_seed": h.get("id"),
+            "first_version": h.get("first_version"),
+            "map_seed": h.get("map_seed"),
             "start_year": h["start_year"],
             "map_w_m": h["map_w_m"],
             "map_h_m": h["map_h_m"],

@@ -17,7 +17,7 @@ import sys
 
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from tf3save import decompress as _decompress  # noqa: E402
+from tf3save import date_of_day, decompress as _decompress  # noqa: E402
 
 
 class R:
@@ -71,7 +71,8 @@ def read_header(path, data=None):
     r = R(data)
     if r.take(4) != b"tf**":
         raise ValueError("not a tf** save")
-    h = {"version": r.u32(), "start_year": r.u32(), "map_w_m": r.u32(), "map_h_m": r.u32(), "unknown": r.u32(),
+    # game_date: Julian day number of the date shown in the game, not the real-world date
+    h = {"version": r.u32(), "start_year": r.u32(), "map_w_m": r.u32(), "map_h_m": r.u32(), "game_date": r.u32(),
          "money": r.i64(), "counter": r.u32()}
     h["info"] = r.table()
     h["mods"] = []
@@ -79,7 +80,7 @@ def read_header(path, data=None):
         m = dict(zip(("id", "source", "path", "name", "extra"), [r.string() for _ in range(5)]))
         m["flags"] = r.u32()
         h["mods"].append(m)
-    h["has_preview"], w, ht = r.u8(), r.u32(), r.u32()
+    h["flag_before_preview"], w, ht = r.u8(), r.u32(), r.u32()  # meaning open, see docs/header.md
     h["preview_size"] = (w, ht)
     n = r.u32()
     h["preview_offset"] = r.p
@@ -107,8 +108,8 @@ def _read_tail(r, h):
     h["resources"] = [(r.string(), r.string()) for _ in range(r.u32())]
     h["params"] = [(r.string(), r.table()) for _ in range(r.u32())]
     h["mission"], h["kind"] = r.string(), r.string()
-    h["flag"], h["value"] = r.u8(), r.u32()
-    h["id"] = r.string()
+    h["flag"], h["first_version"] = r.u8(), r.u32()  # first_version: probably, see docs/header.md
+    h["map_seed"] = r.string()
     h["settings"] = flatten(next((t for k, t in h["params"] if k == ""), []))
     h["header_end"] = r.p
 
@@ -124,8 +125,8 @@ def main():
         if h["partial"]:
             print("  PARTIAL (tail not parsed):", h["partial"])
         print(f"  version {h['version']}  start year {h['start_year']}  map {h['map_w_m']} x {h['map_h_m']} m"
-              f"  unknown {h['unknown']}  money {h['money']}  counter {h['counter']}")
-        print(f"  preview: has={h['has_preview']} size={h['preview_size']} bytes={h['preview_bytes']}")
+              f"  game date {h['game_date']} ({date_of_day(h['game_date'])})  money {h['money']}  counter {h['counter']}")
+        print(f"  preview: flag={h['flag_before_preview']} size={h['preview_size']} bytes={h['preview_bytes']}")
         print(f"  mods: {len(h['mods'])}  resources: {dict(h.get('resources', []))}")
         print(f"  isMapEditor={h.get('settings', {}).get('isMapEditor')} map.size={h.get('settings', {}).get('map.size')} "
               f"header_end={h['header_end']} stream={h['stream_len']}")

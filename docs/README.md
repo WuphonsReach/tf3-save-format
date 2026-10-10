@@ -6,6 +6,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 |---|---|
 | [container.md](container.md) | zstd framing, writing a save back |
 | [header.md](header.md) | Header fields in order, preview image, settings |
+| [tf3-save-editor.md](tf3-save-editor.md) | Where these notes read a field differently from tf3-save-editor's FORMAT.md or its reader, and why |
 | [mods.md](mods.md) | What a save records about a mod: the mod list entry, options, switching mods on and off when loading, script states |
 | [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log |
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |

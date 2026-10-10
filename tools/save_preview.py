@@ -4,8 +4,8 @@ Usage: save_preview.py OUT_DIR SAVE.sav [...]
 
 Read only. The preview in the save stream is raw RGB8 with the bottom row first (the game's
 `.jpg` next to the save is the same picture, right way up and three times larger). The header's
-preview flag byte is 0 in about half the saves we looked at even though the image is there, so the flag is
-ignored and the size is checked against width * height * 3 instead. See docs/header.md, "Preview".
+flag byte before the preview size is 0 in about half the saves we looked at even though the image is there, so
+the flag is ignored and the size is checked against width * height * 3 instead. See docs/header.md, "Preview".
 
 The images are the save authors' pictures. Keep them out of this repo (see CLAUDE.md).
 """
