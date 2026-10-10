@@ -54,7 +54,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_header import read_header  # noqa: E402
-from tf3save import (RANKS, TEMPERATE_NAMES, calendar_speed_label, date_of_day, day_table_regular,  # noqa: E402
+from tf3save import (RANKS, calendar_speed_label, cargo_entries, date_of_day, day_table_regular,  # noqa: E402
                      decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label)
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -71,7 +71,7 @@ def tools_commit():
     return (h.stdout.strip() or None) and h.stdout.strip() + ("-dirty" if st.stdout.strip() else "")
 
 
-def summarise_records(recs, economy):
+def summarise_records(recs, cargo_names):
     start = [r for r in recs if r["floats"] == (1.0, 1.0, 1.0, 1.0)]
     run, best = 0, 0
     for a, b in zip(recs, recs[1:]):
@@ -79,10 +79,10 @@ def summarise_records(recs, economy):
         best = max(best, run + 1)
     out = {"records": len(recs), "starting_layout": len(start), "longest_78_byte_run": best}
     if start:
-        names = TEMPERATE_NAMES if economy.endswith("temperate.eco") else {}
         for kind in ("com", "ind"):
             c = collections.Counter(r["id"][kind] for r in start)
-            out[f"{kind}_cargo"] = {str(names.get(i, i)): n for i, n in sorted(c.items())}
+            out[f"{kind}_cargo"] = {str(cargo_names[i] if cargo_names and i < len(cargo_names) else i): n
+                                    for i, n in sorted(c.items())}
         out["capacity_totals"] = [sum(r["caps"][k] for r in start) for k in range(3)]
     return out
 
@@ -199,7 +199,7 @@ def slug(s):
 SUMMARY_FILE = "tf3-save-summary.json"
 OLD_SUMMARY_FILE = "summary.json"
 # Any layout change raises the version and adds a new schema file; committed ones are never edited.
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
               f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
 # Every key, in the order written (the schema file of SCHEMA_VERSION).
@@ -207,7 +207,7 @@ FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", 
           "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
           "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records",
-          "settings", "mods"]
+          "settings", "mods", "cargo_list", "cargo_from_mods"]
 
 INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
               "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
@@ -236,6 +236,8 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
         h = read_header(path, data)
         s = h.get("settings", {})
         res = dict(h.get("resources", []))
+        entries = cargo_entries(data)
+        cargo_names = [n for _, n, _ in entries] if entries else None
         summary.update({
             "version": h["version"],
             "first_version": h.get("first_version"),
@@ -253,9 +255,11 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
             "stream_bytes": h["stream_len"],
             "calendar": summarise_calendar(data),
             **summarise_states(data),
-            "town_records": summarise_records(scan_records(data), res.get("economy") or ""),
+            "town_records": summarise_records(scan_records(data), cargo_names),
             "settings": {k: setting_label(k, v) for k, v in sorted(s.items())} if s else None,
             "mods": [m["id"] for m in h["mods"]],
+            "cargo_list": cargo_names,
+            "cargo_from_mods": {n: m for _, n, m in entries if m} if entries else None,
         })
         del data
     except Exception as e:  # truncated download, unknown format, ...
@@ -310,7 +314,7 @@ def main():
             if os.path.isfile(sp) and up_to_date(d, path, commit):
                 skipped += 1
                 continue
-            print("reading", path, file=sys.stderr)
+            print("reading", os.path.basename(path), file=sys.stderr)
             summary = summarise_save(path, mod_id, mods_dir, kind)
             os.makedirs(d, exist_ok=True)
             with open(sp, "w", encoding="utf-8") as f:

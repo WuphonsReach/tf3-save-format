@@ -20,11 +20,71 @@ except ImportError:
 # The game writes the data frame followed by this empty frame.
 EMPTY_FRAME = bytes.fromhex("28b52ffd2000010000")
 
-# Cargo type ids as seen in saves (the same ids hold in every economy; see docs/cargo-ids.md).
+# Cargo type ids as seen in base-only games (see docs/cargo-ids.md). A game with a cargo mod
+# shifts them: read the save's own list with `cargo_list` instead.
 KNOWN_IDS = {"fish": 6, "meat": 7, "beverages": 8, "vegetables": 9, "planks": 13, "vehicles": 14,
              "machines": 16, "fuel": 20, "clothes": 27, "tinned_food": 28, "tools": 30,
              "furniture": 31, "glass": 32, "bricks": 33, "cement": 15}
 TEMPERATE_NAMES = {i: n for n, i in KNOWN_IDS.items()}
+
+_CARGO_LIST_FIRST = struct.pack("<I", 34) + b"cargos/passengers/passengers.cargo"
+_CARGO_PATH = re.compile(rb"cargos/([A-Za-z0-9_]+)/\1\.cargo\Z")
+
+
+def cargo_entries(data):
+    """The save's cargo list as [(id, name, source)] in list order, or None if no list is found.
+
+    The list sits near the start of the stream: a u32 count, then that many entries of `str`
+    source (the id of the mod that adds the cargo, empty for base cargo), `str` path
+    (`cargos/<name>/<name>.cargo`) and a u32 id. The ids are 0 to count - 1, each once, in list
+    order. A game with a cargo mod has more entries and different ids from the base game. Other
+    places in the stream also hold a `cargos/passengers` string, so a list needs at least two
+    entries. See docs/cargo-ids.md.
+    """
+    pos = data.find(_CARGO_LIST_FIRST)
+    while pos >= 0:
+        entries = _read_cargo_list(data, pos)
+        if entries:
+            return entries
+        pos = data.find(_CARGO_LIST_FIRST, pos + 1)
+    return None
+
+
+def cargo_list(data):
+    """The cargo names by id (index 0 is passengers), or None. See `cargo_entries`."""
+    entries = cargo_entries(data)
+    return [name for _, name, _ in entries] if entries else None
+
+
+def _read_cargo_list(data, first):
+    # `first` is the path of the first entry (passengers); its source string is empty, so the
+    # entry starts 4 bytes earlier and the count 4 bytes before that.
+    if first < 8:
+        return None
+    count, source0 = struct.unpack_from("<II", data, first - 8)
+    if source0 != 0 or not 2 <= count <= 1000:
+        return None
+    out, p = [], first - 4
+    try:
+        for i in range(count):
+            n = struct.unpack_from("<I", data, p)[0]
+            if n > 200:
+                return None
+            source = data[p + 4:p + 4 + n]
+            p += 4 + n
+            n = struct.unpack_from("<I", data, p)[0]
+            m = _CARGO_PATH.match(data[p + 4:p + 4 + n]) if n < 200 else None
+            if not m:
+                return None
+            cid = struct.unpack_from("<I", data, p + 4 + n)[0]
+            p += 4 + n + 4
+            if cid != i:
+                return None
+            out.append((cid, m.group(1).decode(), source.decode("utf-8", "replace")))
+    except struct.error:
+        return None
+    return out
+
 
 RECORD_SIZE = 78
 # caps (3 x u32), 4 x f32, 5 zero bytes, then a small cargo count. Validated in scan_records.

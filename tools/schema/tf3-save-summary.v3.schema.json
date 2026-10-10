@@ -1,0 +1,835 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v3.schema.json",
+  "title": "Transport Fever 3 save summary",
+  "description": "One tf3-save-summary.json per save, written by tools/mine_saves.py into OUT_DIR/<mod id>-<name slug>/. Facts read from the save, plus the catalog name, author and link that mod.io shows. Every key is always present. A field is null when the save does not have it (an older format, an editor map) or when the save could not be read, in which case `error` says why. Labelled values are strings of the form \"<stored number> (<label>)\", for example \"3 (100%, default)\": the number is what the save holds, the label is how the game shows it. Labels are the English UI names. What each value means, and how sure that meaning is, is in the format notes: https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/README.md",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "name",
+    "mod_id",
+    "kind",
+    "source_name",
+    "source_size",
+    "author",
+    "tags",
+    "url",
+    "tools_commit",
+    "error",
+    "version",
+    "first_version",
+    "map_seed",
+    "start_year",
+    "map_w_m",
+    "map_h_m",
+    "header_money",
+    "header_counter",
+    "climate",
+    "economy",
+    "name_list",
+    "is_map_editor",
+    "header_partial",
+    "stream_bytes",
+    "calendar",
+    "company",
+    "counters",
+    "cycles",
+    "subsidies",
+    "town_states",
+    "town_records",
+    "settings",
+    "mods",
+    "cargo_list",
+    "cargo_from_mods"
+  ],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URL of this schema."
+    },
+    "schema_version": {
+      "type": "integer",
+      "const": 3,
+      "description": "Version of this layout. Any change to the layout (a field added, removed, renamed or changing meaning) raises it, and each version has its own schema file that is not edited once committed."
+    },
+    "name": {
+      "type": "string",
+      "description": "Catalog name on mod.io, or the file name without .sav when there is no catalog entry."
+    },
+    "mod_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "mod.io mod id, or null for a save given as a file."
+    },
+    "kind": {
+      "enum": [
+        "savegame",
+        "map"
+      ],
+      "description": "savegame (from a mod's savegames/ folder or a .sav given directly) or map (from a mod's maps/ folder, a map-editor map; its folder name ends in -map)."
+    },
+    "source_name": {
+      "type": "string",
+      "description": "File name of the save."
+    },
+    "source_size": {
+      "type": "integer",
+      "description": "Size of the .sav file in bytes (compressed)."
+    },
+    "author": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Uploader's mod.io user name."
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "mod.io tags, for example Savegame, Temperate. Empty without a catalog entry."
+    },
+    "url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "mod.io page of the mod."
+    },
+    "tools_commit": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Short git hash of the last commit that changed a script in tools/ when this file was written, with -dirty appended if the scripts had uncommitted changes. null outside a git checkout.",
+      "pattern": "^[0-9a-f]{7,40}(-dirty)?$"
+    },
+    "error": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Why the save could not be read (for example a truncated download), as \"ExceptionType: message\". null when it was read. When set, the fields read from the save are null."
+    },
+    "version": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Format version, the u32 after the tf** magic. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/versions.md",
+      "examples": [
+        604
+      ]
+    },
+    "first_version": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "The header's `value` field, probably the format version the save was first written under. null for 568 and 585, whose header tail is not read. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md"
+    },
+    "map_seed": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The header's last field, `id`: the map seed string typed in the New Game dialog, or the 10-character random one the game offers. null for 568 and 585, whose header tail is not read. Empty or not seed-shaped in a few saves (see docs/header.md). See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md"
+    },
+    "start_year": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Year the game was started (not the date at save time)."
+    },
+    "map_w_m": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Map width in metres."
+    },
+    "map_h_m": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Map height in metres."
+    },
+    "header_money": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Company balance copied into the header. Usually the account figure, but can lag or be 0. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md#money-in-the-header"
+    },
+    "header_counter": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Copy of the company's experience points, written just before the script state."
+    },
+    "climate": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Climate file name, for example temperate.clima."
+    },
+    "economy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Economy resource path, for example ::/economy/temperate.eco."
+    },
+    "name_list": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Town name list resource path, for example ::/names/europe/europe.names."
+    },
+    "is_map_editor": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "Copy of settings.isMapEditor."
+    },
+    "header_partial": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Set when the header was read only up to the preview (formats 568 and 585): the error where reading stopped. Fields from the header tail (first_version, climate, economy, name_list, is_map_editor, settings) are then null."
+    },
+    "stream_bytes": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Length of the decompressed stream in bytes."
+    },
+    "calendar": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "Calendar state from the GAME_SPEED component and the day table after it. null if the pattern was not found exactly once. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/calendar.md#the-calendar-speed-field",
+      "properties": {
+        "date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Date shown in the game (the last day-table entry), ISO 8601.",
+          "format": "date"
+        },
+        "start_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Date of the first day-table entry, ISO 8601. Usually 1 January of start_year.",
+          "format": "date"
+        },
+        "calendar_speed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^-?[0-9]+ \\(.+\\)$",
+          "description": "millisPerDay with the calendar slider step: 1000 (4.00x), 2000 (2.00x), 4000 (1.00x), 8000 (0.50x), 16000 (0.25x), 0 (Paused, the date stops). Other values are labelled \"not a slider step\".",
+          "examples": [
+            "4000 (1.00x)",
+            "0 (Paused)"
+          ]
+        },
+        "play_speed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^-?[0-9]+ \\(.+\\)$",
+          "description": "Simulation speed when saved: 0 (paused), otherwise N (Nx). Values 0 to 4 and 8 seen.",
+          "examples": [
+            "0 (paused)",
+            "4 (4x)"
+          ]
+        },
+        "clock": {
+          "type": "integer",
+          "description": "Game clock (t1), in 1/4000 of a day at 1.00x, counted from the start."
+        },
+        "day_table_entries": {
+          "type": "integer",
+          "description": "Number of (tick, day) entries in the day table."
+        },
+        "day_table_regular": {
+          "type": "boolean",
+          "description": "true if every entry is the day after the one before, at a later tick. false after date edits or jumps."
+        }
+      }
+    },
+    "company": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "Company progression (game_mechanics/company/*.gs script states). null when neither state was found, as in editor maps. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/company.md#company-and-rank",
+      "properties": {
+        "rank_earned": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^-?[0-9]+ \\(.+\\)$",
+          "description": "potentialLevel with the rank name: the rank earned from experience, which the game shows. 1 Junior to 15 Tycoon. Called rank in schema version 1.",
+          "examples": [
+            "13 (Vice President)"
+          ]
+        },
+        "rank_claimed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^-?[0-9]+ \\(.+\\)$",
+          "description": "level with the rank name: the rank the player has claimed in the company window, which rank rewards such as permits follow. Never above rank_earned. Called level in schema version 1.",
+          "examples": [
+            "10 (Director)"
+          ]
+        },
+        "experience": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Company experience points."
+        },
+        "base_population": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "basePopulation of company.gs."
+        }
+      }
+    },
+    "counters": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Whole-number counters of the achievements script state, under their stored key names (for example passengerTransportedCount, cargoDeliveredCount, totalIncome, townLevelUpCount). cargoTypesDelivered, vehiclesUsed and shipsUsed are the number of entries in those lists. The keys depend on the save. null when the state was not found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#counters-and-achievements",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "cycles": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "Time-of-day and weather cycle modes from the game_time.gs state, with the Cycle menu name in brackets where it differs. null when the state was not found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#weather-and-time-of-day",
+      "properties": {
+        "time_of_day": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Dynamic, Automatic (Continuous) or Constant (Custom).",
+          "examples": [
+            "Dynamic",
+            "Automatic (Continuous)"
+          ]
+        },
+        "weather": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Dynamic or Constant (Custom).",
+          "examples": [
+            "Dynamic"
+          ]
+        }
+      }
+    },
+    "subsidies": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "description": "Number of entries in each subsidy table of the subventions.gs state. null when the state was not found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/subsidies.md#active-and-completed-subsidies",
+      "properties": {
+        "proposed": {
+          "type": "integer"
+        },
+        "active": {
+          "type": "integer"
+        },
+        "completed": {
+          "type": "integer"
+        },
+        "failed": {
+          "type": "integer"
+        }
+      }
+    },
+    "town_states": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "description": "Number of entries in the town script's townStates table: towns that have rating state, not necessarily every town. 0 in editor maps. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/town-states.md"
+    },
+    "town_records": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Town records found by the 78-byte scan (tf3save.scan_records). Towns that have run for a while use other layouts and are missed, so this is not a town count. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/town-records.md",
+      "properties": {
+        "records": {
+          "type": "integer",
+          "description": "Records found."
+        },
+        "starting_layout": {
+          "type": "integer",
+          "description": "Records whose four floats are all 1.0."
+        },
+        "longest_78_byte_run": {
+          "type": "integer",
+          "description": "Longest run of records exactly 78 bytes apart."
+        },
+        "com_cargo": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Commercial cargo of the starting-layout records: cargo name and count. The name is the cargo's place in the save's own cargo list (cargo_list), or the plain id when the save has no list. In schema version 2 the names came from a fixed base-game table and only for the temperate economy."
+        },
+        "ind_cargo": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "description": "Industrial cargo, as com_cargo."
+        },
+        "capacity_totals": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "Residential, commercial and industrial capacity summed over the starting-layout records."
+        }
+      }
+    },
+    "settings": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "New Game settings from the header, by stored key, as \"<stored> (<label>[, default])\". A stored setting is its position in the game's option list plus 1; \", default\" marks the game's default. Keys the tool has no list for, or values outside the list, are given as stored. null for formats 568 and 585. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/settings.md",
+      "properties": {
+        "map.size": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Map Size. Stored list position plus 1: 1 Tiny, 2 Small, 3 Medium, 4 Large, 5 Very Large, 6 Huge, 7 Megalomaniac, 8 Gigantomaniac. Default 3.",
+          "examples": [
+            "3 (Medium, default)"
+          ]
+        },
+        "map.format": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Map Format. Stored list position plus 1: 1 1 : 1, 2 1 : 2, 3 1 : 3, 4 1 : 4, 5 1 : 5. Default 1.",
+          "examples": [
+            "1 (1 : 1, default)"
+          ]
+        },
+        "locations.towns.frequency": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Town Density. Stored list position plus 1: 1 Sparse, 2 Scattered, 3 Medium, 4 Dense, 5 Packed. Default 3.",
+          "examples": [
+            "3 (Medium, default)"
+          ]
+        },
+        "locations.towns.populationDensity": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Population. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 150%, 5 200%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "locations.industry.initialIndustryDensity": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Industry Density. Stored list position plus 1: 1 Sparse, 2 Scattered, 3 Medium, 4 Dense, 5 Packed. Default 3.",
+          "examples": [
+            "3 (Medium, default)"
+          ]
+        },
+        "locations.industry.targetIndustryDensity": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Industry Target Density. Stored list position plus 1: 1 Sparse, 2 Scattered, 3 Medium, 4 Dense, 5 Packed. Default 3.",
+          "examples": [
+            "3 (Medium, default)"
+          ]
+        },
+        "locations.industry.industryProductivity": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Industry Productivity. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 150%, 5 200%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.vehiclePurchaseCostScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Vehicle Costs. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.passengerIncome": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Passenger Income. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.cargoIncome": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Cargo Income. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.reforestation": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Reforestation. Stored list position plus 1: 1 Off, 2 On. Default 2.",
+          "examples": [
+            "2 (On, default)"
+          ]
+        },
+        "advancedOptions.infrastructurePurchaseCostScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Infrastructure Costs. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.infrastructureMaintenanceScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Infrastructure Upkeep. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.vehicleMaintenanceScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Vehicle Maintenance. Stored list position plus 1: 1 50%, 2 75%, 3 100%, 4 125%, 5 150%. Default 3.",
+          "examples": [
+            "3 (100%, default)"
+          ]
+        },
+        "advancedOptions.vehicleMaintenanceEffectScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Vehicle Maintenance Effect. Stored list position plus 1: 1 None, 2 Low, 3 Medium, 4 High, 5 Very High. Default 3.",
+          "examples": [
+            "3 (Medium, default)"
+          ]
+        },
+        "economy.industryDevelopment.closureProbability": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Industry Closing Frequency. Stored list position plus 1: 1 Never, 2 Rarely, 3 Sometimes, 4 Often, 5 Very Often. Default 2.",
+          "examples": [
+            "2 (Rarely, default)"
+          ]
+        },
+        "economy.townDevelopment.cargoNeedsPerTown": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Town Cargo Demands. Stored list position plus 1: 1 2 Cargo Types, 2 Up to 4 Cargo Types, 3 Up to 6 Cargo Types. Default 2.",
+          "examples": [
+            "2 (Up to 4 Cargo Types, default)"
+          ]
+        },
+        "advancedOptions.trafficSpeedSensitivityScale": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Traffic Congestion. Stored list position plus 1: 1 0%, 2 25%, 3 50%, 4 75%, 5 100%, 6 125%, 7 150%, 8 175%, 9 200%. Default 5.",
+          "examples": [
+            "5 (100%, default)"
+          ]
+        },
+        "advancedOptions.subventionMode": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Subsidies Availability. Stored list position plus 1: 1 Never, 2 Rarely, 3 Sometimes, 4 Often, 5 Very Often. Default 3.",
+          "examples": [
+            "3 (Sometimes, default)"
+          ]
+        },
+        "advancedOptions.subventionRisk": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Subsidies Risk. Stored list position plus 1: 1 None, 2 Fair, 3 Risky, 4 Very Risky. Default 2.",
+          "examples": [
+            "2 (Fair, default)"
+          ]
+        },
+        "advancedOptions.landmarkResources": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Landmark Required Resources. Stored list position plus 1: 1 None, 2 Low, 3 Normal, 4 High, 5 Very High. Default 3.",
+          "examples": [
+            "3 (Normal, default)"
+          ]
+        },
+        "advancedOptions.inflationFactor": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Inflation. Stored list position plus 1: 1 None, 2 Low, 3 Normal, 4 High, 5 Very High. Default 3.",
+          "examples": [
+            "3 (Normal, default)"
+          ]
+        },
+        "townConfig.sensitivityUrbanCare": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Reputation. Stored list position plus 1: 1 Off, 2 On. Default 2.",
+          "examples": [
+            "2 (On, default)"
+          ]
+        },
+        "townConfig.sensitivityTrafficCongestion": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Traffic Sensitivity. Stored list position plus 1: 1 Off, 2 Very Low, 3 Low, 4 Normal, 5 High, 6 Very High, 7 Extreme. Default 4.",
+          "examples": [
+            "4 (Normal, default)"
+          ]
+        },
+        "townConfig.sensitivityPeopleHappiness": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Happiness Sensitivity. Stored list position plus 1: 1 Off, 2 Very Low, 3 Low, 4 Normal, 5 High, 6 Very High, 7 Extreme. Default 4.",
+          "examples": [
+            "4 (Normal, default)"
+          ]
+        },
+        "townConfig.sensitivityCargoDelivery": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Delivery Sensitivity. Stored list position plus 1: 1 Off, 2 Very Low, 3 Low, 4 Normal, 5 High, 6 Very High, 7 Extreme. Default 4.",
+          "examples": [
+            "4 (Normal, default)"
+          ]
+        },
+        "townConfig.sensitivityNoise": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Noise Sensitivity. Stored list position plus 1: 1 Off, 2 Very Low, 3 Low, 4 Normal, 5 High, 6 Very High, 7 Extreme. Default 4.",
+          "examples": [
+            "4 (Normal, default)"
+          ]
+        },
+        "townConfig.sensitivityPollution": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Pollution Sensitivity. Stored list position plus 1: 1 Off, 2 Very Low, 3 Low, 4 Normal, 5 High, 6 Very High, 7 Extreme. Default 4.",
+          "examples": [
+            "4 (Normal, default)"
+          ]
+        },
+        "weatherConfig.dynamicWeather": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Weather. Stored list position plus 1: 1 Dynamic, 2 Sunny, 3 Cloudy, 4 Rainy. Default 1.",
+          "examples": [
+            "1 (Dynamic, default)"
+          ]
+        },
+        "gameTimeConfig.timeOfDayMode": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Time of Day. Stored list position plus 1: 1 Dynamic, 2 Continuous, 3 Local Time, 4 Morning, 5 Day, 6 Evening, 7 Night. Default 1.",
+          "examples": [
+            "1 (Dynamic, default)"
+          ]
+        },
+        "guideSystemConfig.tutorial": {
+          "type": [
+            "string",
+            "integer",
+            "number"
+          ],
+          "description": "Tutorial. Stored list position plus 1: 1 Off, 2 On. Default 2.",
+          "examples": [
+            "2 (On, default)"
+          ]
+        },
+        "isMapEditor": {
+          "type": "boolean",
+          "description": "true in a save written by the map editor. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/editor-saves.md"
+        }
+      },
+      "additionalProperties": {
+        "type": [
+          "string",
+          "number",
+          "boolean",
+          "null"
+        ]
+      }
+    },
+    "mods": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "description": "Ids of the mods the save uses, in header order (DLC and built-in mods included)."
+    },
+    "cargo_list": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string"
+      },
+      "description": "The save's cargo list: cargo names in id order, so a cargo's id is its index (passengers is 0). A game with a cargo mod has more entries than the 37 of the base game, and base cargo after an inserted one have other ids. Null when no list is found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/cargo-ids.md"
+    },
+    "cargo_from_mods": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": {
+        "type": "string"
+      },
+      "description": "Cargo the list gets from a mod: cargo name to the id of the mod that adds it. Empty when all cargo is base game, null when no list is found."
+    }
+  }
+}
