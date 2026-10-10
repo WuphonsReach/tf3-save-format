@@ -1,4 +1,4 @@
-# Script states: weather, company, achievements, subsidies
+# Script states: weather, company, achievements, subsidies, mods
 
 What the game keeps in a few script states, and how it ties to the header. The container is described in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). Here only the contents are covered. The game clock, the calendar speed and the date shown are not script states; they are in [calendar.md](calendar.md).
 
@@ -115,3 +115,15 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 - `upfront` and `failure` hold `params` tables of `amount` and `type` (`Money` in the ones seen). In the offer checked, the payment on acceptance equalled `upfront`'s 6,300,000, and the fine shown (27,000,000) equalled the two `failure` amounts added, 6,300,000 and 20,700,000. In other saves the `failure` list also held small non-money amounts (under 1), which were not decoded.
 - Durations shown in the offer window equalled the stored numbers divided by 4000 (days) and then multiplied by the calendar speed, 0.50x at the time: `expireDuration` 4,626,500 showed as "1 Year 7 Months" and `effectDuration` 7,305,000 as "2 Years 6 Months". That is consistent with the calendar-speed rule in [calendar.md](calendar.md#the-game-clock). A difficulty setting that scales time could give the same factor, and one save can't tell the two apart. **Open**.
 - The `advancedOptions.*` settings (see [settings.md](settings.md)) are stored as small level numbers (1 to 5 seen in the catalog saves, not multipliers): the option's position in the settings list plus 1, see [header.md](header.md). Whether a level scales the stored money amounts was not shown: at the levels in the save checked (`subventionRisk` 2, `subventionMode` 3) the shown money equalled the stored money. Across a few other 604 saves with the default levels the fine against the payment varied from offer to offer, so the fine is not a fixed multiple of the payment. **Open**.
+
+## Mod script states and stored errors
+
+Mods with scripts keep state the same way the game's scripts do: the script's path string, then its table (see [Finding a table](#finding-a-table)). The mod's id string sat just before the path in the saves looked at, for example `dome_wagon_cameras` before `camera_bridge.gs` and `epod_pay_your_tolls_tf3_1` before `pyt/pyt_toll.gs` (**Observed**, 601 and 604, a few mods). What the table holds is up to the mod. Strings are kept as the mod wrote them.
+
+A mod can keep a Lua error message there, and that message can include a local path from the player's machine:
+
+- The message has Lua's usual form, `[string "<chunk>"]:<line>: <message>`. The chunk name is the full path of the mod's script file on disk: `<path>/mod.io/10640/mods/<mod id>/content/<file>.lua`. In a Windows save the path ran through a user folder, so it held that Windows account's name. In an Xbox save it started `R:/`. **Observed**, two saves.
+- In both cases the message was kept by the mod and not by the game. They are in the state of `camera_bridge.gs` from the mod "Auto Passenger Cameras" (`dome_wagon_cameras`, mod.io id 6422630). That state has `version` (2) and a `models` table keyed by a number written as a string (`4393`, `4398`, `4430`), and each entry holds only `error`, with the same message (an index of a nil `metadata` field at line 55). The mod seems to catch a failure for each model and keep the message.
+- Catalog saves [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) and [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601). All 244 catalog saves and maps of [versions.md](versions.md) were searched (2026-10-10) for `[string "`, `attempt to`, `.lua"]:` and `.lua:` followed by a line number, and for absolute paths (`C:/Users/`, `/home/`, `/Users/`). These two were the only hits. None of 70 of our own saves (604) had any. **Observed**, 568 to 604.
+- No error log of the game's own was found in the stream. A table key `error` is not a fixed name, so a mod could also keep messages under another key. **Open**.
+- To check a save before sharing it, decompress it and search for `[string "`. The path follows. Don't copy these paths or names into notes.

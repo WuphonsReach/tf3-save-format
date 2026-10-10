@@ -10,7 +10,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the animals, the terrain record and the heightmap |
 | [calendar.md](calendar.md) | Game clock, calendar speed, the day table that turns clock values into dates, the date in the header |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
-| [script-states.md](script-states.md) | Script states: weather and time of day, company rank, loans, counters, achievements, subsidies |
+| [script-states.md](script-states.md) | Script states: weather and time of day, company rank, loans, counters, achievements, subsidies, mod states and the error messages they can hold |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
 | [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals |

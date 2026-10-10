@@ -74,7 +74,7 @@ There is no field that names the platform a save was made on (**Observed**, 568 
 
 Two ways a save can still give its platform away:
 
-- **A stored Lua error.** A script error from a mod is kept with its chunk name, which is the mod's full install path. Two catalog saves hold one, both from mod 6422630. In [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) the path is under the Windows user folder and contains the uploader's account name. In [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601) it starts `R:/mod.io/10640/`. Find these by searching for `[string "`. **Observed**, two saves.
+- **A stored Lua error.** A mod can keep a Lua error message in its script state, and the message starts with the mod file's install path. In [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) the path is under a Windows user folder. In [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601) it starts `R:/mod.io/10640/`. Both come from one mod. Layout, search and counts are in [script-states.md](script-states.md#mod-script-states-and-stored-errors). **Observed**, two saves.
 - **Mods from outside mod.io.** Mods whose URL points to modwerkstatt.com appear only in PC saves (7 saves, all 604). Consoles probably load mods from mod.io only, so such a mod suggests a PC save (**Open**). A save without one says nothing.
 
 Since console and PC saves also differ in format version (601 against 604), the only same-version comparison so far has two PC saves. A platform code hidden in a field not yet described is not ruled out (**Open**).
