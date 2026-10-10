@@ -38,7 +38,7 @@ If you uploaded a save that is cited here and want it removed, please open an is
 
 ## Acknowledgements
 
-The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). Code in `tools/` follows its readers; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Corrections found here are passed back to that project.
+The container, header and Lua state layout build on [TBK/tf3-save-editor](https://github.com/TBK/tf3-save-editor) and its `docs/FORMAT.md` (MIT OR Apache-2.0, © 2026 TBK). Code in `tools/` follows its readers; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Where these notes find something that differs from it, they say so; some of those corrections have been offered to that project as pull requests, but whether they are accepted is up to its maintainers.
 
 ## License
 
