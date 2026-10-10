@@ -11,6 +11,7 @@ What a save holds of the generated map, found by comparing saves of one seed. Al
 | C | B with only Mountains moved to Sparse. |
 | D | C with only Mountains moved to Packed. |
 | E | D loaded and run to 12 Jan 1900 (4000 ms per day, 11 days), then saved paused. |
+| F | A new game as in B, but Mountains Dense (between Scattered and Packed on the slider). |
 
 The header differs between cases only in the save counter and, between A and B, the mod list. The sliders do not show up there, so they are not stored in the header.
 
@@ -18,7 +19,7 @@ The header differs between cases only in the save counter and, between A and B, 
 
 - **The same seed and sliders give the same bulk (A against B).** About 92% of the body matches byte for byte, including every large block. It shifts by a few KB at several points, where variable-length data differs.
 - **A moved slider changes nearly all of it (B against C).** The first 283 KB after the header are identical. After that about 88% of the bytes differ over the next 6.2 MB, a stretch that has the same length in both saves. Later stretches shift by +207 KB and +116 KB, so C is 354 KB longer than B.
-- **More mountains, more data (B, C, D).** The body is 14.64 MB for Scattered, 14.99 MB for Sparse and 16.96 MB for Packed. D against C first differs at the same place as B against C (byte 282,774), then shifts by +149 KB near 6.7 MB, -48 KB, -441 KB near 7.1 MB, and +2.0 MB twice from 13.1 MB.
+- **The body length does not follow the slider (B, C, D, F).** The body is 14.99 MB for Sparse, 14.64 MB for Scattered, 19.31 MB for Dense and 16.96 MB for Packed. F against D, and F against B, differ from byte 282,774 on as well (98% of the 4 KB blocks differ in both). D against C first differs at the same place as B against C (byte 282,774), then shifts by +149 KB near 6.7 MB, -48 KB, -441 KB near 7.1 MB, and +2.0 MB twice from 13.1 MB.
 - **Time changes only simulation state (D against E).** 258 of 4,140 4 KB blocks differ. They are one stretch of about 800 KB (four arrays of about 200 KB of tiny floats, around 1e-15, with long runs of one value) and six stretches of 16 to 33 KB. The same four arrays are the only large difference between A and B. The rest, terrain included, is identical.
 
 ## Thirteen 64-byte records (Open what they are)
@@ -37,8 +38,9 @@ About 283 KB after the header, after a list of model path names (one ends in `ba
 Find them by the 8 bytes `00 00 90 40 c2 b8 b2 3f` at byte 28 of a 64-byte record.
 
 - The 13 sit at nearly the same places in all four saves (about -600 / -2180, -424 / -1193, -865 / -743, -870 / -41 and so on). Against B, A is 2.6 to 6.3 m away for all 13, C is within 1 m for 11 and 400 to 550 m away for 2, and D is identical for 8 and 390 to 920 m away for 5. So the places are not simply fixed by the seed.
-- **z follows the Mountains slider.** For the same place z was 154 m (B, Scattered), 123 m (C, Sparse) and 227 m (D, Packed). Over the 13 records z ranged 65 to 283 m in B, 65 to 163 m in C and 166 to 285 m in D.
+- **z follows the Mountains slider.** For the first place z was 123 m (C, Sparse), 154 m (B, Scattered), 226 m (F, Dense) and 227 m (D, Packed). Over the 13 records z ranged 65 to 163 m in C, 65 to 283 m in B, 166 to 285 m in D and 166 to 285 m in F.
 - A has a different shape of record: other numbers in fields 3 and 4 (a direction that varies, such as (0.73, 0.69) and (-1.0, 0.07)), a second point hundreds of metres away, and fields 7 and 8 alternating 4.5 / 1.396 and 2.0 / 1.05. So these records are not simply fixed by the seed; whether the mod list or something else explains it is **Open**.
+- Fields 3, 4, 9, 10 and 13 come in two sets that do not follow the slider: (0.44, 0.90, 1.0, 1.0, 0.05) in B and D, (0.67, 0.74, 0.8, 0.8, 0.04) in C and F. F is within 1 m of B for 9 of 13 places and 394 to 919 m from B for the other 4 (D: 5 of 13 far, at 394 to 918 m), so which places move is not fixed by the slider either, and what the two sets are is **Open**.
 - A structure of the same size follows them, starting with an x, y, z near -568 / -2824.
 - Not found in the two saves of another seed and format (Tiny 1 : 3, seed `RaazVnK55w`) by the pattern above.
 
