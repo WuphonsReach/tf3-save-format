@@ -283,7 +283,7 @@
         "null"
       ],
       "additionalProperties": false,
-      "description": "Company progression (game_mechanics/company/*.gs script states). null when neither state was found, as in editor maps. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#company-and-rank",
+      "description": "Company progression (game_mechanics/company/*.gs script states). null when neither state was found, as in editor maps. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/company.md#company-and-rank",
       "properties": {
         "rank": {
           "type": [
@@ -370,7 +370,7 @@
         "null"
       ],
       "additionalProperties": false,
-      "description": "Number of entries in each subsidy table of the subventions.gs state. null when the state was not found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#active-and-completed-subsidies",
+      "description": "Number of entries in each subsidy table of the subventions.gs state. null when the state was not found. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/subsidies.md#active-and-completed-subsidies",
       "properties": {
         "proposed": {
           "type": "integer"

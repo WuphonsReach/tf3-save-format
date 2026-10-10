@@ -5,24 +5,33 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | File | Covers |
 |---|---|
 | [container.md](container.md) | zstd framing, writing a save back |
-| [header.md](header.md) | Header fields in order, preview image, settings |
+| [header.md](header.md) | Header fields in order, mod entries and options, preview image, settings |
+| [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log |
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
-| [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the animals, the terrain record and the heightmap |
+| [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |
+| [versions.md](versions.md) | Format versions seen in the wild, with dated counts |
+| [platform.md](platform.md) | Whether a save says which platform made it |
 | [calendar.md](calendar.md) | Game clock, calendar speed, the day table that turns clock values into dates, the date in the header |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
-| [script-states.md](script-states.md) | Script states: weather and time of day, company rank, loans, counters, achievements, subsidies, mod states and the error messages they can hold |
+| [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
+| [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
+| [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
+| [notifications.md](notifications.md) | The notification entries, their types |
+| [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
+| [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
+| [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
+| [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories; the balance history |
+| [cargo-ids.md](cargo-ids.md) | Cargo type ids, tiers and weights, starting cargo |
+| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
 | [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
-| [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
-| [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
-| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
 | [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns |
-| [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories |
-| [cargo-ids.md](cargo-ids.md) | Cargo type ids, and how climates and economies pair |
+| [models.md](models.md) | The model table and the model instance records |
+| [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
+| [animals.md](animals.md) | The animals list, which animals they are, how many there are |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |
-| [versions.md](versions.md) | Format versions seen in the wild |
 
 The money journal and the script-state container are documented in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). These notes do not repeat them.
 

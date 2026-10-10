@@ -9,7 +9,8 @@ The game settings of a save: the options of the New Game screen (and of the Sett
 - A game made on the Easy preset (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1)): the screen showed industry productivity 150%, industry closing Never, vehicle maintenance effect Low, subsidies Often, subsidy risk None, landmark resources Low, inflation Low, every town sensitivity Low and vehicle costs 50%. The save held 4, 1, 2, 4, 1, 2, 2, 3 and 1 for those keys.
 - A game left on the defaults (catalog save [6417707](https://mod.io/g/transportfever3/m/333151)) held 3 for the options whose default is the third entry, and 4 for the sensitivities, which default to Normal, the fourth of seven.
 - The same options can have lists of different length, so a number alone does not say what it means. The percentage options list 50, 75, 100, 125 and 150%, so 1 is 50% and 3 is 100%. The game does not store which amount an entry stands for.
-- Values are Lua numbers (f64) apart from the bool `isMapEditor`. Mod options in the same list are covered in [header.md](header.md#settings).
+- Values are Lua numbers (f64) apart from the bool `isMapEditor`. Mod options in the same list are covered in [header.md](header.md#mod-options).
+- `map.size` does not give one size. A value of 3 was 11264 x 11264, 6656 x 19968 and 8192 x 16384 in different saves. Use the header's width and height ([header.md](header.md)) for the real size.
 
 ## The options
 
@@ -111,4 +112,4 @@ So, like the settings, a save's mod list reflects the last load, not the game's 
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
 - Where the "Achievements cannot be earned" state is kept, if it is kept at all.
 - Whether `townConfig.sensitivityUrbanCare` is the Reputation toggle, and what `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
-- Whether mod options follow the position-plus-1 rule ([header.md](header.md#settings)).
+- Whether mod options follow the position-plus-1 rule ([header.md](header.md#mod-options)).

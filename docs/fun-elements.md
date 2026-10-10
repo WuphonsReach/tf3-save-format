@@ -1,12 +1,12 @@
 # Fun elements: the hot air balloon
 
-The Deluxe Upgrade mod (`urbangames_deluxe_upgrade_pack`) sends an Urban Games hot air balloon over the map now and then. The game raises a "Hot Air Balloon Sighting" notification, and its window, titled "Urban Games Hot Air Balloon", thanks the player for buying the Deluxe Edition. A save holds the balloon in three places: the mod's script state, a notification entry, and a model instance like the animals' ([terrain.md](terrain.md#which-animals-they-are)).
+The Deluxe Upgrade mod (`urbangames_deluxe_upgrade_pack`) sends an Urban Games hot air balloon over the map now and then. The game raises a "Hot Air Balloon Sighting" notification, and its window, titled "Urban Games Hot Air Balloon", thanks the player for buying the Deluxe Edition. A save holds the balloon in three places: the mod's script state, a notification entry ([notifications.md](notifications.md)), and a model instance like the animals' ([models.md](models.md#the-model-instance-record)).
 
 All of it is **Observed** on 604 in one game (temperate, Tiny 1 : 4, 2048 x 6144 m, start 1900, calendar speed 1.00x throughout). Five saves were read: the new game on 1 January 1900, an autosave on 11 May, a save made paused on 20 September 1900 just after the sighting, an autosave of the same paused moment (same clock), and a save on 2 January 1901 after the game had run on and the balloon had gone. Times are game-clock values, 4000 per day at 1.00x ([calendar.md](calendar.md)).
 
 ## The script state
 
-The state of the mod script `fun_elements/balloon.gs`. In the stream the path `str` follows a `str` holding the mod id, then one byte and the table's pairs, as for the base game's scripts ([script-states.md](script-states.md#finding-a-table)):
+The state of the mod script `fun_elements/balloon.gs`. In the stream the path `str` follows a `str` holding the mod id, then the table body as for the base game's scripts ([script-states.md](script-states.md#finding-a-table)):
 
 ```
 1e 00 00 00 urbangames_deluxe_upgrade_pack
@@ -34,19 +34,19 @@ A balloon entry:
 
 ## The notification
 
-An entry in the `notifications` table of `game_mechanics/notifications/notifications.gs` (the same table as the subsidy entries, [script-states.md](script-states.md#subsidies)):
+An entry in the `notifications` table of `game_mechanics/notifications/notifications.gs`, the same table as the subsidy entries. The fields are in [notifications.md](notifications.md#entry-fields). What this entry held:
 
-- `notification.type` is `urbangames_deluxe_upgrade_pack::/fun_elements/balloon_notification.script`. The mod's type string carries the mod id before `::`, where the base game's types start with `::`.
-- `notification.params.entity` is `{entity, revision.num}` for the balloon (6786, revision 5). `notification.params.townEntity` is a town (3784, the town that the subsidy entries' `simParams.mapping` in the same save names Middleham). So the sighting is tied to a town, not to an industry. How the town is picked, for example the nearest one, is **Open**.
-- `notification.autoDismissDuration` 60,000 (15 days at 1.00x), `simParams` empty, `playedInitialSound` `true`.
+- `type` is `urbangames_deluxe_upgrade_pack::/fun_elements/balloon_notification.script`.
+- `params.entity` is `{entity, revision.num}` for the balloon (6786, revision 5). `params.townEntity` is a town (3784, the town that the subsidy entries' `simParams.mapping` in the same save names Middleham). So the sighting is tied to a town, not to an industry. How the town is picked, for example the nearest one, is **Open**.
+- `autoDismissDuration` 60,000 (15 days at 1.00x), `simParams` empty, `playedInitialSound` `true`.
 - `timestamp` 1,044,400 is 19 September 1900, the day before the save. That is ten days after `nextSpawnTime`, so the balloon flew for a while before the sighting.
-- The table `ignored.types` lists the balloon notification type with `false`, next to the base game's types.
+- The table `ignored.types` lists the balloon notification type with `false`.
 
 ## The model instance
 
-The balloon has a model instance record of the same shape as an animal's ([terrain.md](terrain.md#which-animals-they-are)): a `u32` count (1), then an instance that starts with the `u32` model id and is followed by two 4 x 4 `f32` matrices one byte apart. Both matrices are the identity rotation with the translation -404.43, 2820.87, 209.45, which equals the script's `x` and `y` to f32 precision.
+The balloon has a model instance record of the shape described in [models.md](models.md#the-model-instance-record), with one instance. Both matrices are the identity rotation with the translation -404.43, 2820.87, 209.45, which equals the script's `x` and `y` to f32 precision.
 
-- The model id is the balloon model's entry in the model table at the start of the stream. Its path is `vehicle/zeppelin/hot_air_balloon/hot_air_balloon.mdl`, from the mod `urbangames_deluxe_upgrade_pack`. Its id was 4503 (`97 11 00 00`) in this game. Like any model id, it depends on the models installed, so read it from the table.
+- The model id is the balloon model's entry in the model table ([models.md](models.md#the-model-table)). Its path is `vehicle/zeppelin/hot_air_balloon/hot_air_balloon.mdl`, from the mod `urbangames_deluxe_upgrade_pack`. Its id was 4503 (`97 11 00 00`) in this game. Like any model id, it depends on the models installed, so read it from the table.
 - Find the instance by searching for that model id with a plausible position 52 bytes after it, or for the 8 bytes of the script's `x` and `y` as `f32`. In the September saves it sat 3.0 MB after the header, among the animals' records. The saves from before the balloon came have no instance with that model id.
 - The rest of the balloon entity, and whether it has other components, is **Open**.
 

@@ -10,7 +10,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - Find it by trying each u32 count `n` with the header money sitting `n * 21 + 4` bytes before the balance's end: the sum of the amounts must equal the balance. The header money also appears as an i64 in a second place in the stream, so check the sum.
 - The first booking is time 0 with +4,000,000, the starting capital. Here its type byte is 0 (`LOAN`), with construction `OTHER`, maintenance `OTHER`, other 0 and carrier `OTHER`. FORMAT.md says the starting capital is booked with type `OTHER`, so the type may differ between versions or settings. **Observed**, one save.
 - The `time` field is the game clock of [calendar.md](calendar.md): the game's own milliseconds, 4000 per game day at calendar speed 1.00x. It is not milliseconds of real time. **Observed**: the last booking sat at 383,513,600, and the newest timestamps in the Lua states of the same save were 383,512,800 to 383,515,000.
-- Bookings are in time order. The journal is not the same data as the long run of balance samples described in [header.md](header.md).
+- Bookings are in time order. The journal is not the same data as the long run of balance samples ([below](#the-balance-history-run)).
 
 ## Periods
 
@@ -40,3 +40,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - Trams are counted under Road, so the tab has no Tram row. Air was empty (no AIR bookings).
 - The tab splits the infrastructure upkeep into roads and buildings (or tracks and buildings). The booking has no field that does that, so the split is not in the five category bytes. Only the sum was checked. **Open**.
 - The bookings in an old period are far fewer than in a recent one: about 220 in each of the two earliest periods above against about 10,000 in each of the last two. Older bookings seem to be merged. **Observed**, so do not use the booking count as a measure of activity.
+
+## The balance history run
+
+**Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.

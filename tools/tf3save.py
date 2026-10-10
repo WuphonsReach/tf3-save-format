@@ -184,7 +184,7 @@ def script_state(data, path):
 
 
 # Rank names as the company window lists them (English UI, 604); `potentialLevel` is the rank
-# shown. See docs/script-states.md.
+# shown. See docs/company.md.
 RANKS = ["Junior", "Mechanic", "Engineer", "Coordinator", "Expert", "Team Leader", "Supervisor", "Manager",
          "Director", "Senior Director", "CEO", "Chairperson", "Vice President", "President", "Tycoon"]
 

@@ -14,7 +14,7 @@ The u32 after the `tf**` magic. The game reads older versions. When it re-saves 
 | 585 | 3 | Same up to the preview, then differs |
 | 568 | 7 | Same up to the preview, then differs (fails in the stats block) |
 
-The difference after the preview in 568 and 585 is **open**. After the header, the script states, the calendar speed field and the day table were read on all five versions (see [script-states.md](script-states.md) and [calendar.md](calendar.md)). The money journal and the rest of the entity data were checked on 604 only, apart from the town record counts in [cargo-ids.md](cargo-ids.md).
+The difference after the preview in 568 and 585 is **open**. After the header, the script states, the calendar speed field and the day table were read on all five versions (see [script-states.md](script-states.md), [company.md](company.md) and [calendar.md](calendar.md)). The money journal and the rest of the entity data were checked on 604 only, apart from the town record counts in [cargo-ids.md](cargo-ids.md).
 
 ## Calendar speed in the catalog (2026-10-09)
 
@@ -45,6 +45,22 @@ Every savegame and editor map in the catalog's mod directories, summarised with 
 | 585 | 3 | 0 |
 | 568 | 7 | 0 |
 
+## Climates and economies in the catalog (2026-10-09)
+
+The 244 entries of the summarised catalog, by the `climate` and `economy` resources in the header ([climates-economies.md](climates-economies.md)):
+
+| Climate | Economy | Saves and maps |
+|---|---|---|
+| `temperate.clima` | `temperate.eco` | 151 |
+| `temperate.clima` | `all.eco` | 16 |
+| `subarctic.clima` | `subarctic.eco` | 36 |
+| `subarctic.clima` | `all.eco` | 3 |
+| `tropical.clima` | `tropic.eco` | 21 |
+| `tropical.clima` | `all.eco` | 2 |
+| `dry.clima` | `dry.eco` | 4 |
+| `mission6_tropical.clima` | `tropic.eco` | 1 |
+| none (568 and 585 headers, which parse only partly) | none | 10 |
+
 ## Versions and releases (2026-10-10)
 
 The 244 entries above, joined with the upload record that mod.io keeps for each mod in its local cache (`metadata/state.json`: the modfile's upload date and its `metadata_blob`). The blob always names `uploadedFromPlatform`. From launch it also carries `buildVersion`, which is the game version number that Urban Games' [PC release notes](https://wiki.transportfever3.com/doku.php?id=releasenotes) use: 40408 (Steam) and 40393 (Epic and GOG) for the initial release on 29 September 2026, and 40420 for the stability update on 8 October 2026.
@@ -67,14 +83,4 @@ An upload date is the latest date a save could have been made, not the date it w
 
 ## Platform in the save (2026-10-10)
 
-There is no field that names the platform a save was made on (**Observed**, 568 to 604). The 244 entries above were matched with the uploader's platform from the same mod.io upload records, and searched in full for platform names:
-
-- **Header.** No field reads differently by platform. Checked: the preview flag, the u8 flag before `value`, the open stats fields, the mod list's `source` (`DLC`, `mod.io`, `BuiltInMods` on every platform) and `flags`, and the settings keys and values. Two comparisons were made: console against PC at 601 (39 against 2), and Windows, Mac, Linux and the Epic/GOG build at 604. A value that turned up off Windows only did so in one or two saves.
-- **Whole stream.** Searched for the names of the consoles, operating systems and stores, and for the path prefixes of each system. The short ones (`PS5`, `GDK`, `EGS`, `GOG`, `C:\`) occur in nearly every save on every platform, so they are chance byte matches. `steam` and `platform` are game words. The longer hits are names from the name lists, or part of a mod's name.
-
-Two ways a save can still give its platform away:
-
-- **A stored Lua error.** A mod can keep a Lua error message in its script state, and the message starts with the mod file's install path. In [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) the path is under a Windows user folder. In [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601) it starts `R:/mod.io/10640/`. Both come from one mod. Layout, search and counts are in [script-states.md](script-states.md#mod-script-states-and-stored-errors). **Observed**, two saves.
-- **Mods from outside mod.io.** Mods whose URL points to modwerkstatt.com appear only in PC saves (7 saves, all 604). Consoles probably load mods from mod.io only, so such a mod suggests a PC save (**Open**). A save without one says nothing.
-
-Since console and PC saves also differ in format version (601 against 604), the only same-version comparison so far has two PC saves. A platform code hidden in a field not yet described is not ruled out (**Open**).
+There is no field that names the platform a save was made on (**Observed**, 568 to 604). The checks are in [platform.md](platform.md).

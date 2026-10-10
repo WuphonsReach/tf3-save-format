@@ -25,4 +25,4 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 
 ## Not here
 
-Town size, cargo demand and positions are not in the script states. They are in the entity data, see [town-records.md](town-records.md). Industries' script state (`game_mechanics/industries/industries.gs`) was empty in the editor saves checked. In a played 604 game (catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3), over 300 industries) it held only `industryFailedExtensions`, `tick` and `triangles`, so the Industries tab's input, output, workload and shipment figures are not kept there (**Observed**). They are presumably in the entity data, which was not read.
+Town size, cargo demand and positions are not in the script states. They are in the entity data, see [town-records.md](town-records.md). The industries' script state is just as bare, see [script-states.md](script-states.md#industries).

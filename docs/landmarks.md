@@ -4,7 +4,7 @@ State of the script `landmarks/landmarks.gs`. Checked on 604, catalog save [6417
 
 ## Finding it
 
-The path string `landmarks/landmarks.gs` has no `game_mechanics/` prefix. In both saves it sat close to the end of the stream (about 98%), among other script states. Seen in this order: `game_mechanics/celebrations/celebrations.gs`, `industries/industry_workers.gs`, `landmarks/landmarks.gs`, `mission/mission.gs`, `terrain/reforestation.gs`, `vehicle/vehicle_modifier.gs`. As for the subsidies state in [script-states.md](script-states.md), the body follows the path string as one byte, a u32 pair count and the pairs, with no leading tag 4. **Observed**.
+The path string `landmarks/landmarks.gs` has no `game_mechanics/` prefix. In both saves it sat close to the end of the stream (about 98%), among other script states. Seen in this order: `game_mechanics/celebrations/celebrations.gs`, `industries/industry_workers.gs`, `landmarks/landmarks.gs`, `mission/mission.gs`, `terrain/reforestation.gs`, `vehicle/vehicle_modifier.gs`. The body follows the path string as described in [script-states.md](script-states.md#finding-a-table). **Observed**.
 
 The state was 996 bytes in both saves and has two keys.
 
