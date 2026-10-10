@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v2.schema.json",
+  "$id": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v1.schema.json",
   "title": "Transport Fever 3 save summary",
   "description": "One tf3-save-summary.json per save, written by tools/mine_saves.py into OUT_DIR/<mod id>-<name slug>/. Facts read from the save, plus the catalog name, author and link that mod.io shows. Every key is always present. A field is null when the save does not have it (an older format, an editor map) or when the save could not be read, in which case `error` says why. Labelled values are strings of the form \"<stored number> (<label>)\", for example \"3 (100%, default)\": the number is what the save holds, the label is how the game shows it. Labels are the English UI names. What each value means, and how sure that meaning is, is in the format notes: https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/README.md",
   "type": "object",
@@ -49,8 +49,8 @@
     },
     "schema_version": {
       "type": "integer",
-      "const": 2,
-      "description": "Version of this layout. Any change to the layout (a field added, removed, renamed or changing meaning) raises it, and each version has its own schema file that is not edited once committed."
+      "const": 1,
+      "description": "Version of this layout. Raised when a field is removed, renamed or changes meaning; new fields alone do not raise it."
     },
     "name": {
       "type": "string",
@@ -285,24 +285,24 @@
       "additionalProperties": false,
       "description": "Company progression (game_mechanics/company/*.gs script states). null when neither state was found, as in editor maps. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/script-states.md#company-and-rank",
       "properties": {
-        "rank_earned": {
+        "rank": {
           "type": [
             "string",
             "null"
           ],
           "pattern": "^-?[0-9]+ \\(.+\\)$",
-          "description": "potentialLevel with the rank name: the rank earned from experience, which the game shows. 1 Junior to 15 Tycoon. Called rank in schema version 1.",
+          "description": "potentialLevel with the rank name: the rank the game shows. 1 Junior to 15 Tycoon.",
           "examples": [
             "13 (Vice President)"
           ]
         },
-        "rank_claimed": {
+        "level": {
           "type": [
             "string",
             "null"
           ],
           "pattern": "^-?[0-9]+ \\(.+\\)$",
-          "description": "level with the rank name: the rank the player has claimed in the company window, which rank rewards such as permits follow. Never above rank_earned. Called level in schema version 1.",
+          "description": "level with the rank name. Can trail rank; its meaning is not settled.",
           "examples": [
             "10 (Director)"
           ]

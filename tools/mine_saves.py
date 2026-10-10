@@ -4,7 +4,7 @@
 Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<id>-<name>/tf3-save-summary.json
-(layout: tf3-save-summary.schema.json next to this script) and rebuilds
+(layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
 OUT_DIR/index.csv from every summary there. A summary.json left by an older
 version in the same folder is removed. A SAVE_OR_MODDIR can be a
 .sav or a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/
@@ -131,8 +131,8 @@ def summarise_states(data):
     if states or company:
         cs = states[0] if states else {}
         out["company"] = {
-            "rank": rank(cs.get("potentialLevel")),
-            "level": rank(cs.get("level")),
+            "rank_earned": rank(cs.get("potentialLevel")),
+            "rank_claimed": rank(cs.get("level")),
             "experience": num(cs.get("experience")),
             "base_population": num(company.get("basePopulation")),
         }
@@ -198,9 +198,11 @@ def slug(s):
 
 SUMMARY_FILE = "tf3-save-summary.json"
 OLD_SUMMARY_FILE = "summary.json"
-SCHEMA_URL = "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/tf3-save-summary.schema.json"
-SCHEMA_VERSION = 1
-# Every key, in the order written (tf3-save-summary.schema.json).
+# Any layout change raises the version and adds a new schema file; committed ones are never edited.
+SCHEMA_VERSION = 2
+SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
+              f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
+# Every key, in the order written (the schema file of SCHEMA_VERSION).
 FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
           "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
@@ -272,7 +274,7 @@ def index_row(sm):
             len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
             cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
-            (sm.get("company") or {}).get("rank"), sm.get("tools_commit")]
+            (sm.get("company") or {}).get("rank_earned"), sm.get("tools_commit")]
 
 
 # Size and mtime of the save last read and the tools commit that read it, one file per summary
