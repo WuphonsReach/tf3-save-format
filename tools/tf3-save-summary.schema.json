@@ -442,7 +442,7 @@
         "object",
         "null"
       ],
-      "description": "New Game settings from the header, by stored key, as \"<stored> (<label>[, default])\". A stored setting is its position in the game's option list plus 1; \", default\" marks the game's default. Keys the tool has no list for, or values outside the list, are given as stored. null for formats 568 and 585. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/header.md#settings",
+      "description": "New Game settings from the header, by stored key, as \"<stored> (<label>[, default])\". A stored setting is its position in the game's option list plus 1; \", default\" marks the game's default. Keys the tool has no list for, or values outside the list, are given as stored. null for formats 568 and 585. See https://github.com/WuphonsReach/tf3-save-format/blob/main/docs/settings.md",
       "properties": {
         "map.size": {
           "type": [

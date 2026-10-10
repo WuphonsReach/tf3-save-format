@@ -191,7 +191,7 @@ RANKS = ["Junior", "Mechanic", "Engineer", "Coordinator", "Expert", "Team Leader
 # New Game options: settings key -> (default index, labels in screen order). Taken from the
 # game's base/mod.json (604 build, desktop lists; where a key has a longer list for the
 # experimental map features, that one). A stored setting is its list position plus 1
-# (docs/header.md). English UI names.
+# (docs/settings.md). English UI names.
 SETTING_OPTIONS = {
     "map.size": (2, ["Tiny", "Small", "Medium", "Large", "Very Large", "Huge", "Megalomaniac", "Gigantomaniac"]),
     "map.format": (0, ["1 : 1", "1 : 2", "1 : 3", "1 : 4", "1 : 5"]),

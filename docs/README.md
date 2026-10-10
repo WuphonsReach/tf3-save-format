@@ -6,6 +6,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 |---|---|
 | [container.md](container.md) | zstd framing, writing a save back |
 | [header.md](header.md) | Header fields in order, preview image, settings |
+| [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
 | [calendar.md](calendar.md) | Game clock, calendar speed, the day table that turns clock values into dates, the date in the header |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
 | [script-states.md](script-states.md) | Script states: weather and time of day, company rank, loans, counters, achievements, subsidies |
