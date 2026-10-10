@@ -26,3 +26,12 @@ Path strings for notification scripts under `::/game_mechanics/notifications/typ
 ## The availability state
 
 The state of `game_mechanics/notifications/availability_notifications.gs` has a `lastYear` number that matched the year on screen (2060, then 2061). It tracks the year but is not the clock. **Observed** on 604.
+
+## Dismissing a notification, and what else changes (604)
+
+**Observed** on 604, one new game, two saves 46,400 clock units apart (2,246,600 and 2,293,000) with the player dismissing notifications between them and a new subsidy offer arriving.
+
+- **Dismissing sets `dismissed` and nothing else.** The "active reward effect" banner of the completed subsidy ([subsidies.md](subsidies.md#completion-604)), entry 15 of the notification state (`subvention_notification.script`, timestamp 2,196,600, 600 units after the subsidy's `completedTime`), went from `dismissed = false` to `true`. Its `expired` stayed `false`, `tracked` stayed `true` and the entry stayed in the table. The subsidy's own state and its effect were unchanged.
+- **A dismissed offer is still on offer.** The second subsidy offer (a "Supply Industry" offer, `deliver_cargo`, spawned at clock 2,253,000) appeared as a new entry 17 with timestamp 2,253,400 (400 after the spawn), already `dismissed = true` and `expired = false` when saved. In the subsidies state it was still in `proposedSubventions` and its uid was in `usedUids`. So dismissing the popup does not decline or remove the offer. The entry's `simParams.mapping` names the industry the offer is about, as in the other subsidy notifications. `maxId` rose from 16 to 17, and a new id was added to the list of ids just before it, so the ids are kept in two places.
+- **Entries expire with a `persisting` reference.** Entry 12 (a `vehiclecondition.script` notification for one road vehicle) went from `expired = false` to `true` between the saves, and its `persisting` list (one entity reference, the vehicle's) disappeared at the same time. An expired entry keeps its place and flags but drops the reference. Why this one expired is **Open**. An industry-spawn entry (16) went from `dismissed = false`, `expired = false` to `true`, `true`.
+- Another table in the same state (a list of ids with a `problemSince` clock value, 10 to 14 entries) changed entirely: ids appeared and disappeared with `problemSince` set to the clock of the save or a little before. It looks like the set of entities that currently have a problem (the vehicle-condition warnings), refreshed each time. **Open**.
