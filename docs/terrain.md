@@ -48,6 +48,22 @@ Find them by the 8 bytes `00 00 90 40 c2 b8 b2 3f` at byte 28 of a 64-byte recor
 
 They look like terrain-generator feature points (hills or peaks placed by the seed, with a height scaled by the slider), but that is a guess (**Open**). They are not the heightmap: 13 records cannot hold 2 x 6 km of terrain.
 
+## Lakes on a temperate map
+
+Two new games on the stock Temperate generator (see below), seed `ktb5aEVwZg`, Tiny 1 : 4, Rivers Scattered, Mountains Dense, European names, saved at once: one with Lakes Sparse, one with Lakes Packed. **Observed**, 604, one pair.
+
+- The headers are identical, but the body is 10,784 bytes longer with Lakes Packed (13,976,271 against 13,987,055).
+- 257 of 3,412 4 KB blocks differ, against 35 for the same change on a desert map. About 195 of them are the simulation arrays (the stretch near 0.67 to 1.48 MB), which also differ on a desert map when the two saves are made at different moments, so they do not count as an effect of Lakes.
+- The rest: a stretch of about 650 KB (3.48 to 4.12 MB) that starts with one record whose count changes from 2 to 1 and then runs shifted by the length change, so most of its bytes differ, and short differences (55 bytes each, about 150 bytes apart) in a list of 78 records that starts 283 KB after the header. In that list a record's position moved by under a metre and its direction changed. The list has the same record layout as the 13 records above (position, a direction, a second position, then 4.0 and 0.698 radians instead of 4.5 and 1.396) followed by a short list of seven offsets.
+- So Lakes does something on a temperate map (it changes how much data the save holds) and nothing on a desert map. What the extra 10.8 KB are is **Open**.
+- The 13-record search bytes (`00 00 90 40 c2 b8 b2 3f`) do not match on temperate, because the constants are different. The records themselves are there, so they are not specific to the desert generator. Their count prefix reads 0x27 (39) in the desert saves and 0x4e (78) in the temperate ones, which does not match the 13 I counted in the desert saves, so my count of 13 may be only the first kind of record in a longer list (**Open**).
+
+## Generators and the Mapzilla mod
+
+On a temperate New Game screen a **Generator** dropdown appears (not on the desert screen). It comes from the Mapzilla mod (mod.io 6423494, source <https://github.com/AmbachtIT/mapzilla>), which ships generator files of its own. Read from the mod's files, not from a save: its `mod.json` has `"cosmetic": true` and `"autoActivate": false`, it adds a generator under `climates/mapzilla/` whose climate is the stock `temperate.clima`, and that generator has sliders keyed `mz_layout` (Layout: Random, Single shore, Island, Inland sea, Isthmus, Strait, Peninsula, Bay), `mz_coast` and others. So the `mz_*` keys that the game's user settings file keeps for the New Game dialog belong to this mod, not to the stock generators.
+
+A game made with the stock **Temperate** generator while the mod was installed (one save, 604) lists only Deluxe Upgrade in its header mod list and has no sign of Mapzilla, so installing it adds nothing to the save (**Observed**). What a save lists when a Mapzilla generator is chosen is **Open**.
+
 ## Open
 
 - Where the heightmap is. Not a smooth 16-bit grid that I could find; 1.5 MB to 6.1 MB after the header is float-like records (periods of 24, 72 and 73 bytes), and 6.4 MB, 6.9 MB and 7.2 MB are near-constant data.
