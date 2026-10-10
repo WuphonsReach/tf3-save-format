@@ -25,6 +25,12 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Standard library only (Python 3.14 for zstd; older Python needs `zstandard`). Shared code is in `tools/tf3save.py`; new scripts import it. Some private scripts import it too, so keep its function names and return shapes stable.
 - Test against real saves before committing, with output to a scratch directory outside the repo.
 
+## Testing in the game
+
+- Tests are saves the user makes in the game, one change per save, named by what changed. Compare a save with the one it was loaded from, not with the New Game screen: the Load Game screen rewrites settings and mods in the next save.
+- To find what an unnamed field holds, ask for a save made with a distinctive typed value and search the decompressed stream for it. The map seed sat in an undescribed header field (`id`) until a typed seed was searched for; searching for the word "seed" found only construction records.
+- Hash a save (sha256) before it is loaded again, so a later re-hash shows whether a load changed it.
+
 ## Conventions
 
 - Integers are little-endian unless stated. Use the notation `str` (u32 length + bytes) and `vec<T>` (u32 count + items), matching `FORMAT.md`, so readers can move between the two.
