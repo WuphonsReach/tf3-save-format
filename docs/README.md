@@ -25,7 +25,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
 | [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories; the balance history |
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids, tiers and weights, starting cargo |
-| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo |
+| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, the town building component and its Historic Preservation flag |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
 | [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
