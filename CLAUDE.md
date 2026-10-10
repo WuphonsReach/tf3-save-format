@@ -28,7 +28,15 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 ## Game install
 
 - Modder-facing files may be read: `api/tealdef/`, `base/tealdef/`, `base/mod.json`, `vscode-template/`.
-- Never read, dump or analyse the native binaries: the `TransportFever3` executable, `model_editor/ModelEditor`, `extra/` and the bundled `.so` libraries. No `strings`, hex dumps, disassemblers, debuggers, or greps that scan them (use `grep -I` in the install). `.claude/hooks/tf3-no-binaries.py` blocks the common forms; it is best effort, so the rule stands without it.
+- The `base/content/` archives and the loose `.lua`/`.tl` files beside them may be opened to learn facts. Urban Games' modding wiki treats that folder as base content for modders and requires the source to be named when game files are used. Conditions:
+  - Data and script archives (`economy`, `scripts`, `climates`, `game_mechanics`, `mission`, `gui`, `names`, `base`): read for facts.
+  - `locale.zip`: match string keys to on-screen labels. Never republish string tables, and never extract the fonts (third-party works).
+  - Media archives (`animal`, `characters`, `warehouses`, `placeholders`, `model_editor`): only for a specific question, and only text metadata (`.mdl`, `.lua`). Never meshes, textures or audio.
+  - `music.zip`: do not open.
+  - Publish only facts in our own words, with short identifiers: resource paths, key names, ids, numbers. No pasted code, no copied tables, no line-by-line walk through a script's logic. Name the file a fact came from (for example `economy/dry.eco.lua` in `base/content/economy.zip`).
+  - Never commit extracted files, and never bundle base data in a tool. A tool may read the user's install at run time.
+  - If an entry is encrypted or needs a key, stop and ask.
+- Never read, dump or analyse the native binaries: the `TransportFever3` executable, `model_editor/ModelEditor`, `extra/` and the bundled `.so` libraries. No `strings`, hex dumps, disassemblers, debuggers, or greps that scan them (use `grep -I` in the install). `.claude/hooks/tf3-install-guard.py` blocks the common forms and `music.zip`. It is best effort and cannot check the publishing conditions, so the rules stand without it.
 
 ## Testing in the game
 

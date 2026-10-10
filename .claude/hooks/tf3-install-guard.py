@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""PreToolUse guard: keep Claude out of Transport Fever 3's native binaries.
+"""PreToolUse guard for reading the Transport Fever 3 install.
 
 Modder-facing files in the install (api/tealdef, base/tealdef, base/mod.json,
-vscode-template) stay readable. The executable, the model editor binary and
-the bundled shared libraries may not be read, dumped, searched or analysed.
+vscode-template, and the base/content archives for facts) stay readable. The
+executable, the model editor binary and the bundled shared libraries may not
+be read, dumped, searched or analysed, and the soundtrack archive is left
+alone. Conditions on the archives (facts only, nothing extracted into a repo)
+are in CLAUDE.md; the hook cannot check those.
 Best effort: a script that walks the install and opens files is not caught.
 """
 import json
@@ -18,6 +21,8 @@ BINARY = re.compile(
     r"|model_editor/|/extra\b"       # dirs holding only native binaries
     r"|\.so(\.\d+)*\b|\.dll\b|\.exe\b"
 )
+# Content archives with no bearing on saves that stay closed (soundtrack).
+OFF_LIMITS = re.compile(r"\bmusic\.zip\b")
 # Tools whose only use on the install would be inspecting binaries.
 TOOLS = re.compile(
     r"(^|[\s;|&(`])(strings|objdump|readelf|nm|gdb|lldb|r2|radare2|rizin|"
@@ -28,11 +33,13 @@ GREP = re.compile(r"(^|[\s;|&(`])(e|f)?grep\s([^|;&]*)")
 RG_BINARY = re.compile(r"(^|[\s;|&(`])rg\b[^|;&]*\s(-\w*a\b|--text|-uuu|--binary)")
 
 REASON = (
-    "Blocked by .claude/hooks/tf3-no-binaries.py: the Transport Fever 3 "
+    "Blocked by .claude/hooks/tf3-install-guard.py: the Transport Fever 3 "
     "executable and bundled native libraries are off limits (no reading, "
-    "strings, hex dumps, disassembly or binary greps). Modder-facing files "
-    "(api/tealdef, base/tealdef, base/mod.json, vscode-template) are fine; "
-    "for grep in the install use -I."
+    "strings, hex dumps, disassembly or binary greps), and base/content/"
+    "music.zip stays closed. Modder-facing files (api/tealdef, base/tealdef, "
+    "base/mod.json, vscode-template) and the other base/content archives are "
+    "fine for facts, under the conditions in CLAUDE.md; for grep in the "
+    "install use -I."
 )
 
 
@@ -41,6 +48,8 @@ def check_bash(cmd):
         return None
     if BINARY.search(cmd):
         return "names a native binary in the TF3 install"
+    if OFF_LIMITS.search(cmd):
+        return "opens the soundtrack archive"
     if TOOLS.search(cmd):
         return "runs a binary-inspection tool on the TF3 install"
     if RG_BINARY.search(cmd):
@@ -55,6 +64,8 @@ def check_bash(cmd):
 def check_path(path):
     if path and INSTALL.search(path) and BINARY.search(path):
         return "reads a native binary in the TF3 install"
+    if path and INSTALL.search(path) and OFF_LIMITS.search(path):
+        return "opens the soundtrack archive"
     return None
 
 

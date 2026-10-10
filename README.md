@@ -30,6 +30,7 @@ Claims are checked against:
 
 - Saves written on our own install (Linux, Steam).
 - Public savegames on the game's mod.io catalog, cited by mod id and link (for example `6430076`). Only facts read from those saves are recorded here: format version, map size, start year, mod list, record counts, and similar. Their files, preview images and other content are not copied into this repo.
+- The game's modder-facing files in our own install: the Lua API type definitions (`api/tealdef/`, `base/tealdef/`), `base/mod.json`, and the base content in `base/content/` (for example `economy/*.eco.lua` in `economy.zip`). Urban Games' [modding rules](https://wiki.transportfever3.com/doku.php?id=modding:general:publishing) ask that game files be credited when used. These notes take only facts from them and name the file each fact came from; none of their content is copied here. The game program and its libraries are not inspected.
 
 If you uploaded a save that is cited here and want it removed, please open an issue.
 

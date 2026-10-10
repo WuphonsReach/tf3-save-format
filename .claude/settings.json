@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/tf3-no-binaries.py\"",
+            "command": "python3 -I \"$CLAUDE_PROJECT_DIR/.claude/hooks/tf3-install-guard.py\"",
             "timeout": 10
           }
         ]
