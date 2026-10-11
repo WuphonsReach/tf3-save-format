@@ -100,6 +100,18 @@ The categories are the folders under `vehicle/`: `bus`, `car`, `helicopter`, `pl
 
 A line is a `line`; players also say route. "Car" alone is ambiguous: a private `car`, a tram car (labels such as Box Car, Closed Car) or a train car.
 
+## Street types
+
+A road edge in a save names its street type; the layout is in [road-network.md](road-network.md).
+
+| Key | Label | Players say |
+|---|---|---|
+| `country_old_small` | Small Country Road | dirt road, gravel road (the game's description says "two-lane gravel road") |
+| `country_old_small_barriers` | Small Country Road With Noise Barrier | |
+| `country_old_medium_barriers` | (label not read) | |
+| `country_old_large_barriers` | Large Country Road With Noise Barrier | six-lane road (the game's description says "Six-lane gravel road") |
+| `town_old_small`, `town_old_xsmall` | (label not read) | |
+
 ## Ambiguous words
 
 Do not pick a key for these without context:

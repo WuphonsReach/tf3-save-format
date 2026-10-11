@@ -9,7 +9,7 @@ One place to see what is still **Open**, grouped by theme, with the test or read
 | [owners-and-links.md](owners-and-links.md) | Which thing a record belongs to: statistics groups, lines and their stops and vehicles, vehicle names and entity ids, people and trip records, the entity-name table |
 | [vehicles-and-costs.md](vehicles-and-costs.md) | A vehicle's stored state (speed, condition, parked-ship instance, income), running-cost bookings that do not fit, depot upkeep, vehicle prices |
 | [cargo-and-warehouses.md](cargo-and-warehouses.md) | Spoilage storage, lists that do not reconcile, stop and edge counters, warehouse modules and their claiming rule, cargo id order and cargo mods |
-| [towns-and-buildings.md](towns-and-buildings.md) | Town record floats and columns, town building fields and boundary, stock records, landmarks |
+| [towns-and-buildings.md](towns-and-buildings.md) | Town record floats and columns, town building fields and boundary, stock records, landmarks, roads and a building's position |
 | [economy-and-events.md](economy-and-events.md) | Subsidies, industry spawning and closing, notification decoding, company offers and ranks, Finances columns, inflation, the balloon and the UFO |
 | [header-settings-and-map.md](header-settings-and-map.md) | Header fields, settings in play, the seed and what rebuilds from it, terrain and heightmap, calendar and clock, mods, script states, animals, platform |
 | [tools-and-analysis.md](tools-and-analysis.md) | Steps that still need a private script, tool defects, saves not yet compared |

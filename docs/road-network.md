@@ -1,0 +1,79 @@
+# Road network
+
+The street-edge table (one record per road segment, with its two end nodes, their positions and its street type), the other tables a road edit touches, and what deleting a road, splitting one and building a new one did to them. All of it is **Observed** on 604, in one map editor game ([the Giant temperate editor game](test-games.md#giant-temperate-editor-game), eleven saves). [tools/street_edges.py](../tools/street_edges.py) lists the table and compares two saves.
+
+## The street-edge table
+
+**Observed, 604, eleven saves of one map.** About 1.6 MB into the stream (0.9 MB after the header), after the model and resource name tables, there is a run of records, one per road edge. Each ends with the edge's street type as text, so the run shows up as a repeated string `infrastructure/street/<folder>/<type>.street_template`. A record, all little-endian:
+
+| Part | Content |
+|---|---|
+| `u32 a`, `u32 b` | The entity ids of the edge's two end nodes |
+| `vec3 f32` twice | The end positions: x, y, z in metres, node `a` first |
+| `vec3 f32` twice | The tangents at the two ends. For a straight edge both are the difference vector of the two positions (34.7, 48.2 for a 59 m edge) |
+| about 124 bytes | Lane data, not decoded. A road of the 60 km/h type held the float 16.67 (60 km/h in m/s), which is a lead, not a reading |
+| `str` | The street type as `.../<type>.street_template` |
+| `u32` | 0 |
+| `str` | The base street type, `.../<base>.street` (`town_old.street` for `town_old_small`, `country_old.street` for the barrier road) |
+
+A record starts right after the previous record's last string. Find them by the pattern: a `.street` string, then two ids and four vec3 whose first two have a sensible position and a length between 1 m and a few km, as `read_edges` does. The type is read from the template string that follows the lane data. Offsets move between saves.
+
+- **What the unedited map held.** 358 edges: 334 of `town_old_small` and 24 of `town_old_xsmall`. 274 are 88 m long, the rest 64, 120, 56 or 24 m among others, so the towns' streets are laid out in edges of a fixed length with some shorter ones. The roads reach every part of the map (x from -8,445 to 9,016, y from -18,432 to 18,713), not one town.
+- **A node's position is the same in every record that names it** (no disagreement over a metre in the first and the last save). The table has no separate node list: a node exists as the end of one or more edges. `street_edges.py --nodes` builds it.
+- **Node and edge ids are entity ids and are reused.** A node id freed in one save became a node of a new road in a later one (see the last save below), and the id of a deleted road's edge became a node.
+- **The type name carries a variant.** `country_old_small_barriers` (label Small Country Road With Noise Barrier) is a street type of its own. Its base type is `country_old`, and the barrier is not an extra record: no separate edge add-on or entity was added with it ([glossary.md](glossary.md#street-types)).
+
+## What the edits did
+
+One change per save, on the same stretch of the main road of the town Hemsworth. The coordinates are map metres.
+
+| Save | Player's change | Street-edge table |
+|---|---|---|
+| `0643` | Baseline | The stub below, node `2a78f` at (-3423.8, 12371.1) to dead end `85be` at (-3467.8, 12294.9), 88 m, is one record |
+| `0644` | Three buildings marked Historic Preservation | Unchanged. Three flag bytes went 0 to 1 in town building records ([town-buildings.md](town-buildings.md)) and nothing else in them changed |
+| `0645` | Deleted the stub, a road segment ending in a dead end off a T-junction | **Unchanged**: the stub's record is still there, as is its dead-end node |
+| `0646` | A small country road from the main road, 58 m | The stub's record and the T-junction node are gone. The two 88 m edges beside the junction became three edges of 55, 55 and 66 m, with a new node `85bf` at (-3442.9, 12382.0). The country road is `85bf` to a dead end `7e56` at (-3414.4, 12432.3), 57.9 m |
+| `0647` | A standalone country road with noise barriers, about 118 m | Two new edges of 59.4 m: `7de1` at (-3466.5, 12442.2), `85be` (-3431.8, 12490.4), `85dc` (-3397.0, 12538.7); 118.9 m in all. The game cut the road in two at its middle |
+| `0648` | Loaded `0647` and saved at once | Unchanged, all 361 edges (see below) |
+| `0649`, `0650`, `0651` | A house ticked; the town deleted; a load and re-save | Unchanged, all 361 edges, in all three ([the deletion](#deleting-the-town)) |
+| `0652` | A chevron of Large Country Road With Noise Barrier drawn over the old town's ground: 148 m, then 98 m at 90 degrees | Three new edges (see below); three of the town's leftover edges removed |
+| `0653` | A medium-width country road with noise barriers in three segments: 100 m, 101 m at 115 degrees, 249 m at 45 degrees | Six new edges; six more of the town's leftover edges removed |
+
+- **A long road is cut into equal edges, and a bend is a node.** The 118.9 m road became two edges of 59.4 m and the 57.9 m road one edge. In `0652` the 148 m segment (147.6 m) became two edges of 73.8 m and the 98 m segment one edge of 97.8 m, joined at a node where the road turns 90 degrees (a corner is not a curved edge here: both edges are straight). `0653` tested the limit with segments the player labelled 100 m, 101 m and 249 m (the game's length readout): 99.8 m stayed one edge, 101.2 m became two of 50.6 m, and 249.3 m three of 83.1 m. All seven roads seen fit one rule: a segment is cut into the fewest equal pieces that are 100 m or shorter, so `ceil(length / 100)` pieces. The game's Angle readout (90, 115 and 45 degrees) equals the angle between the two edges' directions in the save, to within a degree. The type of the new edges was `country_old_large_barriers` (and `country_old_medium_barriers` in `0653`), and the node ids ran `2a23d`, `2a252` (the midpoint), `2a257` (the corner) and `2a28f`, in the order the player drew them.
+- **A deletion is not in the table at once.** The record outlasted the deletion by one save, and was removed in the next save, which also held another edit on the same road. Whether any later edit clears it, or only one in the same area, is **Open**.
+- **What a town's deletion preview covers (screenshot of `0649`, not saved).** With the bulldozer on the town marker the editor highlighted Hemsworth's roads between the junctions, but not the junction squares themselves and not the three country road edges, and said the town's four historic buildings would be removed. The road east of the new junction (`85bf` to `797f`) and the road west of it were highlighted. What the deletion then did is the next section.
+- **The crane flock** `#278` of [animals.md](animals.md) (9 birds, flying) stood at (-3520, 12291) in every save compared, 55 m from the stub's dead end, so a flock is a fixed landmark in an editor map and tells which part of a screenshot a coordinate is.
+
+## Deleting the town
+
+**Observed, 604, once** (`0650` saved right after deleting Hemsworth with the bulldozer on its marker, `0651` a load and re-save of it). Both previews show the town's ground empty, with only the two country roads left, so the game no longer has the town. In the stream:
+
+- **What changed.** The per-town counters of the statistics state (`townResidentialCount`, `townCommercialCount`, `townIndustrialCount`) went from 19 groups each to 18. A `happiness_residential` list appeared 53 times, as many as the "(53)" on the town's marker (probably its residents; a guess). In the junction table the country road's three-edge junction record (edges `0x1b50b`, `0x746b`, `0x731f`) is gone and records with new, higher ids (about `0x2d561` to `0x2d722`) were added: one dead-end record and two three-edge ones. So the country road's end node did not just become a dead end in that table, and what the new ids are is **Open**. About 70 ground-polygon points were removed and 147 added around the old junction, and one flying bird's z changed by 0.08 m.
+- **What stayed, in both saves.** All 361 street-edge records, including the town's own roads, the 335 strip entries, the 18 town records and the 1,104 building records with the 4 Historic flags set. The load and re-save changed none of this either. So a save can keep the records of a deleted town: counting towns, buildings or edges in a save can include ones the game no longer has. A later edit did clear three of the edges, not the rest (next section).
+- **Against the predictions made before the save.** The country edges stayed with unchanged positions (right). The edge table kept the town's roads and the building and town records stayed (wrong: expected one of them to change, and the stale-record rule of `0645` held across a reload too). The junction did change at once but not into a plain dead end. The animal list changed in one entry.
+
+### A later edit clears some of the leftovers
+
+**Observed, 604, once** (`0652`). The chevron was drawn right over where the deleted town's main road had run (its middle node is 6 m from the old node `8693`). Against `0651`: the three new edges came in, and three of the town's 88 m edges were removed from the street-edge table, while the other eight of the eleven town edges in that area stayed (one of them 2 m from the new road, so it is not about overlap). The three were at the old town's far end, 61 to 223 m from the new road, and two of them end in a dead end; other dead-end edges of the area stayed. The next edit (`0653`, a road drawn nearby) removed six more, leaving two of the eleven: `7cd7>8693` and `8693>7a0e`, the two that meet at the node `8693`, which the chevron's first segment passes within 6 m. So every edit seen so far cleared some leftovers, and the ones at the chevron were the last to go; which leftovers an edit clears is **Open**. After `0653` the 18 town records, 1,104 building records and 335 strip entries were still the same, and the flying bird `#319` above the new road dropped to z 41.85 (42.07 before the deletion), as the ground under it was regraded. The 18 town records, the 1,104 building records, the 335 strip entries and the animal list were the same as in `0651`.
+
+## The other tables a road edit touches
+
+These were found by comparing the saves; the first two are written up less firmly than the edge table.
+
+- **The junction table (Observed).** After the street-edge table, in the first few KB of entity data, comes one record per node, each starting with the 14 bytes `00 02 00 00 00 00 00 00 00 ff ff ff ff 00`. Then a `u32` turn count (0 for a dead end, 2, 6 and 12 for nodes with 2, 3 and 4 edges, that is n x (n - 1)), the turn entries, and last a `vec<u32>` of the **edge** entity ids at the node. In `0643` the T-junction's record had 6 turns and the edges `0x9020` (probably the road to the dead end `797f`; it has no strip entry, so this pairing is a guess), `0x7de1` (the stub) and `0x2c123` (the main road's other side). In `0645` it had 2 turns and no `0x7de1`, so the deletion shows here at once. In `0646` the new node `85bf` has 6 turns and the edges `0x1b50b`, `0x746b`, `0x731f`, and the node `7a0e` between the two halves of the split road has 2 turns and `0x21dcd` and `0x1b50b`. The edge entity ids are not in the street-edge table; which of `0x746b` and `0x731f` is the country road was not read.
+- **The road-surface strips (Observed).** A table keyed by edge entity id holds, per edge, quads along the road in rows of two sides (a flag byte 0 or 1), about 8 m long and 18 m apart, so an edge of 88 m has 11 per side. `street_edges.py --ids` pairs these with the street-edge records by position. The stub's entry (`0x7de1`) stays in the table in all later saves, 22 rows, though the road is gone. `0x2c123` (88 m) was replaced in `0646` by `0x21dcd` (7 per side, 55 m) and `0x1b50b` (4 per side, 32 m of the 55 m edge from `7a0e` to `85bf`), so the old entry was replaced by two. The country roads have no entries. The table has 334 entries and the street-edge table 358 edges, and only 161 pair up by position: the rest is **Open**.
+- **The ground-texture polygons (Observed).** A list of polygons per `.gtex` texture (`infrastructure/street/shared/*.gtex` for roads, `buildings/...` for lots) holds the points of each road's surface and edge. In `0645` 175 points that lay along the stub (from (-3476, 12299) to (-3420, 12360)) were gone and about 580 new ones appeared at the junction, so this list follows a deletion at once. The deletion made the stream 57 KB longer, not shorter; about 35 KB of that sat in this list (the rest was not traced).
+- **A list of free entity ids (Observed).** At the very end of the stream, a list of tens of thousands of `u32` ids. In `0646` it held the stub's edge id `0x7de1`, the dead-end node `85be`, `85dc`, and near its end `0x9020` and `0x2c123`. The three nodes of the `0647` road, `7de1`, `85be` and `85dc`, left the list in that save, together with four other ids (what they are was not read), and the ids new in `0646` (`0x1b50b`, `0x21dcd`, `0x746b`, `0x731f`) had sat side by side in `0645`'s list. So new entities take freed ids from it. In `0648` (a load and re-save with no edit) 17 ids were added to the list, in ascending order among its entries, among them the old T-junction node `2a78f` and the edge `0x9020`, both deleted two saves earlier, so some freed ids reach the list only when the game loads and saves again. The rest of the list's order was not checked, and is **Open**.
+
+## Finding a road in a save
+
+1. Run `street_edges.py SAVE --near X,Y,R` with a coordinate. The town record holds no position ([town-records.md](town-records.md)), so start from a landmark: a bird flock from the animal list, or the end of a road already listed.
+2. For a deleted road, compare with the save before: `street_edges.py --diff OLD NEW`. Do not rely on the table in the very next save (above): the junction table and the ground polygons show a deletion first.
+3. Place a screenshot with two known points. The table and the stream's polygons use the same x, y. In the screenshots of this series a stub's dead end was at the top and screen-right was the map direction (-0.87, +0.5), found from the main road's dead end.
+
+## Open
+
+- What the lane data holds, which leftover records a later edit clears, and whether the 100 m limit depends on the street type (three types were drawn).
+- How the junction table is kept in step, and why the strip entry of the stub stays.
+- Why only 161 of 358 edges have a strip entry, and what the other strip entries belong to.
+- Whether a road drawn over water, a bridge or a railway shows in the same table.

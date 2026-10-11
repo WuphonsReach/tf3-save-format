@@ -43,6 +43,12 @@ Notes that use it: [finances.md](finances.md), [running-costs.md](running-costs.
 - Saved paused from 6 February 2060 to 21 April 2061 at calendar speeds 4.00x, 2.00x and 0.50x: the rule that the date shown advances by the calendar speed times the clock ([calendar.md](calendar.md#the-game-clock)), script states read against the game's windows ([script-states.md](script-states.md)) and the year in the availability state ([notifications.md](notifications.md#the-availability-state)).
 - Saves are named `New Game 20261008-<time>`.
 
+## Giant temperate editor game
+
+- Seed `87gEXXsiaA`, temperate climate and economy, European names, Giant (20480 x 40960 m, header `map.size` 8), start year 1900, a map editor save (`isMapEditor` true, money 0). Twelve mods, among them Deluxe Upgrade, the Early Road Vehicles, Trams, Wagons and Locomotives sets, Boathouse, Overpass Builder and Industry Upgrades. 5,034 animals, 1,678 of them with flock offsets ([animals.md](animals.md)).
+- Eleven saves made one after the other in the map editor around the town Hemsworth, one change per save: the baseline, three buildings marked Historic Preservation, a deleted road segment, a new country road, a standalone country road with noise barriers, a load and re-save with no edit, a single house marked Historic Preservation, the town deleted, a load and re-save of that, and a chevron of Large Country Road With Noise Barrier drawn over the old town's ground, and a medium-width country road with noise barriers drawn in three segments to test the cut length. Each was saved from the game the one before it was. They are the basis of [road-network.md](road-network.md); the building ticks are in [town-buildings.md](editor-map-buildings.md).
+- Saves are named `2026-10 Giant Temper 1011-<time>`.
+
 ## Catalog games we re-saved
 
 Three catalog saves were loaded in the game and saved again, so they are tested as well as read. They are cited by mod id; only facts read from them are recorded.
@@ -53,4 +59,4 @@ Three catalog saves were loaded in the game and saved again, so they are tested 
 | [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) | Temperate, 11264 x 22528 m, start 1900, Easy preset, no mods, shown as 18 February 1937 | a second warehouse game, the Paused calendar setting, the Easy preset |
 | [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) | Tropical, 8192 x 24576 m, start 1960, no mods, shown as 14 February 2191 | the Finances tab, company rank and loans, entity names, calendar speed |
 
-Our editor maps and a few early saves, among them a giant temperate map, are cited in the notes by description only.
+Our other editor maps and a few early saves are cited in the notes by description only.
