@@ -1,6 +1,6 @@
 # Running costs and upkeep
 
-How the money journal books the upkeep of buildings and the running costs of vehicles, and how those bookings match the yearly figures in the game's windows. How to find the journal, its periods and the Finances tab rows are in [finances.md](finances.md); a warehouse's upkeep per module is in [warehouses.md](warehouses.md#cost), and costs that rise with the date in [inflation.md](inflation.md#the-year-cost-table). Checked on 604 in one game, the Small 1 : 3 subarctic game of [finances.md](finances.md#a-new-games-journal).
+How the money journal books the upkeep of buildings and the running costs of vehicles, and how those bookings match the yearly figures in the game's windows. How to find the journal, its periods and the Finances tab rows are in [finances.md](finances.md); a warehouse's upkeep per module is in [warehouses.md](warehouses.md#cost), and costs that rise with the date in [inflation.md](inflation.md#the-year-cost-table). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game).
 
 ## Upkeep and running costs are booked in batches (604)
 
@@ -37,7 +37,7 @@ The -200 among the -1,752s and -3,004s of every batch is therefore Ship 5. The o
 
 ## A ship's running cost follows its condition (604)
 
-**Observed** on 604 in the Small 1 : 3 game, from the journal of save `1416` (clock 10,720,600, paused; batches at 10,440,000 to 10,680,000) and the ship windows in the player's screenshots of 14:21. The window's "Condition" bar has five steps and a label; its yearly cost line (`$N/Year`) is the batch booking times about 24.35 (a year of 1,461,000 units in 60,000-unit batches).
+**Observed** on 604 in the Small subarctic game, from the journal of save `1416` (clock 10,720,600, paused; batches at 10,440,000 to 10,680,000) and the ship windows in the player's screenshots of 14:21. The window's "Condition" bar has five steps and a label; its yearly cost line (`$N/Year`) is the batch booking times about 24.35 (a year of 1,461,000 units in 60,000-unit batches).
 
 | Ship (nth water running-cost booking) | Window label | Window `$/Year` | Booking | Against the same model at Very Good |
 |---|---|---|---|---|

@@ -65,7 +65,7 @@ A scan of one 940 MB stream took about one minute in Python.
 
 ## A small new game: one fish line, three windows (604)
 
-**Observed** on 604, a new Small subarctic game of a few minutes, in two saves (`1131` at clock 569,800 and `1147` at 632,200, both paused, see [calendar.md](calendar.md)). The streams were 67 MB, so a scan with the pattern above took a second and the fields sat 6.2 to 6.4 MB into the stream. With only fish moving, every figure in three windows could be matched to a field of cargo id 6 (fish, [cargo-ids.md](cargo-ids.md)):
+**Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game) a few minutes in, in two saves (`1131` at clock 569,800 and `1147` at 632,200, both paused, see [calendar.md](calendar.md)). The streams were 67 MB, so a scan with the pattern above took a second and the fields sat 6.2 to 6.4 MB into the stream. With only fish moving, every figure in three windows could be matched to a field of cargo id 6 (fish, [cargo-ids.md](cargo-ids.md)):
 
 | Window | Figure | Field and values |
 |---|---|---|
@@ -99,7 +99,7 @@ A scan of one 940 MB stream took about one minute in Python.
 
 ## A fish chain read end to end: windows, groups, a truck queue (604)
 
-**Observed** on 604 in the Small 1 : 3 subarctic game of [lines.md](lines.md#trip-plans-line-stops-and-vehicle-or-a-building-604), in three paused saves a few minutes apart (clock about 14.9 million, 15.1 million and 15.6 million), with the player's screenshots of every window in the fish chain taken just before each save. The chain is three fishing industries, each with a ship line to one port, a warehouse by the port, and a road line of horse carts (capacity 4) from a stop at the warehouse to a stop in town. Groups are found as in [Finding a warehouse's stock](#finding-a-warehouses-stock), with figures matched to the windows. One game, so every label is **Observed**.
+**Observed** on 604 in the Small subarctic game, in three paused saves a few minutes apart (clock about 14.9 million, 15.1 million and 15.6 million), with the player's screenshots of every window in the fish chain taken just before each save. The chain is three fishing industries, each with a ship line to one port, a warehouse by the port, and a road line of horse carts (capacity 4) from a stop at the warehouse to a stop in town. Groups are found as in [Finding a warehouse's stock](#finding-a-warehouses-stock), with figures matched to the windows. One game, so every label is **Observed**.
 
 ### Every window matched a group
 

@@ -58,7 +58,7 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 
 ## A new game's three towns against the town window
 
-**Observed** on 604, one new Small 1 : 3 subarctic game ([finances.md](finances.md#a-first-build-out-row-by-row)), paused at 1 January 1900 with almost nothing built. `scan_records` found three records, 78 bytes apart, with capacities 396 / 418 / 268 (fish and cement), 164 / 98 / 115 (meat and planks) and 282 / 209 / 275 (fish and fuel).
+**Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game) when new, paused at 1 January 1900 with almost nothing built. `scan_records` found three records, 78 bytes apart, with capacities 396 / 418 / 268 (fish and cement), 164 / 98 / 115 (meat and planks) and 282 / 209 / 275 (fish and fuel).
 
 - The town window of one town (a Small Village) showed a population of 281, "Earn 3,367 Experience Points" to the next level, and a supplies panel with passengers 0 / 281, fish 4 / 68 and fuel 0 / 97. Its fish and fuel icons are the only fish-and-fuel pair among the three records, so it is the third record, whose capacities are 282 / 209 / 275. The records follow the entity order, and the names table puts this game's towns in slots 1 to 3 as Retford, Bromsgrove and Todmorden ([subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604)), so the third record being Todmorden agrees. The cargo told the towns apart, as above.
 - The district-size chart of that town read about 281 residential, 203 commercial and 268 industrial. The record's 282 / 209 / 275 are close but not equal, so the record holds target capacities that sit a little above the sizes built. The chart was read by eye, so the differences are not exact. **Observed**, one town.

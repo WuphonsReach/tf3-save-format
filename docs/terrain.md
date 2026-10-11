@@ -4,6 +4,8 @@ What a save holds of the generated map, found by comparing saves of one seed. Al
 
 ## What was compared
 
+The cases are the [Tiny desert games](test-games.md#tiny-desert-games) of seed `ktb5aEVwZg`.
+
 | Case | What changed from the one before |
 |---|---|
 | A | New game, seed `ktb5aEVwZg`, Lakes Medium, Rivers Scattered, Mountains Scattered, no mods. Saved at once. |
@@ -70,7 +72,7 @@ The map format setting does not change the grid here: the tropical saves store `
 
 ## A Small subarctic map
 
-One new game on the stock Subarctic generator, **Small** 1 : 3 (4608 x 13824 m), saved at once, format 604, Normal difficulty, seven mods. The sliders were Water Small, Swamps Medium and Mountains Dense, the seed was typed, and every value was read back against the New Game screen. **Observed**, one save, so it adds sizes and names but cannot tie a slider to a map.
+One new game on the stock Subarctic generator, **Small** 1 : 3 (4608 x 13824 m), saved at once (the first save of the [Small subarctic game](test-games.md#small-subarctic-game)), format 604, Normal difficulty, seven mods. The sliders were Water Small, Swamps Medium and Mountains Dense, the seed was typed, and every value was read back against the New Game screen. **Observed**, one save, so it adds sizes and names but cannot tie a slider to a map.
 
 - **The sliders are not stored.** The seed occurs once in the stream, in the header. None of the slider keys (`water`, `swamps`, `mountains`) occurs in it as a string of its own (`water` appears only inside longer words, `swamps` and `mountains` not at all). The generator file `climates/subarctic/subarctic.gen.lua` (in `climates.zip`) lists exactly these three, each with five steps and the third as default; Water runs Very Small to Very Large, the other two Sparse to Packed. The picks were steps 2, 3 and 4. Their effect is only in the generated data below, as on the other climates.
 - **The terrain record** has the fields of [the table above](#the-terrain-record), starting 26.7 MB after the header: `size` 18 x 54 (4608 / 256 and 13824 / 256), `baseLevels` 6, the usual resolution, `highLevels` 8, `offsetZ` -100 and `waterLevel` 0. The eight data maps are 144 x 432 (one value per 32 m), as 4608 / 32 by 13824 / 32. Their names, in stored order: `forest_mask`, `biome3`, `biome1`, `biome4`, `biome0`, `mountain_mask`, `swamp_mask`, `biome2`. So this climate has a mask for mountains and one for swamps but none for water.

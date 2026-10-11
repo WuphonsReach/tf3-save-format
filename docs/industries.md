@@ -1,6 +1,6 @@
 # Industries
 
-What a save keeps about an industry: its production, consumption and output stock as statistics lists, the cargo it destroys when its stock is full, the industries created in play, and the deadline of an industry that is closing. What each industry takes in and gives out is base-game data, in [industry-chains.md](industry-chains.md); the list format is in [statistics-lists.md](statistics-lists.md). Checked on 604 in one game, the new Small 1 : 3 subarctic game of [statistics-lists.md](statistics-lists.md#a-small-new-game-one-fish-line-three-windows-604), unless a line says otherwise.
+What a save keeps about an industry: its production, consumption and output stock as statistics lists, the cargo it destroys when its stock is full, the industries created in play, and the deadline of an industry that is closing. What each industry takes in and gives out is base-game data, in [industry-chains.md](industry-chains.md); the list format is in [statistics-lists.md](statistics-lists.md). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game), unless a line says otherwise.
 
 ## The industries script state
 
@@ -51,7 +51,7 @@ The fish chain of [statistics-lists.md](statistics-lists.md#a-fish-chain-read-en
 
 ## Closing: the deadline is a field of the industry (604)
 
-**Observed** on 604 in the Small 1 : 3 game: saves `1438` and `1439` (no alert) and `1440` (clock 11,791,000, paused, the saw mill's "Industry Closing" popup on screen with 47m 11s left). The notification entry itself is in [notifications.md](notifications.md#industry-closing-notifications-604).
+**Observed** on 604 in the Small subarctic game: saves `1438` and `1439` (no alert) and `1440` (clock 11,791,000, paused, the saw mill's "Industry Closing" popup on screen with 47m 11s left). The notification entry itself is in [notifications.md](notifications.md#industry-closing-notifications-604).
 
 - **The deadline is a field of the industry.** The game's own script (`game_mechanics/industries/industries.script.tl` in `base/content/game_mechanics.zip`) keeps a `closureTimeStamp` on the industry. A value of 0 or less means not closing. When it decides to close an industry it sets the field to the game time plus `closureCountdownTimeSpanYears` (2, from `game_mechanics/industries/industries_config.res.lua`) times the default year length, and a command (`makeIndustrySetDespawnTimeCmd`, `api/cmd.d.tl`) writes it. It tests every 100 ticks, and only industries whose last delivery or shipment is `unusedTimeSpanYears` (5) years back are candidates. The same file also names an `extendTimeSpanYears` of 0.5, not tested here.
 - **Where it is in the file.** In `1440` the value 14,622,000 appears once in the whole stream, as an `i64` in a small record that starts with the industry's entity id (a `u32`), followed by a `u32` (8,480 for the saw mill), a `u32` 1, a `u32` 0 and the `i64`. The same record in `1439` and `1438` held 0 in that place. Find it by searching for the entity id taken from the notification, then checking the shape. The records of the other industries in the same run (the cement plant, canning factory and steel mill with the third value 1; a livestock farm, a quarry, a crop farm and a fishing industry with 5) held 0, as none was closing. What the third value means is **Open**.

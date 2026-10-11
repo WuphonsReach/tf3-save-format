@@ -29,7 +29,7 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 
 ## A new game: an offer, its expiry and an accepted subsidy (604)
 
-**Observed** on 604, one new Small subarctic game (the series of [finances.md](finances.md#a-first-build-out-row-by-row)), three saves with the calendar stopped (date 1 January 1900, so only the game clock moves).
+**Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game), three saves with the calendar stopped (date 1 January 1900, so only the game clock moves).
 
 - **A proposal sits in `proposedSubventions`.** At clock 569,800 to 632,200 the table held one entry, a "Supply Industry" offer (`deliver_cargo`, `spawnTime` 61,000, `toDeliver` 85, one cargo id in `cargosToDeliver`, `upfront` 2,180,000, `failure` of 2,180,000 and 5,180,000). It was spawned 61 s into the game.
 - **It expires on the clock, not by hand.** It was gone in a save at 1,121,000: `proposedSubventions` empty and nothing in the active, completed or failed tables. The offer's `expireDurationProposed` was 728,000, so it ran out at 61,000 + 728,000 = 789,000. A new offer was spawned at 791,600 (`lastSpawnTime`), 2,600 later. The expired offer was not moved to `failedSubventions`: that table stayed empty. **Observed**, one offer.

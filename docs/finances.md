@@ -44,7 +44,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
 ## A new game's journal
 
-**Observed** on 604, one new game (Small 1 : 3 subarctic, Normal difficulty, seven mods, paused at 1900-01-01) saved four times:
+**Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game) when new (paused at 1900-01-01), saved four times:
 
 - A new game starts with header money 0 and **no bookings**: no starting capital is booked, unlike the catalog save above. The journal is then an empty list with balance 0, and the stream holds over a thousand zero-balance journal-shaped runs, so the search for a journal by balance ([above](#finding-the-journal)) finds many and the tf3-save-editor CLI calls money read-only.
 - After a loan was taken, the journal held one booking, type `LOAN`, amount +18,000,000, and the header money was 18,000,000. The search then found exactly one journal.

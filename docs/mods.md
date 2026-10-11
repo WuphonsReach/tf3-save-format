@@ -50,7 +50,7 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 
 ## Seven mods in one new game
 
-A new game (604, subarctic, Normal difficulty) with seven mods active, saved at once, shows what each kind of mod leaves. **Observed**, one save.
+A new game (604, subarctic, Normal difficulty) with seven mods active, saved at once (the first save of the [Small subarctic game](test-games.md#small-subarctic-game)), shows what each kind of mod leaves. **Observed**, one save.
 
 | Mod | Header | Models in the table | Script state |
 |---|---|---|---|

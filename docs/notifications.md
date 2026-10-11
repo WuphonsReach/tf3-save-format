@@ -4,7 +4,7 @@ State of `game_mechanics/notifications/notifications.gs`. The game's popups and 
 
 ## The state and its entries
 
-**Observed** on 604, in the latest autosave of the Small subarctic game of [finances.md](finances.md) (start year 1900, clock 45,001,200, 1914). The balloon and subsidy entries were first read on 585 and 604 in other games, see [Entry layout](#entry-layout).
+**Observed** on 604, in the latest autosave of the [Small subarctic game](test-games.md#small-subarctic-game) (start year 1900, clock 45,001,200, 1914). The balloon and subsidy entries were first read on 585 and 604 in other games, see [Entry layout](#entry-layout).
 
 ### Top-level keys
 
@@ -94,7 +94,7 @@ The state of `game_mechanics/notifications/availability_notifications.gs` has a 
 
 ## "New Vehicles Available" popups (604)
 
-**Observed** on 604, one game (the Small subarctic game of [finances.md](finances.md), start year 1900, saves a year apart and one made nine game days after 1 January 1912, with the popup on screen).
+**Observed** on 604, one game (the Small subarctic game, start year 1900, saves a year apart and one made nine game days after 1 January 1912, with the popup on screen).
 
 - **One entry per release, made on 1 January.** An entry of `availability.script` carries `params.models`, a list of model paths (`::/vehicle/truck/benz1912/benz1912_bulk.mdl` and so on), an empty `multipleUnits` table, `autoDismissDuration` 60,000 (30 game days at the 2.00x calendar speed of that game) and `playedInitialSound`. Its `timestamp` is exactly the clock value at which the day table starts 1 January ([calendar.md](calendar.md)): 41,882,000 for 1910 and 43,342,000 for 1912. A save made 19,200 clock units later still had both 1912 entries with `dismissed` and `expired` false, and the popup was on screen. The six older entries (1910) were all `true` on both. `lastYear` in `availability_notifications.gs` read 1910 in a save from November 1910 and 1912 in the later one.
 - **The year comes from the model's own data, not from the save.** The install's `.mdl` file of each vehicle (a text file inside its zip under `base/content/vehicle/`) has an `availability` block with `yearFrom` and `yearTo`. Reading all of them (355 models with a block): the five 1910 models (`ps_trillium`, `freightcar_24s`, `halle`, `boxcar_2_verb`, `suburban_2nd`) are exactly the five single-model entries stamped 1910, no model has `yearFrom` 1911 and the save has no entry for 1911, and the three 1912 models (`benz1912_bulk`, `benz1912_box`, `liquid_2_zh`) are exactly the three models in the two entries stamped 1912.
@@ -114,7 +114,7 @@ The state of `game_mechanics/notifications/availability_notifications.gs` has a 
 
 ## Industry spawn notifications (604)
 
-**Observed** on 604 in the new Small 1 : 3 game of [subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604), in saves `1208` to `1312`.
+**Observed** on 604 in the Small subarctic game, in saves `1208` to `1312`.
 
 - **Every industry that appeared in play has a notification.** Its type is `::/game_mechanics/notifications/types/industry_spawn.script`, its params hold `simParams.mapping` with the industry's name, and it has a `timestamp` like the subsidy ones. The game had 12 by clock 5,997,000, none in the save at 570,600 and one (Bromsgrove Quarry North, 734,600) in `1208`: 10 primaries (the quarries North and West, three fishing industries (West, South and East), an oil platform, two crop farms, a coal mine and an iron ore mine) and 2 secondaries (a canning factory and a steel mill). The map's own industries have none.
 - **Times.** 734,600; 1,473,800; 2,197,800; 2,937,800; 3,657,800; 3,737,000 (the canning factory and the steel mill at the same time); 3,745,000; 3,762,600; 4,401,000; 5,117,000; 5,861,800. They are 4,100 to 110,000 units after the half-year boundary at which the industry's production list was created ([industries.md](industries.md#when-an-industrys-lists-begin-and-industries-that-appear-in-play-604)): 730,500, 1,461,000, 2,191,500, 2,922,000, 3,652,500 (fishery East, a coal mine and an iron ore mine), 4,383,000, 5,113,500 and 5,844,000. So the industry exists from the boundary and the notification comes later. The two secondaries have no production list and their notification times (3,737,000) are not on a boundary, so when they were created is **Open**.
@@ -122,14 +122,14 @@ The state of `game_mechanics/notifications/availability_notifications.gs` has a 
 
 ## Industry closing notifications (604)
 
-**Observed** on 604 in the Small 1 : 3 game of [subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604): saves `1438` and `1439` (no alert) and `1440` (clock 11,791,000, paused, the saw mill's "Industry Closing" popup on screen with 47m 11s left). One closing in one game.
+**Observed** on 604 in the Small subarctic game: saves `1438` and `1439` (no alert) and `1440` (clock 11,791,000, paused, the saw mill's "Industry Closing" popup on screen with 47m 11s left). One closing in one game.
 
 - **The entry.** Type `::/game_mechanics/notifications/types/industry_close.script`. Its `params` hold `entity` (the industry's entity id, 13,865, as `{entity, revision}`) and `resName` (the industry's `.con` path), `simParams.mapping` holds the name, and `persisting` lists the same entity. `timestamp` was 11,700,600; `tracked` and `playedInitialSound` were `true`, `dismissed` and `expired` `false`. The entry holds no countdown, so the time left is not read from the notification.
 - **The deadline is not in the entry.** It is a field of the industry's own record, with the countdown rule and where to find it in [industries.md](industries.md#closing-the-deadline-is-a-field-of-the-industry-604). A second closing in the same game (clock 45,001,200, a fishing industry, `timestamp` 44,460,600, no `autoDismissDuration`) is there too.
 
 ## Stuck-vehicle notifications (604)
 
-**Observed** on 604 in the Small 1 : 3 game of [subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604), in a save at clock 10,026,200 (`1401`), made while ships queued for the one terminal of a port.
+**Observed** on 604 in the Small subarctic game, in a save at clock 10,026,200 (`1401`), made while ships queued for the one terminal of a port.
 
 - **Type.** `::/game_mechanics/notifications/types/stuck_vehicle.script`. The string occurred once in the save 3.6 million units earlier (clock 6,428,600, only in the type list) and six times in `1401`: once in the type list and five in notification entries.
 - **The five entries** carry `timestamp` 7,747,800, 8,017,400, 8,166,200, 8,322,200 and 9,392,600, and each has `params.entity` as `{entity, revision}` with `revision.num` `{1, 0, 0}` and an empty `simParams` (no name mapping). The entities are 33,642, 33,645, 33,647, 33,644 and 33,629, in the order of the timestamps. They are vehicles, as the game's script says: the `simParams.mapping` of vehicle-condition entries in this and other saves of the game names them Ship 14, Ship 17, Ship 19, Ship 16 and **Ship 8**, and 33,647 is also one of the three vehicles in `vehicle2problem` of the later save ([bookkeeping tables](#bookkeeping-tables)). Only the newest entry (33,629, 9,392,600) has `persisting`, so Ship 8 was still stuck when `1401` was saved. The player's screenshots from before that save showed the ship window of Ship 8 with the line "Ship 8 has been stuck for a while without moving" and 0 km/h, with three fishing lines on one port terminal, so that entry is the message on screen. The four earlier entries are ships of the second new line (Ships 12 to 19). The entries give the time the warning was raised, not how long the vehicle had stood. Spoiled cargo seen in the same window: [spoilage.md](spoilage.md#spoiled-cargo-and-itemslost-604).

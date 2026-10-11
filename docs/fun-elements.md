@@ -2,7 +2,7 @@
 
 The Deluxe Upgrade mod (`urbangames_deluxe_upgrade_pack`) sends an Urban Games hot air balloon over the map now and then. The game raises a "Hot Air Balloon Sighting" notification, and its window, titled "Urban Games Hot Air Balloon", thanks the player for buying the Deluxe Edition. A save holds the balloon in three places: the mod's script state, a notification entry ([notifications.md](notifications.md)), and a model instance like the animals' ([models.md](models.md#the-model-instance-record)).
 
-All of it is **Observed** on 604 in one game (temperate, Tiny 1 : 4, 2048 x 6144 m, start 1900, calendar speed 1.00x throughout). Five saves were read: the new game on 1 January 1900, an autosave on 11 May, a save made paused on 20 September 1900 just after the sighting, an autosave of the same paused moment (same clock), and a save on 2 January 1901 after the game had run on and the balloon had gone. Times are game-clock values, 4000 per day at 1.00x ([calendar.md](calendar.md)).
+All of it is **Observed** on 604 in one game (the [Tiny temperate game](test-games.md#tiny-temperate-games): temperate, Tiny 1 : 4, 2048 x 6144 m, start 1900, calendar speed 1.00x throughout). Five saves were read: the new game on 1 January 1900, an autosave on 11 May, a save made paused on 20 September 1900 just after the sighting, an autosave of the same paused moment (same clock), and a save on 2 January 1901 after the game had run on and the balloon had gone. Times are game-clock values, 4000 per day at 1.00x ([calendar.md](calendar.md)).
 
 ## The script state
 

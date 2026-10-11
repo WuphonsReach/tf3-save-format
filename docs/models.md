@@ -27,6 +27,6 @@ Somewhere after the header (2.7 to 3.9 MB in the animal test saves) there is one
 
 ## Vehicles, people and animals in one run
 
-**Observed** on 604, one game (the Small subarctic game of [finances.md](finances.md#a-first-build-out-row-by-row), two saves, 4 ships and 3 horse carts on the map). Vehicles do keep a model instance like the animals' above (137 bytes, 146 apart with the 9 bytes between records), one per vehicle, with its translation in floats 12 to 14. In the later save the run held 572 consecutive instances (stride 146, no gaps) and mixed animals, vehicles and people: an orca, the three horse carts (model `vehicle/road/truck/horsewagon_1850_v2`), the four ships (`vehicle/ship/british_columbia`), then runs of people (`characters/`) and coaches.
+**Observed** on 604, one game (the [Small subarctic game](test-games.md#small-subarctic-game), two saves, 4 ships and 3 horse carts on the map). Vehicles do keep a model instance like the animals' above (137 bytes, 146 apart with the 9 bytes between records), one per vehicle, with its translation in floats 12 to 14. In the later save the run held 572 consecutive instances (stride 146, no gaps) and mixed animals, vehicles and people: an orca, the three horse carts (model `vehicle/road/truck/horsewagon_1850_v2`), the four ships (`vehicle/ship/british_columbia`), then runs of people (`characters/`) and coaches.
 
 How to find a vehicle's instance, and what a depot, a line, a purchase or a sale does to it, is in [vehicles.md](vehicles.md).
