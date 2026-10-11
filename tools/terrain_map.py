@@ -2,7 +2,7 @@
 """Draw a save's terrain as an SVG, with its roads and rails on top.
 
 Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png]
-       [--game DIR] [--no-network] [--stream]
+       [--game DIR] [--no-network] [--depots] [--coverage] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
@@ -15,7 +15,8 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node) and `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
+end node), `maintenance-buildings`, `road-depots` and `tram-depots` (`--depots`), `coverage` (`--coverage`) and
+`grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
 the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
@@ -78,6 +79,21 @@ game's own palette.
              `AIR6`; any other text is written as given. The scan reads the whole stream (model_instances.py). Only the instances
              named get a text label; the run prints every instance drawn (slot, model, position,
              facing), so the caller can pick slots and run again.
+--depots     (SVG only) add three layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
+             `road-depots` and `tram-depots`: each building's ground face as a dull orange (maintenance), teal (road
+             depot) or purple (tram depot) rectangle with a black outline, its origin as a white dot and a red line along the
+             model's x axis, one `<g class="depot KIND" id="depot-SLOT" data-slot data-model data-x data-y data-pool
+             data-radius data-modes>` each. The rectangle is the first `ground_face` of the building's script in the
+             install (`base/content/depots/road.zip`), placed from the instance's origin and facing as in docs/models.md;
+             nothing of it is copied into the tool, so without an install no building is drawn. A road depot's second
+             instance (`road_depot_sm`) and a mod's depots are left out. Reads the whole stream; no `--crop` needed.
+--coverage   (SVG only) add a `coverage` layer under the roads, a sublayer per building kind
+             (`coverage-maintenance-buildings`, `coverage-road-depots`, `coverage-tram-depots`) holding one dashed circle
+             per building, centred on its origin, with the `catchmentArea` radius of its script (a maintenance building
+             600 m, a depot 400 m: a default the script lets a caller change, which no save was checked for). The pool
+             and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
+             covers buses and trucks, a tram depot trams, the maintenance building all three. Rail, ship and
+             aircraft maintenance have their own scripts and are not drawn. Needs the install like `--depots`.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -160,6 +176,48 @@ def read_lane_counts(content):
             m = _LANES.search(zf.read(member).decode("utf-8", "replace"))
             lanes = _MODES.findall(m.group(1)) if m else []
             out[member[:-len(".street_template.lua")]] = sum(1 for modes in lanes if VEHICLE_MODES.search(modes))
+    return out
+
+
+# road-vehicle maintenance buildings: (layer id, label, script path in depots/road.zip, model path, colour)
+DEPOT_KINDS = (
+    ("maintenance-buildings", "Road maintenance buildings", "road/road_maint_station.script.lua",
+     "depots/road/road_maint_station/road_maint_station.mdl", "#f5a300"),
+    ("road-depots", "Road depots", "road/road_depot/road_depot.script.lua",
+     "depots/road/road_depot/road_depot.mdl", "#2a9d8f"),
+    ("tram-depots", "Tram depots", "road/tram_depot/tram_depot.script.lua",
+     "depots/road/tram_depot/tram_depot.mdl", "#8e5ea2"),
+)
+_FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
+_POINT = re.compile(r"\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
+_RADIUS = re.compile(r"catchmentArea\s*=\s*\{\s*radius\s*=\s*(?:captureParams\.radius or )?(\d+)")
+_POOL = re.compile(r"maintenancePool\s*=\s*(\d+)")
+_DEPOT_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
+
+
+def read_depot_specs(content):
+    """{layer id: {"face": [(a, b) ...], "radius", "pool", "modes"}} for the road maintenance building,
+    the road depot and the tram depot, read when the script runs from the install's `depots/road.zip`
+    (`content` is the `infrastructure` folder `find_content` returns): the first `ground_face` rectangle of the
+    building's script in its own axes, the `catchmentArea` radius, the `maintenancePool` and the transport
+    modes. A kind whose script or fields are missing is left out. Nothing is stored."""
+    out = {}
+    if not content:
+        return out
+    try:
+        zf = zipfile.ZipFile(os.path.join(os.path.dirname(content), "depots", "road.zip"))
+    except (OSError, zipfile.BadZipFile):
+        return out
+    for lid, _label, script, _model, _colour in DEPOT_KINDS:
+        try:
+            text = zf.read(script).decode("utf-8", "replace")
+        except KeyError:
+            continue
+        face, radius, pool, modes = _FACE.search(text), _RADIUS.search(text), _POOL.search(text), _DEPOT_MODES.search(text)
+        if face and radius:
+            out[lid] = {"face": [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))],
+                        "radius": int(radius.group(1)), "pool": int(pool.group(1)) if pool else 0,
+                        "modes": ",".join(re.findall(r'"(\w+)"', modes.group(1))) if modes else ""}
     return out
 
 
@@ -377,7 +435,7 @@ def grid_layers(size, mpp, x_top, y_left, step):
     downwards) and are labelled along the left. Coordinates inside are metres from the image's
     top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
-    size_t = max(7 * mpp, step * 0.07)                   # label size in metres
+    size_t = max(min(7 * mpp, 0.03 * max(w, h)), step * 0.07)   # label size in metres, smaller on a close crop
     major = 'fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="%g"' % max(mpp, 1.0)
     minor = ('fill="none" stroke="#000" stroke-opacity="0.3" stroke-width="%g" stroke-dasharray="%g %g"'
              % (max(0.5 * mpp, 0.5), 2 * mpp, 4 * mpp))
@@ -543,7 +601,56 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
     return out + top, unmatched
 
 
-def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1):
+def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
+    """SVG lines for the depot layers: (`under`, `over`). `under` is the `coverage` layer (one circle per building,
+    a sublayer per kind) and `over` the `maintenance-buildings`, `road-depots` and `tram-depots` layers (the
+    ground face placed from the instance's origin and facing, its origin, a line along the model's x axis).
+    `instances` are `read_instances` rows; only the exact model path of each kind is drawn, so a road depot's
+    `road_depot_sm` twin is not. Units are metres like the other layers."""
+    k = max(1.0, mpp / 2.0)
+    under, over = [], []
+    cover = []
+    for lid, label, _script, model, colour in DEPOT_KINDS:
+        spec = specs.get(lid)
+        rows = [i for i in instances if i["model"] == model]
+        if not spec or not rows:
+            continue
+        attrs = lambda i: ('id="depot-%s" class="depot %s" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"'
+                           ' data-pool="%d" data-radius="%d" data-modes="%s"'
+                           % (i["slot"], lid, i["slot"], quoteattr(model), i["x"], i["y"], spec["pool"], spec["radius"], spec["modes"]))
+        if footprints:
+            over.append(layer(lid, label, ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
+            for i in rows:
+                n = math.hypot(i["fx"], i["fy"]) or 1.0
+                fx, fy = i["fx"] / n, i["fy"] / n
+                local = lambda a, b: (y_left - (i["y"] + a * fy + b * fx), x_top - (i["x"] + a * fx - b * fy))
+                pts = " ".join("%.2f,%.2f" % local(a, b) for a, b in spec["face"])
+                o, tip = local(0, 0), local(10 * k, 0)
+                over.append("<g %s>" % attrs(i))
+                over.append('<polygon points="%s" fill="%s" fill-opacity="0.28" stroke="#000" stroke-width="%g"/>'
+                            % (pts, colour, 0.35 * k))
+                over.append('<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="#c00" stroke-width="%g"/>'
+                            % (o[0], o[1], tip[0], tip[1], 0.35 * k))
+                over.append('<circle cx="%.2f" cy="%.2f" r="%g" fill="#fff" stroke="#000" stroke-width="%g"/>'
+                            % (o[0], o[1], 0.9 * k, 0.3 * k))
+                over.append("</g>")
+            over.append("</g>")
+        if coverage:
+            cover.append(layer("coverage-" + lid, "Coverage: " + label))
+            for i in rows:
+                cx, cy = y_left - i["y"], x_top - i["x"]
+                cover.append('<g %s><circle cx="%.2f" cy="%.2f" r="%d" fill="%s" fill-opacity="0.06" stroke="%s"'
+                             ' stroke-width="%g" stroke-dasharray="%g %g"/></g>'
+                             % (attrs(i), cx, cy, spec["radius"], colour, colour, 1.5 * mpp, 10 * mpp, 6 * mpp))
+            cover.append("</g>")
+    if cover:
+        under.append(layer("coverage", "Coverage", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
+        under += cover
+        under.append("</g>")
+    return under, over
+
+
+def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=()):
     """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
     `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
     street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
@@ -573,6 +680,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
     if grid:                                             # the lines above the terrain, under the network
         grid_lines, grid_labels = grid_layers(size, mpp, x_top, y_left, grid)
         parts += grid_lines
+    parts += under                                       # coverage circles under the network
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
         parts.append(layer(fam + "s", label, ' transform="scale(%g)"' % (1.0 / mpp)))
         for t, paths in sorted(groups[fam].items()):         # a sublayer per street or track type
@@ -582,6 +690,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
             parts += paths
             parts.append("</g>")
         parts.append("</g>")
+    parts += over                                        # depot footprints over the network
     parts += overlay                                     # edge labels and vehicles over the network
     parts += grid_labels                                 # the coordinates over everything
     parts.append("</svg>")
@@ -607,13 +716,16 @@ def main():
     ap.add_argument("--vehicles", action="store_true", help="SVG only: draw the vehicle model instances")
     ap.add_argument("--name", action="append", default=[], metavar="SLOT=TEXT",
                     help="rename one vehicle instance in the picture (repeatable)")
+    ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
+                    "and tram depots (ground faces from the install)")
+    ap.add_argument("--coverage", action="store_true", help="SVG only: draw their maintenance coverage circles")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
     args = ap.parse_args()
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
-    if (args.label or args.vehicles) and args.png:
-        ap.error("--label and --vehicles only work with the SVG")
+    if (args.label or args.vehicles or args.depots or args.coverage) and args.png:
+        ap.error("--label, --vehicles, --depots and --coverage only work with the SVG")
     labels = {}
     for item in args.label:
         pair, _, text = item.partition("=")
@@ -640,6 +752,9 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
     lanes = read_lane_counts(content) if content else {}
+    depot_specs = read_depot_specs(content) if args.depots or args.coverage else {}
+    if (args.depots or args.coverage) and not depot_specs:
+        print("no install found (--game DIR): no depot layers drawn")
     print("lane counts: %s" % (("%d templates read from the install" % len(lanes)) if lanes else
                                "no install found (--game DIR), every road drawn at two-lane width"))
     step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 else 1)
@@ -678,6 +793,16 @@ def main():
             if args.vehicles and crop:
                 vehicles = [v for v in read_instances(data)
                             if x_bot <= v["x"] <= x_top and y_right <= v["y"] <= y_left]
+            depot_rows = []
+            if depot_specs:
+                px_bot, px_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
+                for i in read_instances(data, ("depots/road/",)):
+                    spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[3] == i["model"] and k[0] in depot_specs), None)
+                    if not spec:
+                        continue
+                    r = spec["radius"] if args.coverage else 40       # the circle or the footprint may reach the picture
+                    if px_bot - r <= i["x"] <= x_top + r and px_right - r <= i["y"] <= y_left + r:
+                        depot_rows.append(i)
             if args.edge_ids and labels:
                 edge_ids(edges, read_strips(data))
             if not args.png:
@@ -700,8 +825,12 @@ def main():
             overlay, unmatched = overlay_layers(size, args.mpp, x_top, y_left, edges, vehicles, labels, names)
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
+            under, over = depot_layers(args.mpp, x_top, y_left, depot_rows, depot_specs, args.depots, args.coverage)
             open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid, meta,
-                                               overlay, args.zoom))
+                                               overlay, args.zoom, under, over))
+            for i in depot_rows:
+                print("depot slot %-6d %-22s x %8.1f y %8.1f facing %5.2f %5.2f"
+                      % (i["slot"], short_model(i["model"]), i["x"], i["y"], i["fx"], i["fy"]))
             for v in vehicles:
                 print("vehicle slot %-6d %-28s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (v["slot"], short_model(v["model"]), v["x"], v["y"], v["fx"], v["fy"]))
