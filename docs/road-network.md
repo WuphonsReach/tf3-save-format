@@ -77,6 +77,8 @@ These were found by comparing the saves; the first two are written up less firml
 2. For a deleted road, compare with the save before: `street_edges.py --diff OLD NEW`. Do not rely on the table in the very next save (above): the junction table and the ground polygons show a deletion first.
 3. Place a screenshot with two known points. The table and the stream's polygons use the same x, y. In the screenshots of this series a stub's dead end was at the top and screen-right was the map direction (-0.87, +0.5), found from the main road's dead end.
 
+4. Name a segment by its two end node ids in hex, `2a619>342aa` ([signals.md](signals.md) uses it): both ids are in every record and either order names the same edge. The edge's own entity id is known only where the strip table has an entry (above). `terrain_map.py --crop X,Y,R --mpp 1 --label A>B` writes that name along the edges asked for; label only the few that matter, as a curve is many short chords. **Observed**, one 604 save.
+
 ## Open
 
 - What the lane block of the edge record holds (the lane count itself is in the templates, [street-templates.md](street-templates.md)), which leftover records a later edit clears, and whether the 100 m limit depends on the street type (four types were drawn).

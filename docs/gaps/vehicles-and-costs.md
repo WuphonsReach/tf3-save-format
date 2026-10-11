@@ -4,6 +4,7 @@ Format of an entry: see [README.md](README.md).
 
 ## Stored vehicle state
 
+- **Which instance is `Train 18` or `Road Vehicle 40`** (604) Maps drawn with `terrain_map.py --vehicles` name a vehicle by model and slot, and the caller supplies the player's number from a screenshot and a position (in the one case tried, Train 18 and two trucks of one model 80 m apart, the order along the road and the trucks' facings in three in-game screenshots told them apart, by eye). The save does not link a vehicle's name or entity id to its instance. Home: [vehicles.md](../vehicles.md), [entity-names.md](../entity-names.md#vehicles-model-name-slot-and-entity-id). Needs: a paused save with one vehicle selected and named in the game window, moved between two saves, to match by position.
 - **Where a vehicle's speed is kept** (604) Not in the model instance; ship windows read 26 and 35 km/h in one save. Home: [vehicles.md](../vehicles.md). Needs: game window (a speed reading) plus existing saves.
 - **Where the vehicle condition (maintenance state) is kept** (604) Condition steps change the running cost ([running-costs.md](../running-costs.md)) but the value itself is not found. Needs: new save pair: send one Very Bad ship to a depot, save paused before and after, diff.
 - **When a parked ship's model instance is dropped** (604, one game) One ship had an instance 24,600 units after parking and none 148,600 later; another model type (`dunara_castle`) never had one. Home: [vehicles.md](../vehicles.md). Needs: new saves at short intervals after parking, on two ship models.

@@ -45,6 +45,32 @@ game's own palette.
              into the tool or the picture). Without an install, or for a type the install lacks
              (a mod's), the width is the two-lane one. Default: the usual Steam folders.
 --no-network leave the roads and rails out.
+--label A>B[=TEXT]
+             (SVG only, repeatable) add the edge with end nodes A and B (hex entity ids, in either
+             order, the notation of docs/signals.md: `2a619>342aa`) to a `labels` layer: its name
+             is written along it (TEXT if given, else `A>B`) and its end nodes are dotted. Only
+             the edges named get a label: an edge is the one handle the table gives, but a curve
+             is many short chords and a label on each would hide the picture, so the caller picks
+             (`street_edges.py --near X,Y,R` lists the edges and their ids). A name that matches
+             no edge in the picture is reported.
+--edge-ids   with --label, add the edge's own entity id (`e1b50b`) to the text where the road-
+             surface strip table has an entry for it (street_edges.py `--ids`; many edges have
+             none, and the scan reads the whole stream).
+--zoom N     (SVG only) the root's width and height are N times the picture's pixels, so a viewer
+             opens a small crop larger; the `viewBox` and the layers do not change.
+--vehicles   (SVG only) add a `vehicles` layer: every model instance under `vehicle/` in the
+             picture, drawn as a rectangle with a triangle on the front end (the facing is the
+             first row of the instance's transform, docs/models.md), sized by class (the save
+             holds no vehicle length: train 20 x 3 m, wagon and tram 14 x 3, truck 7 x 2.5, bus
+             10 x 2.6, car 4.5 x 1.8, ship 40 x 8, other 6 x 2.5), and labelled only if named.
+             `--name SLOT=TEXT` (repeat it) sets the name of one instance, such as
+             `--name 48700="Road Vehicle 40"`: the save does not link an instance to the vehicle's number (docs/
+             vehicles.md), so that is the caller's reading, for instance from a screenshot and a
+             position. A default name is shortened in the label: `Road Vehicle 279`
+             is `RV279`, `Train 58` `RR58`, `Ship 106` `S106`, `Tram 62` `TRM62`, `Aircraft 6`
+             `AIR6`; any other text is written as given. The scan reads the whole stream (model_instances.py). Only the instances
+             named get a text label; the run prints every instance drawn (slot, model, position,
+             facing), so the caller can pick slots and run again.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -60,6 +86,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 """
 import argparse
 import base64
+import math
 import os
 import re
 import struct
@@ -70,7 +97,8 @@ from xml.sax.saxutils import quoteattr
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
-from street_edges import read_edges  # noqa: E402
+from model_instances import read_instances, short_model  # noqa: E402
+from street_edges import edge_ids, read_edges, read_strips  # noqa: E402
 from tf3save import decompress  # noqa: E402
 
 RESOLUTION = bytes.fromhex("0000804000008040cdcc4c3d")      # 4.0, 4.0, 0.05
@@ -375,7 +403,80 @@ def svg_metadata(size, mpp, x_top, y_left, map_size, crop=None, grid=None, sourc
             % (META_NS, " ".join("%s=%s" % (k, quoteattr(str(v))) for k, v in attrs if v is not None)))
 
 
-def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None):
+VEHICLE_SIZE = (("vehicle/train/", (20, 3)), ("vehicle/waggon/", (14, 3)), ("vehicle/tram/", (14, 3)),
+                ("vehicle/truck/", (7, 2.5)), ("vehicle/bus/", (10, 2.6)), ("vehicle/car/", (4.5, 1.8)),
+                ("vehicle/ship/", (40, 8)))
+SHORT_NAME = re.compile(r"^(Road Vehicle|Train|Ship|Tram|Aircraft) (\d+)(\??)$")
+SHORT_PREFIX = {"Road Vehicle": "RV", "Train": "RR", "Ship": "S", "Tram": "TRM", "Aircraft": "AIR"}
+
+
+def short_name(text):
+    """A vehicle's default name shortened for a label: `Road Vehicle 279` -> `RV279`, `Train 58` ->
+    `RR58`, `Ship 106` -> `S106`, `Tram 62` -> `TRM62`, `Aircraft 6` -> `AIR6` (a trailing `?`,
+    for an unsure reading, is kept). Any other text, such as a name the player gave, stays as it is."""
+    m = SHORT_NAME.match(text)
+    return SHORT_PREFIX[m.group(1)] + m.group(2) + m.group(3) if m else text
+
+
+VEHICLE_COLOUR = {"train": "#ff9d00", "waggon": "#ffd34d", "tram": "#ffd34d", "truck": "#2f8fff",
+                  "bus": "#2f8fff", "car": "#9ab", "ship": "#2fd1c5"}
+
+
+def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, names=None):
+    """SVG text for the `labels` layer (edge node pairs) and the `vehicles` layer (a rectangle with
+    a triangle on its front end per vehicle instance, with a text only for a slot in `names`),
+    in the same metre units as the other layers. `edges` and `vehicles` may be empty. Returns the
+    SVG lines and the set of requested edge labels that matched no edge. `labels` is
+    {frozenset of two node ids: text or None}."""
+    names = names or {}
+    fs = 4 * mpp + 4                                  # label size in metres: 8 px at 1 m/px
+    halo = ' paint-order="stroke" stroke="#fff" stroke-width="%g" stroke-linejoin="round"' % (fs / 4)
+    out = []
+    unmatched = set(labels or {})
+    if labels:
+        lfs = fs * 0.7
+        out.append('<g id="labels" inkscape:groupmode="layer" inkscape:label="Edge labels" transform="scale(%g)"'
+                   ' font-family="monospace" font-size="%g" text-anchor="middle" fill="#000">' % (1.0 / mpp, lfs))
+        for e in edges:
+            key = frozenset((e["a"], e["b"]))
+            if key not in labels:
+                continue
+            unmatched.discard(key)
+            (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
+            text = labels[key] or "%x>%x" % (e["a"], e["b"])
+            if e.get("e"):
+                text += " e%x" % e["e"]
+            for x, y in ((x0, y0), (x1, y1)):
+                out.append('<circle cx="%.1f" cy="%.1f" r="%g" fill="#000"/>' % (y_left - y, x_top - x, lfs * 0.25))
+            angle = math.degrees(math.atan2(x0 - x1, y0 - y1))     # the edge in picture axes
+            if angle > 90 or angle < -90:                           # keep the text upright
+                angle -= 180 if angle > 0 else -180
+            out.append('<text transform="translate(%.1f %.1f) rotate(%.1f)" y="%g"%s>%s</text>'
+                       % (y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1, halo, text))
+        out.append("</g>")
+    if vehicles:
+        out.append('<g id="vehicles" inkscape:groupmode="layer" inkscape:label="Vehicles" transform="scale(%g)"'
+                   ' font-family="sans-serif" font-size="%g">' % (1.0 / mpp, fs))
+        for v in vehicles:
+            length, width = next((sz for pre, sz in VEHICLE_SIZE if v["model"].startswith(pre)), (6, 2.5))
+            kind = v["model"].split("/")[1] if v["model"].count("/") > 1 else ""
+            fill = VEHICLE_COLOUR.get(kind, "#c6c")
+            px, py = y_left - v["y"], x_top - v["x"]
+            angle = math.degrees(math.atan2(-v["fx"], -v["fy"]))      # the facing in picture axes
+            tip = width * 0.9
+            out.append('<g transform="translate(%.1f %.1f) rotate(%.1f)">'
+                       '<rect x="%g" y="%g" width="%g" height="%g" fill="%s" stroke="#000" stroke-width="0.4"/>'
+                       '<path d="M%g %gL%g 0L%g %gZ" fill="#000"/></g>'
+                       % (px, py, angle, -length / 2, -width / 2, length, width, fill,
+                          length / 2, -width / 2, length / 2 + tip, length / 2, width / 2))
+            if v["slot"] in names:
+                out.append('<text x="%.1f" y="%.1f"%s>%s</text>'
+                           % (px + max(length, 8) / 2 + 2, py - width / 2 - 1, halo, short_name(names[v["slot"]])))
+        out.append("</g>")
+    return out, unmatched
+
+
+def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
     `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
@@ -390,7 +491,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
             "M%.1f %.1fL%.1f %.1f" % (y_left - y0, x_top - x0, y_left - y1, x_top - x1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
-             ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
+             ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0] * zoom, size[1] * zoom, size[0], size[1]),
              '<title>Terrain, roads and rails</title>'] + ([metadata] if metadata else []) + [
              '<style>.road{stroke:%s}.rail{stroke:%s}'
              '.road,.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}</style>'
@@ -411,6 +512,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
                          ' stroke-linecap="round" stroke-linejoin="round"/>'
                          % (fam, t, "".join(segs), ROAD_HEX if fam == "road" else RAIL_HEX, width))
         parts.append("</g>")
+    parts += overlay                                     # edge labels and vehicles over the network
     parts += grid_labels                                 # the coordinates over everything
     parts.append("</svg>")
     return "\n".join(parts)
@@ -427,11 +529,35 @@ def main():
     ap.add_argument("--game", help="the game's install folder, for the lane counts "
                     "(default: the usual Steam places)")
     ap.add_argument("--no-network", action="store_true")
+    ap.add_argument("--label", action="append", default=[], metavar="A>B[=TEXT]",
+                    help="SVG only: label the edge with end nodes A and B (hex ids); repeatable")
+    ap.add_argument("--edge-ids", action="store_true", help="with --label, add edge entity ids where known")
+    ap.add_argument("--zoom", type=int, default=1, help="SVG only: show the picture this many times larger "
+                    "(its width and height, not the viewBox)")
+    ap.add_argument("--vehicles", action="store_true", help="SVG only: draw the vehicle model instances")
+    ap.add_argument("--name", action="append", default=[], metavar="SLOT=TEXT",
+                    help="rename one vehicle instance in the picture (repeatable)")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
     args = ap.parse_args()
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
+    if (args.label or args.vehicles) and args.png:
+        ap.error("--label and --vehicles only work with the SVG")
+    labels = {}
+    for item in args.label:
+        pair, _, text = item.partition("=")
+        try:
+            a, b = (int(v, 16) for v in pair.split(">"))
+        except ValueError:
+            ap.error("--label wants A>B[=TEXT] with hex node ids, not %r" % item)
+        labels[frozenset((a, b))] = text or None
+    if args.vehicles and not args.crop:
+        ap.error("--vehicles needs --crop")
+    try:
+        names = {int(k): v for k, v in (n.split("=", 1) for n in args.name)}
+    except ValueError:
+        ap.error("--name wants SLOT=TEXT, with a number for the slot")
     if args.grid is not None and (args.grid < 1 or args.png):
         ap.error("--grid wants a step of 1 metre or more, and only works with the SVG")
     crop = None
@@ -478,6 +604,12 @@ def main():
                 edges = [e for e in edges
                          if max(e["p0"][0], e["p1"][0]) >= x_bot and min(e["p0"][0], e["p1"][0]) <= x_top
                          and max(e["p0"][1], e["p1"][1]) >= y_right and min(e["p0"][1], e["p1"][1]) <= y_left]
+            vehicles = []
+            if args.vehicles and crop:
+                vehicles = [v for v in read_instances(data)
+                            if x_bot <= v["x"] <= x_top and y_right <= v["y"] <= y_left]
+            if args.edge_ids and labels:
+                edge_ids(edges, read_strips(data))
             if not args.png:
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
@@ -495,11 +627,19 @@ def main():
             dest = dest[:-len(".png")] + ".svg"
             meta = svg_metadata(size, args.mpp, x_top, y_left, (map_w, map_h), crop, args.grid,
                                 os.path.basename(path))
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid, meta))
+            overlay, unmatched = overlay_layers(size, args.mpp, x_top, y_left, edges, vehicles, labels, names)
+            for key in unmatched:
+                print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid, meta,
+                                               overlay, args.zoom))
+            for v in vehicles:
+                print("vehicle slot %-6d %-28s x %8.1f y %8.1f facing %5.2f %5.2f"
+                      % (v["slot"], short_model(v["model"]), v["x"], v["y"], v["fx"], v["fy"]))
         else:
             open(dest, "wb").write(png)
-        print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
-              % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails))
+        print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges%s"
+              % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails,
+                 ", %d vehicles" % len(vehicles) if args.vehicles else ""))
 
 
 if __name__ == "__main__":
