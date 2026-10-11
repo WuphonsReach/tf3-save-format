@@ -1,12 +1,14 @@
 """Outline the notes in docs/: size, sections, links in and out.
 
-Usage: facts_index.py [REPO_ROOT] [--max-words N] [--outline NOTE]
+Usage: facts_index.py [REPO_ROOT] [--max-words N] [--max-section-words N] [--outline NOTE]
 
 Read only, no saves. The default view is one row per note in docs/ (words, sections, links to it
 from other notes, links from it to other notes), biggest first, with a mark on every note over
 --max-words (default 3500) as a candidate for splitting. `--outline docs/NOTE.md` prints that
 note's headings with line numbers and the words under each, so a reader can open one section
-instead of the whole note. Links in code fences and inline code are not counted. Exit status is
+instead of the whole note. Sections whose own text (subsections not counted) is over
+--max-section-words (default 1500) are listed after the table: a long section is where the next
+split will have to cut. Links in code fences and inline code are not counted. Exit status is
 always 0; the marks are advice.
 
 Use it before reading notes to find where a fact probably lives and which notes have grown too
@@ -72,13 +74,20 @@ def link_graph(root, files):
     return out
 
 
+def section_words(lines, sections):
+    """Return (level, title, first line, words) per section, counting its own text only."""
+    out = []
+    for i, (level, title, start) in enumerate(sections):
+        end = sections[i + 1][2] if i + 1 < len(sections) else len(lines) + 1
+        out.append((level, title, start, words(lines[start:end - 1])))
+    return out
+
+
 def outline(root, note):
     lines, sections, _ = read_note(os.path.join(root, note))
     total = words(lines)
     print(f"{note}: {total} words, {len(sections)} headings")
-    for i, (level, title, start) in enumerate(sections):
-        end = sections[i + 1][2] if i + 1 < len(sections) else len(lines) + 1
-        w = words(lines[start:end - 1])
+    for level, title, start, w in section_words(lines, sections):
         print(f"{start:5d} {w:5d}w {'  ' * (level - 1)}{title}")
 
 
@@ -86,6 +95,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("root", nargs="?", default=os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     ap.add_argument("--max-words", type=int, default=3500)
+    ap.add_argument("--max-section-words", type=int, default=1500)
     ap.add_argument("--outline", metavar="NOTE")
     args = ap.parse_args()
     root = os.path.abspath(args.root)
@@ -97,9 +107,11 @@ def main():
     files = md_files(root)
     notes = doc_notes(root)
     graph = link_graph(root, files)
-    rows = []
+    rows, long_sections = [], []
     for f in notes:
         lines, sections, _ = read_note(os.path.join(root, f))
+        long_sections += [(w, f, start, title) for _, title, start, w in section_words(lines, sections)
+                          if w > args.max_section_words]
         inbound = sum(1 for g, dests in graph.items() if g not in (f, "docs/README.md") and f in dests)
         outbound = len({d for d in graph[f] if d in notes and d != f})
         rows.append((words(lines), f, len(sections), inbound, outbound))
@@ -111,6 +123,8 @@ def main():
         print(f"{w:6d} {heads:5d} {inb:3d} {outb:3d}  {f}{flag}")
     total = sum(r[0] for r in rows)
     print(f"{len(rows)} notes, {total} words (about {total * 3 // 2} tokens)")
+    for w, f, start, title in sorted(long_sections, reverse=True):
+        print(f"long section: {f}:{start} {w}w {title}")
     orphans = [f for _, f, _, inb, _ in rows if inb == 0]
     if orphans:
         print("no note links to: " + ", ".join(orphans))

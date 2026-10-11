@@ -77,9 +77,8 @@ def scan(path):
     return links, anchors
 
 
-def main():
-    root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
-                           os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+def find_problems(root):
+    """Return (Markdown files checked, list of problem lines) for the repo at root."""
     files = md_files(root)
     scanned = {f: scan(os.path.join(root, f)) for f in files}
     problems = []
@@ -116,7 +115,13 @@ def main():
         schema_dir = os.path.join(root, "tools", "schema")
         if os.path.isdir(schema_dir) and "schema/" not in text:
             problems.append("tools/schema/: not mentioned in tools/README.md")
+    return files, problems
 
+
+def main():
+    root = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else
+                           os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+    files, problems = find_problems(root)
     for p in problems:
         print(p)
     print(f"{len(files)} Markdown files checked, {len(problems)} problem(s)")
