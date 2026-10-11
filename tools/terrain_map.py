@@ -7,7 +7,8 @@ Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.s
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
 embedded PNG and the roads and rails as vector paths on top, in three layers (`terrain`,
 `roads`, `rails`; groups with Inkscape's layer attributes) with one path per street or track type
-(class `road` or `rail` plus the type name, for styling). The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
+(class `road` or `rail` plus the type name, for styling; the colours and width are also set
+on each path, since Krita ignores the style sheet). The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
 the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
 3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
@@ -59,6 +60,7 @@ MAX_PIXELS = 64_000_000
 
 ROAD = (50, 50, 50)
 RAIL = (205, 30, 30)
+ROAD_HEX, RAIL_HEX = "#323232", "#cd1e1e"      # the same two colours, for the SVG
 
 # height ramp (metres, colour), interpolated; water and land are told apart by waterLevel
 LAND = [(0, (190, 205, 140)), (30, (130, 175, 105)), (100, (165, 155, 105)),
@@ -252,8 +254,9 @@ def svg_document(png, size, mpp, x_left, y_top, edges):
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
              '<title>Terrain, roads and rails</title>',
-             '<style>.road{stroke:#323232}.rail{stroke:#cd1e1e}'
-             '.road,.rail{fill:none;stroke-width:%g;stroke-linecap:round;stroke-linejoin:round}</style>' % width,
+             '<style>.road{stroke:%s}.rail{stroke:%s}'
+             '.road,.rail{fill:none;stroke-width:%g;stroke-linecap:round;stroke-linejoin:round}</style>'
+             % (ROAD_HEX, RAIL_HEX, width),
              '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain" transform="scale(%g)">' % (1.0 / mpp),
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
@@ -262,7 +265,9 @@ def svg_document(png, size, mpp, x_left, y_top, edges):
         parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
                      % (fam, label, 1.0 / mpp))
         for t, segs in sorted(groups[fam].items()):
-            parts.append('<path class="%s %s" d="%s"/>' % (fam, t, "".join(segs)))
+            parts.append('<path class="%s %s" d="%s" fill="none" stroke="%s" stroke-width="%g"'
+                         ' stroke-linecap="round" stroke-linejoin="round"/>'
+                         % (fam, t, "".join(segs), ROAD_HEX if fam == "road" else RAIL_HEX, width))
         parts.append("</g>")
     parts.append("</svg>")
     return "\n".join(parts)
