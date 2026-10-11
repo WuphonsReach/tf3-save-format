@@ -57,7 +57,7 @@ The ground height is a grid of `u16` per tile, matching the `TerrainTileHeightma
 
 | Part | Content |
 |---|---|
-| prefix | `ff ff ff ff 0e 00 00 00` and 12 zero bytes |
+| prefix | a `u32` (`ff ff ff ff` in our 604 test saves, a small number such as 3 or 41 in catalog saves 6386889 and 6401182), then `0e 00 00 00` and 12 zero bytes |
 | count | `u32`: the number of tiles, `size` x times y (192 here) |
 | each tile | `vec<u16>` of 4225 values (65 x 65), 8,454 bytes |
 
@@ -66,9 +66,13 @@ The ground height is a grid of `u16` per tile, matching the `TerrainTileHeightma
 - **Height.** z = `offsetZ` + v x `baseResolution` z, so z = -100 + 0.05 v metres, and v = 2000 is the water level. The non-flying animals all fall on this to within 0.4 m ([animals.md](animals.md)). Heights seen: 0.8 to 262 m on the desert map with Mountains Dense, 1.6 to 142 m on Sparse, 0.15 to 478 m on the temperate map.
 - **What changes it.** The grid is identical for the same seed and sliders (A against B), after 11 days of play (D against E), and with Lakes moved (F against G, and the temperate pair). Mountains Scattered against Sparse (B against C) changes 45% of the values; another seed changes nearly all.
 
-Find it by its count and first length together, `c0 00 00 00 81 10 00 00` here (192 and 4225), then step 8,454 bytes per tile. It ends 0.46 to 0.63 MB before the end of the stream in these saves, long after the terrain record.
+Find it by `0e 00 00 00`, 12 zero bytes, the count and the first length, `0e 00 00 00` + zeros + `c0 00 00 00 81 10 00 00` here (192 and 4225), then step 8,454 bytes per tile. The first `u32` is left out of the key because it differs between saves; a key that includes `ff ff ff ff` finds nothing in those two catalog saves. It ends 0.46 to 0.63 MB before the end of the stream in these saves, long after the terrain record.
 
 The map format setting does not change the grid here: the tropical saves store `map.format` 3 and the others 4, and both have 8 x 24 tiles of 2048 x 6144 m (**Observed**, Tiny only; a Small 1 : 3 map has 18 x 54 tiles, see [below](#a-small-subarctic-map)).
+
+## Drawing the map
+
+[tools/terrain_map.py](../tools/terrain_map.py) turns the terrain record and heightmap above into a PNG (height ramp, hill shading, water below `waterLevel`) with the road and rail edges of [road-network.md](road-network.md) drawn on top. **Observed**: it found the heightmap and gave a sensible picture in one catalog save of each of 568, 585, 599, 601 and 604 (mod.io 6090964, 6187236, 6386889, 6401182, 6415512) and in our own 604 saves. Map sizes seen, in tiles of 256 m (width x height): 8 x 24, 18 x 54, 40 x 80, 44 x 44, 56 x 56, 64 x 64 and 80 x 160 (20,480 x 40,960 m); the tile count was the metres divided by 256 each time. The test of the frame is the roads: in a 568 map of 14,336 m a side (mod.io 6098954), towns lie on land, roads keep out of the lakes and follow valleys, and the orientation of [the layout above](#the-heightmap) (x right, y up, not flipped) put them there. At the default 4 m per pixel a Small map is 1,153 x 3,457 pixels.
 
 ## A Small subarctic map
 
@@ -99,6 +103,6 @@ A game made with the stock **Temperate** generator while the mod was installed (
 
 - What `baseLevels` (6) and `highLevels` (8) mean, and whether the heightmap has coarser levels stored elsewhere. 1.5 MB to 6.1 MB after the header is still float-like records (periods of 24, 72 and 73 bytes) of unknown purpose.
 - The list that follows the heightmap. It also starts with the tile count (`c0 00 00 00 16 00 00 00 ...`). The API has a per-tile brush record (`TerrainTileBrush`); that this list is it is a guess.
-- How the tile count follows map size and format. Tiny 1 : 4 and 1 : 3 (8 x 24) and Small 1 : 3 (18 x 54) were checked; in all three it is the map's metres divided by 256.
+- Whether the tile count is always the map's metres divided by 256 on sizes not seen (it held on every size in [Drawing the map](#drawing-the-map)).
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
 - Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.

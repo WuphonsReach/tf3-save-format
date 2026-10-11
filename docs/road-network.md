@@ -23,6 +23,10 @@ A record starts right after the previous record's last string. Find them by the 
 - **Node and edge ids are entity ids and are reused.** A node id freed in one save became a node of a new road in a later one (see the last save below), and the id of a deleted road's edge became a node.
 - **The type name carries a variant.** `country_old_small_barriers` (label Small Country Road With Noise Barrier) is a street type of its own. Its base type is `country_old`, and the barrier is not an extra record: no separate edge add-on or entity was added with it ([glossary.md](glossary.md#street-types)).
 
+## Rails are in the same table
+
+**Observed, 568 to 601, three catalog saves with rails** (mod.io 6098954 on 568, 6386889 on 599, 6401182 on 601). The 585 and 604 catalog saves and our own 604 saves checked had no track edge, so 604 is untested for rails. A railway edge is a record of the layout above whose template string is `infrastructure/track/<folder>/<type>.street_template` (types seen: `simple`, `standard` and `high_speed`, each also with `_catenary`; `simple` and `standard` in 6098954, `high_speed_catenary` in 6401182), not `infrastructure/street/...`. In 6401182 (14,336 m a side) the table held 8,282 road edges and 4,967 rail edges. Edges are straight chords as for roads, so a curved line is many short edges. `street_edges.py` reads both: `family` is `street` or `track` and `type` the last name. Bridges and tunnels have their own `infrastructure/bridge` and `infrastructure/tunnel` strings in the stream; how they attach to an edge was not read.
+
 ## What the edits did
 
 One change per save, on the same stretch of the main road of the town Hemsworth. The coordinates are map metres.
@@ -78,4 +82,4 @@ These were found by comparing the saves; the first two are written up less firml
 - What the lane data holds, which leftover records a later edit clears, and whether the 100 m limit depends on the street type (four types were drawn).
 - How the junction table is kept in step, and why the strip entry of the stub stays.
 - Why only 161 of 358 edges have a strip entry, and what the other strip entries belong to.
-- Whether a road drawn over water, a bridge or a railway shows in the same table.
+- Whether a road drawn over water or on a bridge shows in the same table (a railway does, see above).

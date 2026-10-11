@@ -70,7 +70,7 @@ The middle has no section table and no Lua wrapper, but three kinds of marker sh
 | Marker | What it looks like | What it gives |
 |---|---|---|
 | Length-prefixed strings | A `str` (u32 length, then bytes) inside a record. The u32 before the length is not the Lua string tag: it was often 0 or 1, and the float 1.0 (`00 00 80 3f`) before some building names | Resource ids (`.mdl`, `.gtex`, `.con`, `.street_template` and similar paths) that records point at, and field names that repeat per record (the statistics list keys of [statistics-lists.md](statistics-lists.md), the `happiness_*` names). Good anchors to search for |
-| Counts and fixed prefixes | A `vec<T>` count in front of a list, or a prefix such as the heightmap's `ff ff ff ff 0e 00 00 00` | Lets a list be walked once its start is found. Nothing records where it ends in the stream |
+| Counts and fixed prefixes | A `vec<T>` count in front of a list, or a prefix such as the heightmap's ([terrain.md](terrain.md#the-heightmap)) | Lets a list be walked once its start is found. Nothing records where it ends in the stream |
 | Embedded Lua tables | A real Lua table (`04 00 00 00 01`, a count, then pairs) in the middle of binary data | Parses with the reader of [lua-values.md](lua-values.md), no schema needed |
 
 Counts per save (the string scan counts runs of printable bytes of 3 to 200 whose preceding u32 equals their length, so it misses strings that run into other printable bytes and may count a few by chance):

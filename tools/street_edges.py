@@ -46,7 +46,7 @@ from tf3save import decompress  # noqa: E402
 # more vec3 (the tangents), lane data, and the record's own two strings (docs/road-network.md).
 # A lookahead, so a match does not use up the bytes of the next record's own `.street`.
 _START = re.compile(rb"\.street(?=(....)(....)(.{12})(.{12})(.{12})(.{12}))", re.S)
-_TEMPLATE = re.compile(rb"([\x20-\x80])\x00\x00\x00(infrastructure/street/[A-Za-z0-9_/]+)\.street_template")
+_TEMPLATE = re.compile(rb"([\x20-\x80])\x00\x00\x00(infrastructure/(?:street|track)/[A-Za-z0-9_/]+)\.street_template")
 SEARCH_LIMIT = 16 << 20       # the table sits in the first few MB of the stream
 TEMPLATE_WINDOW = 800         # the type string follows the lane data within this many bytes
 MAX_ID = 1 << 24
@@ -78,8 +78,9 @@ def _plausible(a, b, p0, p1, t0, t1):
 
 def read_edges(data):
     """The street-edge table as a list of dicts: `a`, `b` (node entity ids), `p0`, `p1` (x, y, z),
-    `length` (horizontal, metres), `type` (street type without folder, or None if the type string
-    was not found) and `offset` (of the record's first node id in the stream)."""
+    `length` (horizontal, metres), `type` (street or track type without folder, or None if the type
+    string was not found), `family` (`street` or `track`, from the folder; None with the type) and
+    `offset` (of the record's first node id in the stream)."""
     out = []
     end = min(len(data), SEARCH_LIMIT)
     for m in _START.finditer(data, 0, end):
@@ -89,12 +90,13 @@ def read_edges(data):
             continue
         start = m.start() + len(b".street")
         window = data[start:start + TEMPLATE_WINDOW]
-        t = None
+        t = family = None
         for tm in _TEMPLATE.finditer(window):
             if len(tm.group(2)) == tm.group(1)[0] - len(b".street_template"):
-                t = tm.group(2).decode().rsplit("/", 1)[-1]
+                parts = tm.group(2).decode().split("/")
+                t, family = parts[-1], parts[1]
                 break
-        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t,
+        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t, "family": family,
                     "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     return out
 
