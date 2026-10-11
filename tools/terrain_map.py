@@ -6,10 +6,17 @@ Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
-embedded PNG and the roads and rails as vector paths on top, in three layers (`terrain`,
-`roads`, `rails`; groups with Inkscape's layer attributes) with one path per street or track type
-(class `road` or `rail` plus the type name, for styling; the colours and width are also set
-on each path, since Krita ignores the style sheet). The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
+embedded PNG and the roads and rails as vector paths on top. Every layer is a group with
+`class="layer"`, its id repeated in `data-layer` and Inkscape's layer attributes, so a page script can list
+them with `g.layer` and toggle `display`. Layers, bottom to top: `terrain`, `grid`, `roads` and `rails` (each a
+parent with one sublayer per street or track type, `road-TYPE` / `rail-TYPE`, holding one `<path>` per edge with
+`data-a` and `data-b` (the end node ids in hex), class `road` or `rail` plus the type name, and `data-edge` where
+the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `vehicles-train` (wagons included),
+`-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
+`data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
+one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
+end node) and `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
+groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
 the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
 3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
@@ -93,7 +100,7 @@ import struct
 import sys
 import zipfile
 from array import array
-from xml.sax.saxutils import quoteattr
+from xml.sax.saxutils import escape, quoteattr
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
@@ -349,6 +356,18 @@ def draw_network(img, size, x_top, y_left, mpp, edges, lanes):
     return n["street"], n["track"]
 
 
+def layer(lid, label, attrs=""):
+    """The opening tag of a layer: a group Inkscape shows as a layer, with `class="layer"` and
+    `data-layer` holding its id so a script can list and toggle layers with `g.layer`."""
+    return ('<g id="%s" class="layer" data-layer="%s" inkscape:groupmode="layer" inkscape:label="%s"%s>'
+            % (lid, lid, label, attrs))
+
+
+def safe_id(text):
+    """`text` with anything but letters, digits, `_` and `-` replaced by `_`, for an element id."""
+    return re.sub(r"[^A-Za-z0-9_-]+", "_", str(text))
+
+
 def grid_layers(size, mpp, x_top, y_left, step):
     """The grid as two layers, `grid` (the lines) and `grid-labels` (the coordinates, at the top
     and left edges, meant to be drawn last so they sit over the network). A line at every
@@ -365,8 +384,8 @@ def grid_layers(size, mpp, x_top, y_left, step):
     text = ('font-family="sans-serif" font-size="%g" fill="#000" stroke="#fff" stroke-width="%g"'
             ' paint-order="stroke"' % (size_t, size_t / 5))
     scale = "scale(%g)" % (1.0 / mpp)
-    lines = ['<g id="grid" inkscape:groupmode="layer" inkscape:label="Grid %d m" transform="%s">' % (step, scale)]
-    labels = ['<g id="grid-labels" inkscape:groupmode="layer" inkscape:label="Grid labels" transform="%s">' % scale]
+    lines = [layer("grid", "Grid %d m" % step, ' transform="%s" pointer-events="none"' % scale)]
+    labels = [layer("grid-labels", "Grid labels", ' transform="%s" pointer-events="none"' % scale)]
     y = (y_left // step) * step                          # the first multiple of step at or below y_left
     while y >= y_left - w:
         px = y_left - y
@@ -427,10 +446,19 @@ def short_name(text):
 
 
 
+def vehicle_class(model):
+    """The folder a vehicle model sits in (`train`, `waggon`, `tram`, `truck`, `bus`, `car`, `ship`,
+    ...), or `other`. A wagon is drawn on the `train` layer."""
+    m = re.match(r"vehicle/([a-z_]+)/", model)
+    return m.group(1) if m else "other"
+
+
 def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, names=None):
-    """SVG text for the `labels` layer (edge node pairs) and the `vehicles` layer (a rectangle with
-    a five-sided shape (the body with a pointed front) per vehicle instance, with a text only for a slot in `names`),
-    in the same metre units as the other layers. `edges` and `vehicles` may be empty. Returns the
+    """SVG text for the `labels` layer (edge node pairs and their end nodes) and the `vehicles` layer (a
+    five-sided shape (the body with a pointed front) per vehicle instance, with a text only for a slot in `names`),
+    in the same metre units as the other layers. `edges` and `vehicles` may be empty. Each vehicle is a
+    `<g class="vehicle CLASS" id="vehicle-SLOT" data-...>` in the sublayer of its class, each label a
+    `<g class="edge-label">`, each end node a `<g class="node">`. Returns the
     SVG lines and the set of requested edge labels that matched no edge. `labels` is
     {frozenset of two node ids: text or None}."""
     names = names or {}
@@ -440,17 +468,18 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
     unmatched = set(labels or {})
     if labels:
         lfs = fs * 0.7
-        top.append('<g id="labels" inkscape:groupmode="layer" inkscape:label="Edge labels" transform="scale(%g)"'
-                   ' font-family="monospace" font-size="%g" text-anchor="middle" fill="#000">' % (1.0 / mpp, lfs))
+        top.append(layer("labels", "Labels", ' transform="scale(%g)" font-family="monospace" font-size="%g"'
+                         ' text-anchor="middle" fill="#000"' % (1.0 / mpp, lfs)))
         picked = [e for e in edges if frozenset((e["a"], e["b"])) in labels]
         tint = {}                                                   # one light colour per labelled edge
         for e in picked:
             tint.setdefault(frozenset((e["a"], e["b"])), LABEL_TINTS[len(tint) % len(LABEL_TINTS)])
-        ends = {}                                                   # node point -> [(tint, direction along the edge)]
+        ends = {}                                         # node point -> [(tint, direction along the edge, edge name)]
         for e in picked:
             c = tint[frozenset((e["a"], e["b"]))]
             for (x, y, _), (xo, yo, _) in ((e["p0"], e["p1"]), (e["p1"], e["p0"])):
-                ends.setdefault((round(x, 1), round(y, 1)), []).append((c, (y - yo, xo - x)))
+                ends.setdefault((round(x, 1), round(y, 1)), []).append((c, (y - yo, xo - x), "%x>%x" % (e["a"], e["b"])))
+        top.append(layer("edge-labels", "Edge labels"))
         for e in picked:
             key = frozenset((e["a"], e["b"]))
             unmatched.discard(key)
@@ -461,13 +490,17 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
             angle = math.degrees(math.atan2(x0 - x1, y0 - y1))     # the edge in picture axes
             if angle > 90 or angle < -90:                           # keep the text upright
                 angle -= 180 if angle > 0 else -180
-            top.append('<text transform="translate(%.1f %.1f) rotate(%.1f)" y="%g" paint-order="stroke" stroke="%s"'
-                       ' stroke-width="%g" stroke-linejoin="round">%s</text>'
-                       % (y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1, tint[key], fs / 4, text))
+            top.append('<g class="edge-label" data-a="%x" data-b="%x"><text transform="translate(%.1f %.1f) rotate(%.1f)"'
+                       ' y="%g" paint-order="stroke" stroke="%s" stroke-width="%g" stroke-linejoin="round">%s</text></g>'
+                       % (e["a"], e["b"], y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1,
+                          tint[key], fs / 4, escape(text)))
+        top.append("</g>")
         r = lfs * 0.3
         ring = 'stroke="#000" stroke-width="%g"' % (lfs * 0.08)
+        top.append(layer("nodes", "Edge end nodes"))
         for (x, y), parts in ends.items():
             cx, cy = y_left - y, x_top - x
+            top.append('<g class="node" data-x="%g" data-y="%g" data-edges="%s">' % (x, y, " ".join(p[2] for p in parts)))
             top.append('<circle cx="%.1f" cy="%.1f" r="%g" fill="%s" %s/>' % (cx, cy, r, parts[-1][0], ring))
             if len(parts) > 1:                                      # a join: the half toward the first edge in its colour
                 dx, dy = parts[0][1]
@@ -475,41 +508,56 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
                 px_, py_ = -dy / n * r, dx / n * r
                 top.append('<path d="M%.1f %.1f A%g %g 0 0 0 %.1f %.1f Z" fill="%s" %s/>'
                            % (cx + px_, cy + py_, r, r, cx - px_, cy - py_, parts[0][0], ring))
+            top.append("</g>")
+        top.append("</g>")
         top.append("</g>")
     if vehicles:
-        out.append('<g id="vehicles" inkscape:groupmode="layer" inkscape:label="Vehicles" transform="scale(%g)"'
-                   ' font-family="sans-serif" font-size="%g">' % (1.0 / mpp, fs))
+        out.append(layer("vehicles", "Vehicles", ' transform="scale(%g)" font-family="sans-serif" font-size="%g"'
+                         % (1.0 / mpp, fs)))
+        by_class = {}
         for v in vehicles:
-            length, width = next((sz for pre, sz in VEHICLE_SIZE if v["model"].startswith(pre)), (6, 2.5))
-            px, py = y_left - v["y"], x_top - v["x"]
-            angle = math.degrees(math.atan2(-v["fx"], -v["fy"]))      # the facing in picture axes
-            tip = min(width * 0.9, length / 2)                        # the point's length comes out of the body's
-            fill = next((c for pre, c in VEHICLE_FILL if v["model"].startswith(pre)), VEHICLE_GREY)
-            edge = RAIL_OUTLINE if v["model"].startswith(RAIL_BOUND) else "#fff"
-            x0, x1, hw = -length / 2, length / 2, width / 2
-            out.append('<polygon transform="translate(%.1f %.1f) rotate(%.1f)" points="%g,%g %g,%g %g,0 %g,%g %g,%g"'
-                       ' fill="%s" stroke="%s" stroke-width="0.5" stroke-linejoin="round"/>'
-                       % (px, py, angle, x0, -hw, x1 - tip, -hw, x1, x1 - tip, hw, x0, hw, fill, edge))
-            if v["slot"] in names:
-                out.append('<text x="%.1f" y="%.1f"%s>%s</text>'
-                           % (px + max(length, 8) / 2 + 2, py - width / 2 - 1, halo, short_name(names[v["slot"]])))
+            cls = vehicle_class(v["model"])
+            by_class.setdefault("train" if cls == "waggon" else cls, []).append((cls, v))
+        for layer_cls in sorted(by_class):
+            out.append(layer("vehicles-" + safe_id(layer_cls), "Vehicles: " + layer_cls))
+            for cls, v in by_class[layer_cls]:
+                length, width = next((sz for pre, sz in VEHICLE_SIZE if v["model"].startswith(pre)), (6, 2.5))
+                px, py = y_left - v["y"], x_top - v["x"]
+                angle = math.degrees(math.atan2(-v["fx"], -v["fy"]))      # the facing in picture axes
+                tip = min(width * 0.9, length / 2)                        # the point's length comes out of the body's
+                fill = next((c for pre, c in VEHICLE_FILL if v["model"].startswith(pre)), VEHICLE_GREY)
+                edge = RAIL_OUTLINE if v["model"].startswith(RAIL_BOUND) else "#fff"
+                x0, x1, hw = -length / 2, length / 2, width / 2
+                out.append('<g id="vehicle-%s" class="vehicle %s" data-slot="%s" data-model=%s data-class="%s"'
+                           ' data-x="%.1f" data-y="%.1f">'
+                           % (v["slot"], safe_id(cls), v["slot"], quoteattr(v["model"]), safe_id(cls), v["x"], v["y"]))
+                out.append('<polygon transform="translate(%.1f %.1f) rotate(%.1f)" points="%g,%g %g,%g %g,0 %g,%g %g,%g"'
+                           ' fill="%s" stroke="%s" stroke-width="0.5" stroke-linejoin="round"/>'
+                           % (px, py, angle, x0, -hw, x1 - tip, -hw, x1, x1 - tip, hw, x0, hw, fill, edge))
+                if v["slot"] in names:
+                    out.append('<text x="%.1f" y="%.1f"%s>%s</text>'
+                               % (px + max(length, 8) / 2 + 2, py - width / 2 - 1, halo, escape(short_name(names[v["slot"]]))))
+                out.append("</g>")
+            out.append("</g>")
         out.append("</g>")
     return out + top, unmatched
 
 
 def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1):
-    """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
-    data URI), `roads` and `rails`, each holding one path per street or track type.
-    `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
+    """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
+    `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
+    street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
     right (picture x is `y_left - y`, picture y is `x_top - x`)."""
     w, h = size[0] * mpp, size[1] * mpp
     unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
-    groups = {"road": {}, "rail": {}}
+    groups = {"road": {}, "rail": {}}                    # family -> type -> one <path> per edge
     for e in edges:
         fam = "rail" if e["family"] == "track" else "road"
         (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-        groups[fam].setdefault((e["type"] or "unknown", edge_width(e, lanes, unit, mpp)), []).append(
-            "M%.1f %.1fL%.1f %.1f" % (y_left - y0, x_top - x0, y_left - y1, x_top - x1))
+        groups[fam].setdefault(e["type"] or "unknown", []).append(
+            '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="M%.1f %.1fL%.1f %.1f"/>'
+            % (fam, safe_id(e["type"] or "unknown"), e["a"], e["b"], ' data-edge="%x"' % e["e"] if e.get("e") else "",
+               edge_width(e, lanes, unit, mpp), y_left - y0, x_top - x0, y_left - y1, x_top - x1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0] * zoom, size[1] * zoom, size[0], size[1]),
@@ -517,7 +565,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
              '<style>.road{stroke:%s}.rail{stroke:%s}'
              '.road,.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}</style>'
              % (ROAD_HEX, RAIL_HEX),
-             '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain" transform="scale(%g)">' % (1.0 / mpp),
+             layer("terrain", "Terrain", ' transform="scale(%g)"' % (1.0 / mpp)),
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
              '</g>']
@@ -526,12 +574,13 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
         grid_lines, grid_labels = grid_layers(size, mpp, x_top, y_left, grid)
         parts += grid_lines
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
-        parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
-                     % (fam, label, 1.0 / mpp))
-        for (t, width), segs in sorted(groups[fam].items()):
-            parts.append('<path class="%s %s" d="%s" fill="none" stroke="%s" stroke-width="%g"'
-                         ' stroke-linecap="round" stroke-linejoin="round"/>'
-                         % (fam, t, "".join(segs), ROAD_HEX if fam == "road" else RAIL_HEX, width))
+        parts.append(layer(fam + "s", label, ' transform="scale(%g)"' % (1.0 / mpp)))
+        for t, paths in sorted(groups[fam].items()):         # a sublayer per street or track type
+            parts.append(layer("%s-%s" % (fam, safe_id(t)), "%s: %s" % (label, t),
+                               ' data-type=%s fill="none" stroke="%s" stroke-linecap="round" stroke-linejoin="round"'
+                               % (quoteattr(t), ROAD_HEX if fam == "road" else RAIL_HEX)))
+            parts += paths
+            parts.append("</g>")
         parts.append("</g>")
     parts += overlay                                     # edge labels and vehicles over the network
     parts += grid_labels                                 # the coordinates over everything
