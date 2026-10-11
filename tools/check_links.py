@@ -28,7 +28,8 @@ _EXTERNAL = re.compile(r"^(?:[a-z][a-z0-9+.-]*:|//)", re.I)
 def md_files(root):
     try:
         out = subprocess.run(
-            ["git", "-C", root, "ls-files", "*.md"],
+            ["git", "-C", root, "ls-files", "--cached", "--others",
+             "--exclude-standard", "*.md"],
             capture_output=True, text=True, check=True,
         ).stdout.split("\n")
         return sorted(f for f in out if f)
@@ -84,7 +85,7 @@ def main():
     problems = []
     linked_from_docs_readme = set()
 
-    for f, (links, _) in scanned.items():
+    for f, (links, _) in list(scanned.items()):
         for n, target in links:
             if _EXTERNAL.match(target):
                 continue
