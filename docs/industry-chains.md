@@ -74,7 +74,7 @@ The `categoryList` in each industry file names the economies it appears in; the 
 - Subarctic only: cement_plant, paper_mill, printing_press.
 - Tropical only: rubber_farm, tire_factory.
 
-The matching cargo files list the economies each cargo exists in, which is where sawdust (subarctic only), paper and books (subarctic only), cement (subarctic only) and tires and rubber (tropical only) come from. **Open**: the saw_mill and vehicle_factory rules still name sawdust and tires. How the game treats an input whose cargo the economy lacks is not in the files read; it presumably drops that stock.
+The matching cargo files list the economies each cargo exists in. Sawdust, paper, books and cement are subarctic only; tires and rubber tropical only; clay temperate and dry only. Four more are missing from one climate each: vegetables and bricks from subarctic, beverages from tropical, fish from dry. What each economy leaves out of town cargo, as seen in saves, is in [climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo). **Open**: some rules still name a cargo their climate lacks (the saw_mill's sawdust and the vehicle_factory's tires outside those climates, the farm's vegetables in subarctic). How the game treats an input whose cargo the economy lacks is not in the files read; it presumably drops that stock.
 
 Each economy file also holds:
 

@@ -51,8 +51,7 @@ Checked against it, none of these split the 182 saves into 0 and 1 (the best sin
 The params entry with the empty key is a flat Lua table: one layer, with the dotted names stored as the keys (**Observed** on 599 to 604, 22 catalog saves and ours). Keys include `isMapEditor`, `map.size`, `advancedOptions.*` and `townConfig.*`.
 
 - `isMapEditor` is `true` in map editor saves. See [editor-saves.md](editor-saves.md).
-- **A setting is stored as its position in the option list plus 1** (**Confirmed** on 604). The option lists, defaults and difficulty presets are in [settings.md](settings.md).
-- **The stored settings are those of the last load, not of the New Game screen** (**Confirmed** on 604). Changing options on the Load Game settings tab rewrites them in the next save, see [settings.md](settings.md#changing-settings-when-loading).
+- How a value is stored (its place in the option list), the option lists, the difficulty presets and how a load rewrites them are in [settings.md](settings.md).
 
 ## Counts the load dialog shows
 

@@ -33,7 +33,7 @@ Script paths as they appear in the stream, and where each is described. A mod's 
 
 ### Industries
 
-The state of `game_mechanics/industries/industries.gs` was empty in the editor saves checked. In a played 604 game (catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3), over 300 industries) it held only `industryFailedExtensions`, `tick` and `triangles`, so the Industries tab's input, output, workload and shipment figures are not kept there (**Observed**). They are presumably in the entity data, which was not read.
+The state of `game_mechanics/industries/industries.gs` was empty in the editor saves checked. In a played 604 game (catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3), over 300 industries) it held only `industryFailedExtensions`, `tick` and `triangles`, so the Industries tab's input, output, workload and shipment figures are not kept there (**Observed**). Production, consumption and stocks follow from the `items*` statistics lists of the entity data ([statistics-lists.md](statistics-lists.md)), and a closing industry's deadline is a field of its own record ([notifications.md](notifications.md#industry-closing-notifications-604)).
 
 ## Times
 

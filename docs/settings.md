@@ -86,7 +86,7 @@ Each preset was clicked in turn on one test game (Easy, Normal, Hard, Very Hard,
 
 - A new game was made (Tiny, 1 : 3, tropical, a typed seed), saved, loaded, six options were changed on that tab and the game was saved under a new name. The new header held the changed values and no others: of 32 settings values, 26 were equal. The changes were subsidy risk Risky to Fair, vehicle costs 75% to 100%, industry productivity 150% to 75%, industry target density Packed to Dense, population 150% to 50% and delivery sensitivity Low to High.
 - Every value on the load screen matched the new header, and each settings key occurs once in the stream, in the header. There is no second copy.
-- The tab's **Experimental** group has **Industries** and **Climate**. Setting them to Dry and Temperate changed the header's `economy` resource from `tropic.eco` to `dry.eco` and `climate` from `tropical.clima` to `temperate.clima` (see [header.md](header.md) for the resources and [cargo-ids.md](cargo-ids.md) for the pairs).
+- The tab's **Experimental** group has **Industries** and **Climate**. Setting them to Dry and Temperate changed the header's `economy` resource from `tropic.eco` to `dry.eco` and `climate` from `tropical.clima` to `temperate.clima` (see [header.md](header.md) for the resources and [climates-economies.md](climates-economies.md) for the pairs).
 - Map size, map format and the seed are not on that screen and did not change.
 - So the saves of one game can hold different settings, and what a save says is only known to be in force from its last load.
 
@@ -99,9 +99,8 @@ The Load Game list shows the loaded save's own values: its Difficulty row read "
 ## Open
 
 - Whether the changes act in play: for example whether a higher infrastructure upkeep applies to buildings that already exist, or only to new ones. The in-play effect was not tested.
-- What a mod adds to the script states once it has run in the game, and whether a deactivated mod with options is dropped with its options. Only mods with no options were switched on and off ([mods.md](mods.md#open)).
+- The questions about mods (a deactivated mod's options, whether mod options follow the position-plus-1 rule) are in [mods.md](mods.md#open).
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
 - Where the "Achievements cannot be earned" state is kept, if it is kept at all.
 - Whether `townConfig.sensitivityUrbanCare` is the Reputation toggle, and what `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
-- Whether mod options follow the position-plus-1 rule ([mods.md](mods.md#mod-options)).

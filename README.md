@@ -18,11 +18,12 @@ Start at [docs/README.md](docs/README.md).
 - Header: start year, date shown, map size, money, preview image, settings, the map seed.
 - Mods: the mod list entry, mod options, switching mods on and off when loading, the states and errors a mod keeps.
 - Settings and the climate and economy pairs.
+- Industry chains: base-game recipes, which climates have which industry, each cargo's transport class.
 - Calendar: the game clock, calendar speed and the day table.
-- Lua value encoding, and the script states: weather, company rank and loans, inflation, counters, notifications, subsidies, town ratings, landmarks, mod states.
-- Entity data: town records, warehouses, the statistics lists behind stocks and yearly charts, entity names, models, animals, terrain, and searches that failed.
+- Lua value encoding, and the script states: weather, company rank and loans, inflation, counters, notifications, subsidies, town ratings, landmarks, the hot air balloon, mod states.
+- Entity data: town records, warehouses, the statistics lists behind stocks and yearly charts, entity names, line stops and trip plans, models and vehicles, animals, terrain, and searches that failed.
 - The Finances tab against the money journal.
-- Cargo type ids.
+- Cargo type ids and the save's cargo list.
 - Map editor saves, and converting a regular save into one.
 - Format versions seen in the wild, and whether a save names its platform.
 

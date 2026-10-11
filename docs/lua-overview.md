@@ -96,7 +96,7 @@ Counts per save (the string scan counts runs of printable bytes of 3 to 200 whos
 | Every key name, as a string | Which time base a time uses, see [calendar.md](calendar.md) |
 | The type of every value (the tag) | That a numeric key is an array position rather than an id |
 | How long every table is | Where the block starts: found by searching for a path |
-| | Names for numeric ids, see [cargo-ids.md](cargo-ids.md) |
+| | Names for most numeric ids. Cargo ids are the exception: a cargo list outside the Lua part gives them, see [cargo-ids.md](cargo-ids.md#the-id-is-the-position-in-the-cargo-list) |
 
 So a reader needs no schema to walk a state, but needs the game's files or a test in the game to say what a field is.
 

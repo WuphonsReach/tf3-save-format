@@ -25,7 +25,7 @@ The header names a climate and an economy in its config resources (`climate`, `e
 - `temperate.eco` has no cement: 15 never appeared in a temperate economy record, while 33 is common.
 - `all.eco` has everything, and its records used 15 and 33 both.
 
-Each of those economy files (`economy/<name>.eco.lua` in the install's `base/content/economy.zip`, 604 build) was read to see which cargo it removes. The ids themselves are not in those files and are not in the save: no cargo name string sits next to an id in any of the four climates' saves.
+Each of those economy files (`economy/<name>.eco.lua` in the install's `base/content/economy.zip`, 604 build) was read to see which cargo it removes. The ids are not in those files. The save has its own cargo list, which gives each cargo's id as its position and holds all 37 base cargo whatever the economy ([cargo-ids.md](cargo-ids.md#the-id-is-the-position-in-the-cargo-list)).
 
 Which industries each economy removes, and what each industry makes, are in [industry-chains.md](industry-chains.md).
 

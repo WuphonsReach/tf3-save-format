@@ -4,7 +4,7 @@ State of the script `landmarks/landmarks.gs`. Checked on 604, catalog save [6417
 
 ## Finding it
 
-The path string `landmarks/landmarks.gs` has no `game_mechanics/` prefix. In both saves it sat close to the end of the stream (about 98%), among other script states. Seen in this order: `game_mechanics/celebrations/celebrations.gs`, `industries/industry_workers.gs`, `landmarks/landmarks.gs`, `mission/mission.gs`, `terrain/reforestation.gs`, `vehicle/vehicle_modifier.gs`. The body follows the path string as described in [script-states.md](script-states.md#finding-a-table). **Observed**.
+The path string `landmarks/landmarks.gs` has no `game_mechanics/` prefix. In both saves it sat close to the end of the stream (about 98%), among other script states ([the order seen](script-states.md#states-seen)). The body follows the path string as described in [script-states.md](script-states.md#finding-a-table). **Observed**.
 
 The state was 996 bytes in both saves and has two keys.
 
@@ -13,7 +13,7 @@ The state was 996 bytes in both saves and has two keys.
 A table `site entity id -> cargo id -> amount`, all numbers f64.
 
 - **Confirmed**: for the Summer Palace site, the stored amounts equalled the per-cargo progress the window showed, in both states. A: `{2: 264, 13: 264, 24: 528, 31: 264}` against 264/300 on three cargos and 528/600 on one. B: `{2: 267, 13: 267, 24: 534, 31: 267}` against 267/300 and 534/600.
-- Cargo 13 is planks and 31 is furniture ([cargo-ids.md](cargo-ids.md)). The window's other two cargos were dyes and stone, and the stored 528 against 264 puts stone (needing 600, twice the others' 300) on id 24, which leaves dyes on id 2. That pairing is **Observed**, from the window's numbers alone.
+- Cargo 13 is planks and 31 is furniture ([cargo-ids.md](cargo-ids.md)). The window's other two cargos were dyes and stone, and the stored 528 against 264 puts stone (needing 600, twice the others' 300) on id 24, which leaves dyes on id 2. The save's cargo list gives the same two ids (dyes 2, stone 24, [cargo-ids.md](cargo-ids.md#the-id-is-the-position-in-the-cargo-list)). **Observed**.
 - Between A and B only these four numbers in the whole state changed (+3, +3, +6 and +3). They equal what left the site's input stocks in the window: planks 56 to 53, furniture 97 to 94, stone 116 to 110. The dye stock went 0 to 2 while dye progress rose by 3, which fits 5 delivered and 3 used (the truck's window showed 5 of 30 dye on board before it unloaded). So the stock is used up one for one as progress. **Observed**, one delivery.
 - The save held six more sites, with round totals: 200, 400, 600, 800, 1,000 or 1,200 per cargo. Whether these are finished sites was not checked. **Open**.
 - The requirements (300 and 600 here) were not found as stored numbers. **Open**.
