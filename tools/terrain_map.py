@@ -25,11 +25,13 @@ game's own palette.
              Giant map at 4 m, 52 million) is refused unless --mpp is raised or --force-size is
              given. A 52 million pixel map took 42 s and 1.3 GB, and its SVG was 81 MB.
 --crop X,Y,R draw only the square of half-width R metres around map point (X, Y), for a close
-             look at a station or a junction.
+             look at a station or a junction. X and Y are the map's own coordinates, not the
+             picture's.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
              wide (at least one pixel).
 --grid N     (SVG only) add a `grid` layer: a line at every multiple of N metres of map x and y,
-             labelled `x -3000` along the top and `y 4500` along the left, so a place seen in the
+             labelled `y 4500` along the top (the lines that run up the picture) and `x -3000`
+             along the left (the lines that run across it), so a place seen in the
              picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
              Lines at multiples of 1000 are darker and thicker, the others dotted and faint; the
              lines are one layer under the roads and the labels another over everything.
@@ -43,9 +45,10 @@ game's own palette.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
 scale; the heightmap is one `vec<u16>` of 65 x 65 per tile, tile `ty * tiles_x + tx`. Grid point
-(c, r) of the stitched grid is at x = -width / 2 + 4c, y = -height / 2 + 4r. North is up in the
-image: row 0 is the largest y. That y points north is the usual top-down reading of a right-handed
-map and was not checked against the game's compass.
+(c, r) of the stitched grid is at x = -width / 2 + 4c, y = -height / 2 + 4r. The picture is turned
+so that north is up and east is right: image up is +x and image right is -y, which is the grid
+turned a quarter turn anticlockwise (docs/terrain.md, "Which way is north"). So a grid row is a
+picture column, and the picture's width is the map's y extent.
 
 The roads and rails are the street-edge table (docs/road-network.md, street_edges.py), straight
 chords between the end positions: roads dark grey, rails red. Bridges and tunnels
@@ -142,8 +145,8 @@ def read_terrain(data):
 
 
 def read_heightmap(data, tiles_x, tiles_y):
-    """The stitched grid as a list of `array('H')` rows, row r (y rising from the map's south edge)
-    of 64 * tiles_x + 1 points. Found by `0e 00 00 00`, 12 zero bytes, the tile count and 4225
+    """The stitched grid as a list of `array('H')` rows, row r (y rising with r) of
+    64 * tiles_x + 1 points (x rising along the row). Found by `0e 00 00 00`, 12 zero bytes, the tile count and 4225
     together. The u32 before the `0e` is `ff ff ff ff` in some saves and a small number in others,
     so it is not part of the key."""
     count = tiles_x * tiles_y
@@ -201,8 +204,8 @@ def upsample(rows, f):
 
 
 def crop_grid(rows, tx, ty, cx, cy, radius):
-    """The part of the grid within `radius` metres of (cx, cy), and the map coordinates of its
-    top-left pixel (x_left, y_top)."""
+    """The part of the grid within `radius` metres of (cx, cy), and the map coordinates (x_top,
+    y_left) of its top-left pixel in the north-up picture: the largest x and the largest y."""
     w, h = tx * 256, ty * 256
     c0 = max(0, int((cx - radius + w / 2) // GRID_STEP))
     c1 = min(64 * tx, int(-(-(cx + radius + w / 2) // GRID_STEP)))
@@ -210,15 +213,28 @@ def crop_grid(rows, tx, ty, cx, cy, radius):
     r1 = min(64 * ty, int(-(-(cy + radius + h / 2) // GRID_STEP)))
     if c1 - c0 < 2 or r1 - r0 < 2:
         raise ValueError("the crop lies outside the map")
-    return [r[c0:c1 + 1] for r in rows[r0:r1 + 1]], (-w / 2 + GRID_STEP * c0, -h / 2 + GRID_STEP * r1)
+    return [r[c0:c1 + 1] for r in rows[r0:r1 + 1]], (-w / 2 + GRID_STEP * c1, -h / 2 + GRID_STEP * r1)
+
+
+def to_picture(rows, step):
+    """The grid in the picture's order, every `step`th point: picture row j (top first, x falling)
+    is grid column `last - j * step`, and along it y falls from the grid's last row."""
+    width = len(rows[0])
+    flat = array("H")
+    for r in rows:
+        flat.extend(r)
+    picture = []
+    for c in range(width - 1, -1, -step):
+        col = flat[c::width]                                 # the column, y rising
+        col.reverse()
+        picture.append(col[::step])
+    return picture
 
 
 def render(rows, step, off_z, unit, water, spacing=None):
-    """RGB bytes (top row first) and (width, height) of the grid sampled every `step` points.
-    Hill shading from the north-west, vertical scale doubled."""
-    # image row j is grid row (last - j * step), north first
-    last = len(rows) - 1
-    picked = [rows[last - j * step][::step] for j in range((last // step) + 1)]
+    """RGB bytes (top row first) and (width, height) of the grid sampled every `step` points,
+    turned north up and east right. Hill shading from the north-west, vertical scale doubled."""
+    picked = to_picture(rows, step)
     w, h = len(picked[0]), len(picked)
     spacing = spacing or GRID_STEP * step
     water_v = (water - off_z) / unit
@@ -247,7 +263,7 @@ def render(rows, step, off_z, unit, water, spacing=None):
             is_land, col = base(row[i])
             if is_land:
                 dzdx = (row[i + 1 if i + 1 < w else i] - row[i - 1 if i else i]) * k
-                dzdy = (up[i] - down[i]) * k                 # y rises towards the top of the image
+                dzdy = (up[i] - down[i]) * k                 # rises towards the top of the picture
                 s = (-dzdx * lx - dzdy * ly + lz) / (1 + dzdx * dzdx + dzdy * dzdy) ** 0.5
                 f = max(0.55, min(1.25, 0.5 + 0.75 * s))
                 out[o:o + 3] = bytes(min(255, int(c * f)) for c in col)
@@ -282,8 +298,9 @@ def _line(img, w, h, x0, y0, x1, y1, colour, width=1):
             y0 += sy
 
 
-def draw_network(img, size, x_left, y_top, mpp, edges, lanes):
-    """Draw roads, then rails over them. Returns (roads drawn, rails drawn)."""
+def draw_network(img, size, x_top, y_left, mpp, edges, lanes):
+    """Draw roads, then rails over them. Returns (roads drawn, rails drawn). Picture x is
+    `y_left - y` and picture y is `x_top - x` (north up, east right)."""
     w, h = size
     n = {"street": 0, "track": 0}
     for fam, colour in (("street", ROAD), ("track", RAIL)):
@@ -291,18 +308,20 @@ def draw_network(img, size, x_left, y_top, mpp, edges, lanes):
             if e["family"] != fam and not (fam == "street" and e["family"] is None):
                 continue
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-            _line(img, w, h, (x0 - x_left) / mpp, (y_top - y0) / mpp,
-                  (x1 - x_left) / mpp, (y_top - y1) / mpp, colour,
+            _line(img, w, h, (y_left - y0) / mpp, (x_top - x0) / mpp,
+                  (y_left - y1) / mpp, (x_top - x1) / mpp, colour,
                   max(1, round(edge_width(e, lanes, max(3.0, 1.5 * mpp), mpp) / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
 
 
-def grid_layers(size, mpp, x_left, y_top, step):
+def grid_layers(size, mpp, x_top, y_left, step):
     """The grid as two layers, `grid` (the lines) and `grid-labels` (the coordinates, at the top
     and left edges, meant to be drawn last so they sit over the network). A line at every
     multiple of `step` metres in map x and y: those at multiples of 1000 m are darker and
-    thicker, the others dotted and faint. Coordinates inside are metres from the image's
+    thicker, the others dotted and faint. The lines of constant y run up the picture (y falls
+    to the right) and are labelled along the top; those of constant x run across it (x falls
+    downwards) and are labelled along the left. Coordinates inside are metres from the image's
     top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
     size_t = max(7 * mpp, step * 0.07)                   # label size in metres
@@ -314,25 +333,26 @@ def grid_layers(size, mpp, x_left, y_top, step):
     scale = "scale(%g)" % (1.0 / mpp)
     lines = ['<g id="grid" inkscape:groupmode="layer" inkscape:label="Grid %d m" transform="%s">' % (step, scale)]
     labels = ['<g id="grid-labels" inkscape:groupmode="layer" inkscape:label="Grid labels" transform="%s">' % scale]
-    x = -(-x_left // step) * step                        # the first multiple of step at or after x_left
-    while x <= x_left + w:
-        px = x - x_left
-        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if x % 1000 == 0 else minor))
-        labels.append('<text x="%g" y="%g" %s>x %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, x))
-        x += step
-    y = -(-(y_top - h) // step) * step
-    while y <= y_top:
-        py = y_top - y
-        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if y % 1000 == 0 else minor))
-        labels.append('<text x="%g" y="%g" %s>y %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, y))
-        y += step
+    y = (y_left // step) * step                          # the first multiple of step at or below y_left
+    while y >= y_left - w:
+        px = y_left - y
+        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if y % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>y %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, y))
+        y -= step
+    x = (x_top // step) * step
+    while x >= x_top - h:
+        py = x_top - x
+        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if x % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>x %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, x))
+        x -= step
     return lines + ["</g>"], labels + ["</g>"]
 
 
-def svg_document(png, size, mpp, x_left, y_top, edges, lanes, grid=None):
+def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
-    Coordinates inside the layers are metres from the image's top-left corner."""
+    Coordinates inside the layers are metres from the image's top-left corner, north up and east
+    right (picture x is `y_left - y`, picture y is `x_top - x`)."""
     w, h = size[0] * mpp, size[1] * mpp
     unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
     groups = {"road": {}, "rail": {}}
@@ -340,7 +360,7 @@ def svg_document(png, size, mpp, x_left, y_top, edges, lanes, grid=None):
         fam = "rail" if e["family"] == "track" else "road"
         (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
         groups[fam].setdefault((e["type"] or "unknown", edge_width(e, lanes, unit, mpp)), []).append(
-            "M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
+            "M%.1f %.1fL%.1f %.1f" % (y_left - y0, x_top - x0, y_left - y1, x_top - x1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
@@ -354,7 +374,7 @@ def svg_document(png, size, mpp, x_left, y_top, edges, lanes, grid=None):
              '</g>']
     grid_labels = []
     if grid:                                             # the lines above the terrain, under the network
-        grid_lines, grid_labels = grid_layers(size, mpp, x_left, y_top, grid)
+        grid_lines, grid_labels = grid_layers(size, mpp, x_top, y_left, grid)
         parts += grid_lines
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
         parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
@@ -418,24 +438,24 @@ def main():
                 print("REFUSED %s: --mpp %d needs --crop" % (os.path.basename(path), args.mpp))
                 continue
             rows = read_heightmap(data, tx, ty)
-            x_left, y_top = -map_w / 2, map_h / 2
+            x_top, y_left = map_w / 2, map_h / 2
             if crop:
-                rows, (x_left, y_top) = crop_grid(rows, tx, ty, *crop)
+                rows, (x_top, y_left) = crop_grid(rows, tx, ty, *crop)
             if fine > 1:
                 rows = upsample(rows, fine)
             img, size = render(rows, step, off_z, unit, water, args.mpp)
             roads = rails = 0
             edges = [] if args.no_network else read_edges(data)
             if crop:                                  # only the edges that touch the picture
-                x1, y1 = x_left + size[0] * args.mpp, y_top - size[1] * args.mpp
+                x_bot, y_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
                 edges = [e for e in edges
-                         if max(e["p0"][0], e["p1"][0]) >= x_left and min(e["p0"][0], e["p1"][0]) <= x1
-                         and max(e["p0"][1], e["p1"][1]) >= y1 and min(e["p0"][1], e["p1"][1]) <= y_top]
+                         if max(e["p0"][0], e["p1"][0]) >= x_bot and min(e["p0"][0], e["p1"][0]) <= x_top
+                         and max(e["p0"][1], e["p1"][1]) >= y_right and min(e["p0"][1], e["p1"][1]) <= y_left]
             if not args.png:
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
             elif edges:
-                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, edges, lanes)
+                roads, rails = draw_network(img, size, x_top, y_left, args.mpp, edges, lanes)
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
@@ -446,7 +466,7 @@ def main():
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges, lanes, args.grid))
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid))
         else:
             open(dest, "wb").write(png)
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
