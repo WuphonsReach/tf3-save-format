@@ -60,7 +60,7 @@ The game has no separate truck stop, bus stop or bus station building. There are
 |---|---|---|
 | `small_*` | Road Stop | truck stop, bus stop, cargo stop, stop (ambiguous) |
 | `modular_terminal`, `STATIONS_STREET_PASSENGER` | Bus/Tram Station | bus station, bus terminal |
-| `modular_terminal`, `STATIONS_STREET_CARGO_UNIVERSAL` | Universal Cargo Station | truck station, cargo station, cargo terminal, truck terminal, loading station |
+| `modular_terminal`, `STATIONS_STREET_CARGO_UNIVERSAL` (or `_BULK`, `_FLATBED`, `_GOODS`, `_LIQUID`) | Universal (Bulk, Flatbed, Goods, Liquid) Cargo Station | truck station, cargo station, cargo terminal, truck terminal, loading station |
 | `harbor_modular`, `HARBOR_SMALL`, `HARBOR_LARGE` | Small or Large Passenger/Cargo Port | harbor, harbour, dock (ambiguous), quay, ship stop |
 | `STATIONS_WATER_SMALL_PIER`, `STATIONS_WATER_MEDIUM_PIER` | Small Landing, Large Landing | pier, jetty |
 | `modular_station` (`rail/`) | rail station build | train station, railway station |
@@ -90,7 +90,8 @@ The categories are the folders under `vehicle/`: `bus`, `car`, `helicopter`, `pl
 | `truck` | lorry, hauler, wagon (cargo) (ambiguous) | a model's label ends in Box, Bulk, Tank or Stake, or has no suffix |
 | `truck` models `horse_cart_small`, `horse_cart_medium`, `horse_cart_barrels` | cart (ambiguous), wagon (ambiguous), dray, carriage (ambiguous) | the labels say "Horse Carriage"; they carry cargo, not people |
 | `bus` | coach (ambiguous), omnibus, minibus, shuttle | a bus model can be a motor bus or horse-drawn |
-| `bus` models `droshky`, `american_post_coach` | carriage (ambiguous), coach (ambiguous), stagecoach, cab, horse bus | horse-drawn passenger carriages; American Post Coach is labelled Stagecoach (`obeissante`, L'Obéissante, is an early steam bus, not horse-drawn) |
+| `bus` model `droshky` | carriage (ambiguous), coach (ambiguous), cab, horse bus | horse-drawn passenger carriage; `obeissante` (L'Obéissante) is an early steam bus, not horse-drawn |
+| `bus` model `american_post_coach` | stagecoach, coach (ambiguous) | label Stagecoach, horse-drawn |
 | `tram` model `double_horse` | horse tram | label Horse Tram, in the `tram` category |
 | `train` | loco, locomotive, engine (ambiguous), railcar | the wagons are `waggon` |
 | `waggon` | wagon (ambiguous), freight car, boxcar, coach (rail) (ambiguous) | a train's cargo or passenger wagon |

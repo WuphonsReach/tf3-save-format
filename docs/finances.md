@@ -65,7 +65,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
 ### A first build-out, row by row
 
-**Observed** on 604, the same game after buying two small ports, two ship depots, a road depot, a specialised fish warehouse, a truck stop, three road vehicles and four ships, and building a short road (calendar paused at 1 January 1900, so every booking carries the same time, 1000). The journal grew from 3 to 20 bookings (editor labels in quotes), and every figure on the company window's Finances tab matched the bookings in its category to the dollar:
+**Observed** on 604, the same game after buying two small ports, two ship depots, a road depot, a specialised fish warehouse, a road stop (`small_*`), three road vehicles and four ships, and building a short road (calendar paused at 1 January 1900, so every booking carries the same time, 1000). The journal grew from 3 to 20 bookings (editor labels in quotes), and every figure on the company window's Finances tab matched the bookings in its category to the dollar:
 
 | Tab row | Value | Bookings |
 |---|---|---|
@@ -98,7 +98,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
 ### A new game's first batch of bookings while paused
 
-**Observed** on 604, the same game a quarter of an hour of play later (save at clock 1,121,000, the calendar stopped, 477 bookings, money 2,503,056,661). The player added vehicles to the fish lines, bought the first buses and trucks, built a quarry-to-concrete-plant line and took a subsidy:
+**Observed** on 604, the same game a quarter of an hour of play later (save at clock 1,121,000, the calendar stopped, 477 bookings, money 2,503,056,661). The player added vehicles to the fish lines, bought the first buses and trucks, built a line from a `quarry` to the `cement_plant` and took a subsidy:
 
 - **Everything done while paused is booked at the paused tick.** 40 bookings share the time 1,095,400: 5 depots, 5 stations, a warehouse, 5 pieces of street, 25 vehicle purchases and the subsidy payment. The game had been paused with the clock at 1,095,400 while the player built, so building is allowed while paused and the booking time is the clock, not the order. The first build-out ([above](#a-first-build-out-row-by-row)) was booked in the same way at time 1,000. **Observed**, two paused sessions.
 - **Vehicle purchases are one booking each**, in groups of equal price: 4 x 60,903 (the horse carts added at 887,400), then at 1,095,400 5 x 60,912 (carts again), 4 x 57,138, and 16 x 96,918, all `Road`, and two ships, 585,194 at 1,021,800 and 438,891 at 1,035,400 (`Water`). The two different prices for the same cart (60,903 and 60,912) are 0.015% apart. Why they differ is **Open**. The later maintenance batches show the effect of each purchase: the 900,000 batch had 11 running-cost bookings (7 + 4 carts) and the 1,080,000 batch 13 (+ 2 ships), one per vehicle as in [the earlier batches](running-costs.md#upkeep-and-running-costs-are-booked-in-batches-604).

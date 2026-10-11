@@ -12,7 +12,7 @@ Each industry file has a stock list and a list of rules:
 - A rule has `input`, `output` and `capacity`. `input` is a list of amounts, one per input stock in the order the stocks are declared. `output` maps a cargo to an amount. One cycle of the rule consumes the inputs and yields the outputs.
 - `capacity` carries the comment "duration" in the file, so it is the cycle length in some game time unit. **Open**: which unit.
 - An extractive industry has an input of 0 (it needs nothing). Its input stock, if any, is a booster: a second rule with `booster = true` takes the stock in amounts of 12, 13, 15 or 17 per cycle and outputs nothing.
-- The food factory has two rules, each with `requiredInput` naming one input stock (fish in the first, meat in the second), so it takes fish or meat, plus sheet metal. **Observed** reading of `requiredInput`, **Open** on how the game picks when both are in stock.
+- The `food_factory` has two rules, each with `requiredInput` naming one input stock (fish in the first, meat in the second), so it takes fish or meat, plus sheet metal. **Observed** reading of `requiredInput`, **Open** on how the game picks when both are in stock.
 
 ## Recipes
 
