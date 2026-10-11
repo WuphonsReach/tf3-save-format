@@ -111,6 +111,7 @@ A road edge in a save names its street type; the layout is in [road-network.md](
 | `country_old_medium_barriers` | (label not read) | |
 | `country_old_large_barriers` | Large Country Road With Noise Barrier | six-lane road (the game's description says "Six-lane gravel road") |
 | `town_old_small`, `town_old_xsmall` | (label not read) | |
+| `town_old_large` | (label not read) | four-lane town road |
 
 ## Ambiguous words
 
