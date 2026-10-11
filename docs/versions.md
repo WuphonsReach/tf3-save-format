@@ -80,6 +80,7 @@ An upload date is the latest date a save could have been made, not the date it w
 - **568 to 599 are pre-release** (**Observed**). Every upload at these versions was made before 29 September. Their dates match the closed beta rounds that Urban Games announced in April 2026, including a console round. Uploads from before launch carry no build number, so these formats cannot be tied to game builds.
 - **There are older numbers in the header's `value` field** (see [header.md](header.md)). Some 604 saves hold 543, 555 or 596 there, which suggests their games were started under those versions, so the pre-release numbers seen run at least 543, 555, 568, 585, 596, 599 and 601. No save at 543, 555 or 596 is in the catalog.
 - **Builds before release** (**Open**). Mods other than saves carry builds 40358 (uploaded 15 September) and 40380 (22 September), before launch, possibly from early access. Builds 40419 (2 uploads) and 40420 appear from 6 October, two days before the update was released, possibly from a test branch.
+- **The game's own build line on Linux** (**Observed**, 2026-10-11). The Linux client's main screen shows "Build 40420 Linux 64-bit", the same number as the stability update's `buildVersion` above, so Linux runs the same build number as the PC uploads. The header does not store it: a save made on that install reads 604, as before the update.
 
 ## Platform in the save (2026-10-10)
 
