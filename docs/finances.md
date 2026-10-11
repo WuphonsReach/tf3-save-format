@@ -108,6 +108,14 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - **The loan payment kept its schedule**: at 975,400 and 1,097,200 (121,800 apart), -214,286 and -19,286 each.
 - **Income keeps coming as one pair of bookings per delivery** (Road and Water at one time), now at 635,400, 719,400 (three bookings), 825,200, 915,800, 1,013,200 and 1,099,000, each pair about 24,500 to 25,100 in total.
 
+### Selling a vehicle is a positive booking in the purchase category (604)
+
+**Observed** on 604, one game (the Small subarctic game, saves `1958` and `1959`, paused at clock 43,361,200, 1 January 1912 plus ten days). The player sold seven old horse carts and bought seven `benz1912_box` trucks at the Todmorden road depot ("Buy 7 Vehicles for $2,580,102", $368,586 each in the buy window).
+
+- The journal gained 14 bookings, all at the paused clock and with the same five category bytes as the purchases (3, 6, 2, 0, 0, the `ACQUISITION` / road bookings of the vehicle purchases above). Seven were -368,586, the buy button's per-vehicle price. Seven were **positive**: +48,309, +48,286 and five of +46,838. Their sum, 330,785, is what separates the 2,580,102 bought from the fall of 2,249,317 in the account (2,500,026,265 to 2,497,776,948).
+- So the game books a sale as money in, in the vehicles' own acquisition category, one booking per vehicle, not as a negative purchase. The Finances tab's "Investments, Vehicles" row therefore shows the net. These were the first positive bookings of that kind in the whole journal (5,955 bookings). The sale prices differ a little between vehicles (two at about 48.3 thousand, five at 46,838), which fits a value that depends on age or condition (**Open**: not tested against the vehicle windows).
+- Buying and selling in one go shows in the header counts too, see [header.md](header.md#counts-the-load-dialog-shows).
+
 ### A road depot's upkeep against its window (604)
 
 **Observed** on 604, the same game at clock 5,997,000 (save `1246`). The Bromsgrove Road Depot's window showed "Maintenance Pool 5 / 12", five maintained horse carts (Road Vehicles 8 to 12) and a running cost of $30,503/Year.

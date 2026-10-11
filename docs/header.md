@@ -20,7 +20,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | preview width, height | u32, u32 | 640 x 360 in every save checked (120 catalog saves, 568 to 604) |
 | preview | str | Raw RGB8, width x height x 3 bytes, **bottom row first** (ours) |
 | stats | i64 x 6 | Index 3 is another copy of the money (equal in all 120 catalog saves) |
-| stats | i32 x 11, vec<(u32, u32)>, u32 x 2, i64 x 9, u32 x 2 | **Open** |
+| stats | i32 x 11, vec<(u32, u32)>, u32 x 2, i64 x 9, u32 x 2 | Mostly **open**. Three of the counts the load dialog shows are in here, see [below](#counts-the-load-dialog-shows) |
 | labels | vec<(str, u32)> | Text such as `"%d Point(s) for Company Value"` with a number |
 | stats | u32, i64 x 2, u32 | **Open** |
 | config mods | vec<str> | The ids of the save's mods, the same set as the mod list above (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). See [mods.md](mods.md#the-mod-list-entry) |
@@ -53,6 +53,23 @@ The params entry with the empty key is a flat Lua table: one layer, with the dot
 - `isMapEditor` is `true` in map editor saves. See [editor-saves.md](editor-saves.md).
 - **A setting is stored as its position in the option list plus 1** (**Confirmed** on 604). The option lists, defaults and difficulty presets are in [settings.md](settings.md).
 - **The stored settings are those of the last load, not of the New Game screen** (**Confirmed** on 604). Changing options on the Load Game settings tab rewrites them in the next save, see [settings.md](settings.md#changing-settings-when-loading).
+
+## Counts the load dialog shows
+
+**Observed** on 604, one game (Small 1 : 3 subarctic, 7 mods; five saves, three of them one purchase apart). The Load Game screen showed 22 stations, 11 lines and 88 vehicles for one of them. Positions are in the order the fields are read, counting from 0:
+
+| Field | Value in that save | What it tracks |
+|---|---|---|
+| `i32` index 2 of the 11-`i32` run | 69 | Road vehicles |
+| `i32` index 4 | 19 | Ships. 69 + 19 is the 88 the screen shows |
+| `i32` index 5 | 22 | Stations |
+| first `u32` of the two `u32` after the nine `i64` | 11 | Lines |
+
+The game total on screen is the sum of the first two rows, not one stored number.
+
+**Buying vehicles shows in the header at once, with the game paused** (**Observed**, same game). Five road vehicles were bought and the game was saved paused before any simulation time passed. Against the save made just before, the road vehicle count went from 69 to 74, the first of the six leading `i64` rose by the purchase price (285,690, as in the buy button), the sixth fell by the same amount, and the header money fell by it too. So the header counts a new vehicle before the player has seen it reach a stop of its line. In the next save, made after about a second of game time at 1x, the first `i64` was 75 lower and the rest were unchanged (the lowering looks like wear on the vehicle value, **open**). Selling seven vehicles of one line and deleting a line in the save before took the road vehicle count from 76 to 69 and the line count from 12 to 11.
+
+**A swap in one paused session** (**Observed**, same game, saves `1958` and `1959` at the same clock): seven old horse carts sold and seven trucks bought. The road vehicle count stayed 83. The first of the six leading `i64` rose by the net spend (1,600,728 to 3,850,045, +2,249,317), the sixth fell by the same (2,446,422 to 197,105) and the header money fell by it. The net is the purchases less the sales ([finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604)). One small number changed by one, the last of the four numbers `save_header.py` prints as `stats3` (11 to 12); nothing else in the header did; what it counts is **Open**.
 
 ## Money in the header
 

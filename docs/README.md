@@ -5,7 +5,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | File | Covers |
 |---|---|
 | [container.md](container.md) | zstd framing, writing a save back |
-| [header.md](header.md) | Header fields in order, preview image, settings |
+| [header.md](header.md) | Header fields in order, preview image (and a crash save's empty one), the vehicle, ship, station and line counts the load dialog shows, settings |
 | [tf3-save-editor.md](tf3-save-editor.md) | Where these notes read a field differently from tf3-save-editor's FORMAT.md or its reader, and why |
 | [mods.md](mods.md) | What a save records about a mod: the mod list entry, options, switching mods on and off when loading, script states |
 | [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log |
@@ -20,12 +20,12 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
 | [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
 | [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
-| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn, industry-closing (deadline field on the industry) and stuck-vehicle entries |
+| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn, industry-closing (deadline field on the industry) and stuck-vehicle entries, the "New Vehicles Available" popups and the model years behind them |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
 | [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
-| [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories; the balance history |
+| [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories, vehicle purchase and sale bookings; the balance history |
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids, tiers and weights, starting cargo |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, the town building component and its Historic Preservation flag, building records replaced or changing level in play |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |

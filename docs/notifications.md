@@ -27,6 +27,16 @@ Path strings for notification scripts under `::/game_mechanics/notifications/typ
 
 The state of `game_mechanics/notifications/availability_notifications.gs` has a `lastYear` number that matched the year on screen (2060, then 2061). It tracks the year but is not the clock. **Observed** on 604.
 
+## "New Vehicles Available" popups (604)
+
+**Observed** on 604, one game (the Small subarctic game of [finances.md](finances.md), start year 1900, saves a year apart and one made nine game days after 1 January 1912, with the popup on screen).
+
+- **One entry per release, made on 1 January.** An entry of `availability.script` carries `params.models`, a list of model paths (`::/vehicle/truck/benz1912/benz1912_bulk.mdl` and so on), an empty `multipleUnits` table, `autoDismissDuration` 60,000 (30 game days at the 2.00x calendar speed of that game) and `playedInitialSound`. Its `timestamp` is exactly the clock value at which the day table starts 1 January ([calendar.md](calendar.md)): 41,882,000 for 1910 and 43,342,000 for 1912. A save made 19,200 clock units later still had both 1912 entries with `dismissed` and `expired` false, and the popup was on screen. The six older entries (1910) were all `true` on both. `lastYear` in `availability_notifications.gs` read 1910 in a save from November 1910 and 1912 in the later one.
+- **The year comes from the model's own data, not from the save.** The install's `.mdl` file of each vehicle (a text file inside its zip under `base/content/vehicle/`) has an `availability` block with `yearFrom` and `yearTo`. Reading all of them (355 models with a block): the five 1910 models (`ps_trillium`, `freightcar_24s`, `halle`, `boxcar_2_verb`, `suburban_2nd`) are exactly the five single-model entries stamped 1910, no model has `yearFrom` 1911 and the save has no entry for 1911, and the three 1912 models (`benz1912_bulk`, `benz1912_box`, `liquid_2_zh`) are exactly the three models in the two entries stamped 1912.
+- **A group makes one popup.** The two Benz trucks share a `notificationGroup` (`benz1912`) with `notificationSortKey` 100 (bulk) and 200 (box), and the entry lists them in that order: the first is named in the popup ("has hit the market") and the rest follow under "The following are also available". The wagon has no group and got its own entry (and its own popup). 75 of the 355 models have a group name and 25 names are shared by more than one model.
+- **Infrastructure has its own type.** The one `con_availability.script` entry (1910, same timestamp as the five vehicles; params `name`, `image`, `special` = `TramCatenary`) names a tram track catenary, not a model. The 1912 popup had no such entry.
+- **Open:** whether `yearTo` ends anything (no popup was seen for it); what a game that skips a year (the calendar set forward) does with the models of the years skipped; whether mod vehicles get entries the same way. **Prediction, not yet tested:** 1 January 1913 should bring two separate entries (`et13` and `univ_2_r`, the two models with `yearFrom` 1913, neither in a group).
+
 ## Dismissing a notification, and what else changes (604)
 
 **Observed** on 604, one new game, two saves 46,400 clock units apart (2,246,600 and 2,293,000) with the player dismissing notifications between them and a new subsidy offer arriving.
