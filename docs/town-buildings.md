@@ -1,6 +1,6 @@
 # Town buildings
 
-The record of every building in a town (houses, shops, workplaces): its level, parcels, height, build time, owning town and the "Historic Preservation" flag, and how the records change in play. The town's own record (capacities and cargo) is in [town-records.md](town-records.md). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game), against the player's screenshots of the building windows.
+The record of every building in a town (houses, shops, workplaces): its level, parcels, height, build time, owning town and the "Historic Preservation" flag, and how the records change in play. The parcels it names are in [parcels.md](parcels.md). The town's own record (capacities and cargo) is in [town-records.md](town-records.md). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game), against the player's screenshots of the building windows.
 
 ## The building record and "Historic Preservation" (604)
 
@@ -27,6 +27,7 @@ u64  timeBuilt    a clock value, see calendar.md
 
 - **The records follow each other with nothing between them.** A record is 41 + 4n bytes, and the distances between consecutive flag bytes were 45, 49, 53 and 57 (n = 1 to 4) for nearly all of 569 records. The order differs from the API's list (the flag sits straight after `level` and one entity, before the parcels). The scan took a `level` byte, an entity, a flag byte of 0 or 1 and a count of 1 to 16, then checked depth, height, a town id and a build time; a find-by-pattern, not by offset.
 - **What the 569 were.** Three towns (entity ids 17,912, 17,913 and 17,914, with 181, 82 and 306 records), every building of the game, not only commercial ones. `1427` held 566 records and `1428` 569: the three buildings built in the 91st month. The two ticked buildings are both in town 17,914: the 5 of 6 one has height 23.3 and `timeBuilt` 9,936,000, the 8 of 8 one (the larger) height 25.7 and `timeBuilt` 7,440,000. Build times run from 0 to 11,304,000, and several buildings share one value (5,017,600 for example), so they come in batches. What `a`, `b` and `d` point to was not followed.
+- **`timeBuilt` is a clock value, 0, or all ones (Observed, 604, one game).** The first save of the [Small subarctic game](test-games.md#small-subarctic-game) (1 January 1900) held 410 records: 327 with 0, 83 with all 64 bits set, none with a clock value. By 1 April 1920 there were 1,329: 1,170 with a clock value, 144 with 0, 15 with all ones. Of the 83 all-ones records, 74 kept their parcel ids and 59 of those had a clock value by then (a rebuild in place writes a new time); of the 327 zeros, 145 did and 38 lost their parcel set. A level change leaves the value alone (21 zeros went from level 1 to 2). The all-ones records are the larger buildings of the start (2 to 4 parcels wide, mostly depth 4, 19.9 m high on average against 15.3 m); what all ones means that 0 does not is **Open**. A scan that wanted a plausible clock value skips them, so the 569 above may be short.
 
 ### Ticking buildings, save by save
 
