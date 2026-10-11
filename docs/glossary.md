@@ -88,7 +88,7 @@ The categories are the folders under `vehicle/`: `bus`, `car`, `helicopter`, `pl
 | `damen_ferry`, `hong_kong_ferry_boat` | ferry | labels Damen Fast Ferry, Meridian Ferry |
 | `herkules_xi_universal`, `virgo_universal`, `votrans_universal` | tug, towboat | labels Hercules XI Towboat, Virgo Towboat, Votrans Towboat Cargo |
 | `truck` | lorry, hauler, wagon (cargo) (ambiguous) | a model's label ends in Box, Bulk, Tank or Stake, or has no suffix |
-| `truck` models `horse_cart_small`, `horse_cart_medium`, `horse_cart_barrels` | cart (ambiguous), wagon (ambiguous), dray, carriage (ambiguous) | the labels say "Horse Carriage"; they carry cargo, not people |
+| `truck` models `horse_cart_small`, `horse_cart_medium`, `horse_cart_barrels` (mods add more, such as `horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) | cart (ambiguous), wagon (ambiguous), dray, carriage (ambiguous) | the labels say "Horse Carriage"; they carry cargo, not people |
 | `bus` | coach (ambiguous), omnibus, minibus, shuttle | a bus model can be a motor bus or horse-drawn |
 | `bus` model `droshky` | carriage (ambiguous), coach (ambiguous), cab, horse bus | horse-drawn passenger carriage; `obeissante` (L'Obéissante) is an early steam bus, not horse-drawn |
 | `bus` model `american_post_coach` | stagecoach, coach (ambiguous) | label Stagecoach, horse-drawn |
@@ -112,7 +112,7 @@ Do not pick a key for these without context:
 - **port**: the `harbor_modular` station, or an industry on the water.
 - **depot**: a vehicle depot (`road_depot`, `rail_depot`, `water_depot`), never a `warehouse`.
 - **station**: one terminal or a whole station group.
-- **carriage, coach, wagon, cart**: a horse-drawn passenger `bus`, a horse-drawn cargo `truck`, the horse tram (`tram` model `double_horse`), a rail `waggon` or a tram car; "coach" can also be a motor `bus` (a motor coach). The words overlap in English (a cart has two wheels, a carriage carries people, a coach is large and enclosed, a wagon is a utility vehicle), and the game's labels do not follow them; a player may call any horse-drawn vehicle a cart. Mods add more horse-drawn models (the Early Road Vehicles `truck` models `horsewagon_1850_v2` and `horsewagon_1850_usa_v2`). In a note, name the model key at the first mention in a section; "cart" or "coach" may follow for the same vehicles.
+- **carriage, coach, wagon, cart**: a horse-drawn passenger `bus`, a horse-drawn cargo `truck`, the horse tram (`tram` model `double_horse`), a rail `waggon` or a tram car; "coach" can also be a motor `bus` (a motor coach) or a private `car` (the early `car` models `coach_01` to `coach_06` are horse coaches). The words overlap in English (a cart has two wheels, a carriage carries people, a coach is large and enclosed, a wagon is a utility vehicle), and the game's labels do not follow them; a player may call any horse-drawn vehicle a cart. Mods add more horse-drawn models (the Early Road Vehicles `truck` models `horsewagon_1850_v2` and `horsewagon_1850_usa_v2`). In a note, name the model key at the first mention in a section; "cart" or "coach" may follow for the same vehicles.
 - **car**: a private `car`, a tram car or a train car.
 - **cargo platform**: a module of `modular_terminal`, not a separate station.
 - **dock**: `harbor_modular` or `water_depot`.

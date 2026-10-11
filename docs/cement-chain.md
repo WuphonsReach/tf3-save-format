@@ -27,7 +27,7 @@ The cement chain of the [Small subarctic game](test-games.md#small-subarctic-gam
 
 ## Replacing both lines' vehicles (604)
 
-**Observed** in the same game from August 1917 to May 1918 (clock 58.4 to 63.2 million, calendar 0.25x), in three manual saves and two autosaves, with the player's screenshots of the line, depot and buy windows up to July 1918. The player replaced the stone line's nine carts with seven Benz 3-Ton Bulk trucks (capacity 12), then the delivery line's 23 trucks with 14 and later 27 of the same model. The bookings of the purchases and sales are in [finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604), and what the line windows showed in [lines.md](lines.md#the-lines-windows-frequency-rate-and-load-columns-604).
+**Observed** in the same game from August 1917 to May 1918 (clock 58.4 to 63.2 million, calendar 0.25x), in three manual saves and two autosaves, with the player's screenshots of the line, depot and buy windows up to July 1918. The player replaced the stone line's nine carts (`horsewagon_1850_usa_v2` and `horse_cart_small`) with seven Benz 3-Ton Bulk trucks (capacity 12), then the delivery line's 23 trucks with 14 and later 27 of the same model. The bookings of the purchases and sales are in [finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604), and what the line windows showed in [lines.md](lines.md#the-lines-windows-frequency-rate-and-load-columns-604).
 
 **The stone line.**
 

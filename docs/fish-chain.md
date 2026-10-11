@@ -8,7 +8,7 @@ How to find a group and read its lists is in [statistics-lists.md](statistics-li
 
 ## A fish chain read end to end: windows, groups, a truck queue (604)
 
-**Observed** on 604 in the Small subarctic game, in three paused saves a few minutes apart (clock about 14.9 million, 15.1 million and 15.6 million), with the player's screenshots of every window in the fish chain taken just before each save. The chain is three fishing industries, each with a ship line to one port, a warehouse by the port, and a road line of horse carts (capacity 4) from a stop at the warehouse to a stop in town. Groups are found as in [Finding a warehouse's stock](statistics-lists.md#finding-a-warehouses-stock), with figures matched to the windows. One game, so every label is **Observed**.
+**Observed** on 604 in the Small subarctic game, in three paused saves a few minutes apart (clock about 14.9 million, 15.1 million and 15.6 million), with the player's screenshots of every window in the fish chain taken just before each save. The chain is three fishing industries, each with a ship line to one port, a warehouse by the port, and a road line of horse carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`, capacity 4, see [test-games.md](test-games.md#small-subarctic-game)) from a stop at the warehouse to a stop in town. Groups are found as in [Finding a warehouse's stock](statistics-lists.md#finding-a-warehouses-stock), with figures matched to the windows. One game, so every label is **Observed**.
 
 ### Every window matched a group
 
@@ -36,7 +36,7 @@ How to find a group and read its lists is in [statistics-lists.md](statistics-li
 
 ### A stuck vehicle: the totals along the route show the queue
 
-The player stopped one cart for a while and saved (`1659`). Counts of fish in the lists, before and after:
+The player stopped one of the road line's carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) for a while and saved (`1659`). Counts of fish in the lists, before and after:
 
 | Point | Before | After |
 |---|---|---|

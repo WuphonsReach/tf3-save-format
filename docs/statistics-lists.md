@@ -73,7 +73,7 @@ A scan of one 940 MB stream took about one minute in Python.
 | Warehouse, stock | 21 then 18 | `itemsUnloaded6` minus `itemsLoaded6`: 29 - 8 in `1131`, 30 - 12 in `1147` |
 | Warehouse, Incoming and Outgoing bars | 18 and 8, then 30 and 12 | the same two fields, with the exception in the first bullet below |
 | Fishing Grounds, Cargo Flow | Produced 18, Destroyed 6 | `itemsProduced6` ending at 18 (steps 12, 15, 18) and `itemsDestroyed6` ending at 6 |
-| Line windows, Transported Last Year | 8 (carts), 40 (ships) | an `itemsTransported6` list ending at 8 (steps 4, 8) and one ending at 40 (steps 30, 40); in `1147` the second ended at 50 and the first at 8 |
+| Line windows, Transported Last Year | 8 (`horsewagon_1850_v2` carts), 40 (ships) | an `itemsTransported6` list ending at 8 (steps 4, 8) and one ending at 40 (steps 30, 40); in `1147` the second ended at 50 and the first at 8 |
 
 - **The bars leave out the newest entry.** In `1131` the warehouse's unloaded list ended at 29 with its last time equal to the save's clock (569,800), but the window's Incoming bar showed 18, the value of the entry before. In `1147` the last unloaded entry (30, at 570,600) was well before the save's clock and the bar showed 30. The loaded list agreed with the bar in both (8 and 12). So the bar is the total up to the last entry that is older than the save's clock, while the stock uses every entry. A ship was unloading at the port when `1131` was paused, which fits an entry made at that very tick. **Observed**, one ship, two saves. This replaces the unexplained 21 against 18 - 8 in [running-costs.md](running-costs.md#upkeep-and-running-costs-are-booked-in-batches-604).
 - **Lists grow by one entry per event time.** The fish loaded at the Fishing Grounds read times 121,749, 243,400 and 352,600 with totals 0, 30 and 40 in `1131`, and the same three plus (630,200, 50) in `1147`. Lists in these two saves held 2 to 9 entries. Each list starts with a total of 0 at a time of its own (121,749, 365,249, 486,999 and so on, not the game start), which looks like the time the list was created; the later entries are totals at the times fish were handled. **Observed**.
@@ -88,7 +88,7 @@ A scan of one 940 MB stream took about one minute in Python.
 |---|---|---|
 | Todmorden Warehouse, Incoming and Outgoing | about 90, 175, 105 and 68, 100, 64 | `itemsUnloaded6` and `itemsLoaded6` (fish): 90, 175, 105 and 68, 100, 64, totals 370 and 232; the stock read 138, which is 370 - 232 |
 | Todmorden Port, Loaded and Unloaded | about 20, 50, 30 and 90, 175, 105 | a fish `itemsLoaded6` with 20, 50, 30 and the same unloaded list as the warehouse |
-| Todmorden Station (a road stop), Loaded | about 68, 102, 66 | a fish `itemsLoaded6` of 68, 102, 66 (the warehouse's outgoing list had 68, 100, 64: the cart line loaded 2 more fish per period than the warehouse list says, which is **Open**) |
+| Todmorden Station (a road stop), Loaded | about 68, 102, 66 | a fish `itemsLoaded6` of 68, 102, 66 (the warehouse's outgoing list had 68, 100, 64: the cart line (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) loaded 2 more fish per period than the warehouse list says, which is **Open**) |
 | Todmorden Fishing Grounds, Produced | about 45, 61, 38 | `itemsProduced6`: 45, 61, 38 |
 | Bromsgrove Quarry, Produced and Destroyed | about 70, 74, 56 and 70, 34, 24 | `itemsProduced24` and `itemsDestroyed24` with those values (24 is stone, see [cargo-ids.md](cargo-ids.md)) |
 | Bromsgrove Quarry North, Produced | about 35, 65, 40 | `itemsProduced24`: 35, 65, 40; no destroyed list |
