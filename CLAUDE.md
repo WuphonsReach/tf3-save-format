@@ -41,6 +41,7 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 
 - Never write or modify a `.sav`. Output (PNGs, JSON summaries) goes to a directory the caller names.
 - Standard library only (Python 3.14 for zstd; older Python needs `zstandard`). Shared code is in `tools/tf3save.py`; new scripts import it. Some private scripts import it too, so keep its function names and return shapes stable.
+- To show a place with named segments and vehicles ("which segment?"), follow `.claude/skills/area-map/SKILL.md`: `terrain_map.py --crop --label --vehicles --name`, pictures to `local/games/<game>/maps/<topic>/`.
 - VS Code flags the `$schema` URL in summaries as untrusted; the local `.vscode/settings.json` fix is in `docs/developer/vscode-schema.md`. Do not change `SCHEMA_URL` for it.
 - Test against real saves before committing, with output to a scratch directory outside the repo.
 
