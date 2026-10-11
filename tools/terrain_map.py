@@ -14,6 +14,10 @@ it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so
 the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
 3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
 (`vector-effect: non-scaling-stroke`) turned short edges into blobs in VS Code's preview.
+A `<metadata>` element
+(namespace `urn:tf3-save-format:terrain-map:1`, one `view` element with attributes) records the
+save's file name, the map size, the metres per pixel, the map point at the picture's top-left
+corner and the x and y range the picture covers, the crop (X, Y, R) if any and the grid step.
 The terrain colours are a plain
 height ramp with hill shading (water below the save's `waterLevel` in blue); they are not the
 game's own palette.
@@ -62,6 +66,7 @@ import struct
 import sys
 import zipfile
 from array import array
+from xml.sax.saxutils import quoteattr
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
@@ -348,10 +353,32 @@ def grid_layers(size, mpp, x_top, y_left, step):
     return lines + ["</g>"], labels + ["</g>"]
 
 
-def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None):
+META_NS = "urn:tf3-save-format:terrain-map:1"
+
+
+def svg_metadata(size, mpp, x_top, y_left, map_size, crop=None, grid=None, source=None):
+    """A `<metadata>` element recording where the picture sits on the map, so the SVG can be
+    turned back into map coordinates (or redrawn) without the command line that made it. All
+    values are map metres: `x-top` and `y-left` are the map point at the picture's top-left
+    corner, and the picture spans x from `x-min` to `x-top` and y from `y-min` to `y-left`."""
+    w, h = size[0] * mpp, size[1] * mpp
+    attrs = [("source", source), ("map-width", map_size[0]), ("map-height", map_size[1]),
+             ("metres-per-pixel", mpp), ("orientation", "north-up: image up is +x, image right is -y"),
+             ("x-top", "%g" % x_top), ("x-min", "%g" % (x_top - h)),
+             ("y-left", "%g" % y_left), ("y-min", "%g" % (y_left - w)),
+             ("cropped", "true" if crop else "false")]
+    if crop:
+        attrs += [("crop-x", "%g" % crop[0]), ("crop-y", "%g" % crop[1]), ("crop-radius", "%g" % crop[2])]
+    if grid:
+        attrs.append(("grid-step", grid))
+    return ('<metadata><tf3map:view xmlns:tf3map="%s" %s/></metadata>'
+            % (META_NS, " ".join("%s=%s" % (k, quoteattr(str(v))) for k, v in attrs if v is not None)))
+
+
+def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
-    Coordinates inside the layers are metres from the image's top-left corner, north up and east
+    `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
     right (picture x is `y_left - y`, picture y is `x_top - x`)."""
     w, h = size[0] * mpp, size[1] * mpp
     unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
@@ -364,7 +391,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None):
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
-             '<title>Terrain, roads and rails</title>',
+             '<title>Terrain, roads and rails</title>'] + ([metadata] if metadata else []) + [
              '<style>.road{stroke:%s}.rail{stroke:%s}'
              '.road,.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}</style>'
              % (ROAD_HEX, RAIL_HEX),
@@ -466,7 +493,9 @@ def main():
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid))
+            meta = svg_metadata(size, args.mpp, x_top, y_left, (map_w, map_h), crop, args.grid,
+                                os.path.basename(path))
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid, meta))
         else:
             open(dest, "wb").write(png)
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
