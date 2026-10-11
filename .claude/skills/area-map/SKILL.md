@@ -27,13 +27,15 @@ Roads dark grey, rails red, grid labels `x` and `y` in map metres. Each vehicle 
 
 ## Where the output goes, and what stays out of git
 
-- Pictures of a test map go to `local/games/<seed>-<climate>-<label>/maps/<topic>/` (gitignored; the folder rules are in `local/README.md`). Put the SVG there and a PNG preview if you made one. Name `<topic>` for the question (`skipton-train18-rv40-rv44`).
+- Pictures of a test map go to `local/games/<seed>-<climate>-<label>/maps/<topic>/` (gitignored; the folder rules are in `local/README.md`). Put the SVG there; it is the picture the user gets. Make no PNG unless the user asks for one. Name `<topic>` for the question (`skipton-train18-rv40-rv44`).
 - Never commit a picture (`*.svg` is not ignored; keep them under `local/`) or a screenshot. Only the user's own saves; a catalog save's picture stays local too.
 - A format fact learned from a map goes to `docs/` in our own words, tagged with the version, with a reference map cited by mod id.
 
-## Making a PNG to look at
+## SVG first, PNG only on request
 
-An SVG with a data-URI terrain does not preview in every viewer. A headless browser screenshot works: `firefox --headless --no-remote --profile DIR --window-size W,H --screenshot out.png file://…/map.svg`, where DIR is an empty profile folder the browser can write to (a snap-packaged Firefox cannot use `/tmp`; use a folder under its own `common` directory) and `W,H` are the SVG's width and height plus about 90 px. Look at it with the Read tool.
+Give the user the SVG and tell them to open it in Firefox or Chrome (the vector layers stay sharp when zoomed, and the browser shows the data-URI terrain that other viewers drop). Do not write `--png`, and do not leave a PNG next to the SVG, unless the user asks for a PNG. An SVG is superior in most cases, so offer nothing else by default.
+
+To check a picture yourself, the Read tool needs a raster. Take a headless browser screenshot into the scratchpad directory, not into `local/games/`, so it is not left for the user. The command: `firefox --headless --no-remote --profile DIR --window-size W,H --screenshot out.png file://…/map.svg`, where DIR is an empty profile folder the browser can write to (a snap-packaged Firefox cannot use `/tmp`; use a folder under its own `common` directory) and `W,H` are the SVG's width and height plus about 90 px. Look at it with the Read tool.
 
 ## Known limits
 
