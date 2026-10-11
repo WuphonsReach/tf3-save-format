@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Draw a save's terrain as a PNG, with its roads and rails on top.
 
-Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--no-network] [--stream]
+Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--no-network] [--stream]
 
 Read only: no save is written. The image goes to OUT_DIR/<save name>-terrain.png and the script
 prints its size, the metres per pixel and the edge counts. The terrain colours are a plain
 height ramp with hill shading (water below the save's `waterLevel` in blue); they are not the
 game's own palette.
 
---mpp M      metres per pixel, a multiple of 4 (default 4, the heightmap's own spacing). Larger
-             values keep every (M / 4)th grid point. A map that would come out wider or taller
+--mpp M      metres per pixel: 1 or 2, or a multiple of 4 (default 4, the heightmap's own
+             spacing). Larger values keep every (M / 4)th grid point. 1 and 2 interpolate the
+             terrain between grid points (no new height detail) so the lines can be drawn
+             finer; they are for a --crop.
+--crop X,Y,R draw only the square of half-width R metres around map point (X, Y), for a close
+             look at a station or a junction. Lines are drawn about 4 m wide (at least one pixel). A map that would come out wider or taller
              than 8,000 pixels is refused unless --mpp is raised or --force-size is given.
 --no-network leave the roads and rails out.
 --stream     the files are decompressed streams, not saves.
@@ -105,14 +109,44 @@ def _land_colour(z):
     return LAND[-1][1]
 
 
-def render(rows, step, off_z, unit, water):
+def upsample(rows, f):
+    """The grid with `f` points per original step, interpolated bilinearly (rounded to `u16`)."""
+    def stretch(row):
+        out = array("H")
+        for a, b in zip(row, row[1:]):
+            out.extend(a + (b - a) * k // f for k in range(f))
+        out.append(row[-1])
+        return out
+    wide = [stretch(r) for r in rows]
+    out = []
+    for r0, r1 in zip(wide, wide[1:]):
+        for k in range(f):
+            out.append(array("H", (a + (b - a) * k // f for a, b in zip(r0, r1))))
+    out.append(wide[-1])
+    return out
+
+
+def crop_grid(rows, tx, ty, cx, cy, radius):
+    """The part of the grid within `radius` metres of (cx, cy), and the map coordinates of its
+    top-left pixel (x_left, y_top)."""
+    w, h = tx * 256, ty * 256
+    c0 = max(0, int((cx - radius + w / 2) // GRID_STEP))
+    c1 = min(64 * tx, int(-(-(cx + radius + w / 2) // GRID_STEP)))
+    r0 = max(0, int((cy - radius + h / 2) // GRID_STEP))
+    r1 = min(64 * ty, int(-(-(cy + radius + h / 2) // GRID_STEP)))
+    if c1 - c0 < 2 or r1 - r0 < 2:
+        raise ValueError("the crop lies outside the map")
+    return [r[c0:c1 + 1] for r in rows[r0:r1 + 1]], (-w / 2 + GRID_STEP * c0, -h / 2 + GRID_STEP * r1)
+
+
+def render(rows, step, off_z, unit, water, spacing=None):
     """RGB bytes (top row first) and (width, height) of the grid sampled every `step` points.
     Hill shading from the north-west, vertical scale doubled."""
     # image row j is grid row (last - j * step), north first
     last = len(rows) - 1
     picked = [rows[last - j * step][::step] for j in range((last // step) + 1)]
     w, h = len(picked[0]), len(picked)
-    spacing = GRID_STEP * step
+    spacing = spacing or GRID_STEP * step
     water_v = (water - off_z) / unit
     cache = {}
 
@@ -149,17 +183,20 @@ def render(rows, step, off_z, unit, water):
     return out, (w, h)
 
 
-def _line(img, w, h, x0, y0, x1, y1, colour):
+def _line(img, w, h, x0, y0, x1, y1, colour, width=1):
     """Bresenham line in pixel coordinates, clipped to the image by skipping outside points."""
     x0, y0, x1, y1 = int(round(x0)), int(round(y0)), int(round(x1)), int(round(y1))
     dx, dy = abs(x1 - x0), -abs(y1 - y0)
     sx, sy = (1 if x0 < x1 else -1), (1 if y0 < y1 else -1)
     err = dx + dy
     px = bytes(colour)
+    lo, hi = -((width - 1) // 2), width // 2 + 1
     while True:
-        if 0 <= x0 < w and 0 <= y0 < h:
-            o = (y0 * w + x0) * 3
-            img[o:o + 3] = px
+        for yy in range(y0 + lo, y0 + hi):
+            for xx in range(x0 + lo, x0 + hi):
+                if 0 <= xx < w and 0 <= yy < h:
+                    o = (yy * w + xx) * 3
+                    img[o:o + 3] = px
         if x0 == x1 and y0 == y1:
             return
         e2 = 2 * err
@@ -171,7 +208,7 @@ def _line(img, w, h, x0, y0, x1, y1, colour):
             y0 += sy
 
 
-def draw_network(img, size, map_w, map_h, mpp, edges):
+def draw_network(img, size, x_left, y_top, mpp, edges):
     """Draw roads, then rails over them. Returns (roads drawn, rails drawn)."""
     w, h = size
     n = {"street": 0, "track": 0}
@@ -180,8 +217,8 @@ def draw_network(img, size, map_w, map_h, mpp, edges):
             if e["family"] != fam and not (fam == "street" and e["family"] is None):
                 continue
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-            _line(img, w, h, (x0 + map_w / 2) / mpp, (map_h / 2 - y0) / mpp,
-                  (x1 + map_w / 2) / mpp, (map_h / 2 - y1) / mpp, colour)
+            _line(img, w, h, (x0 - x_left) / mpp, (y_top - y0) / mpp,
+                  (x1 - x_left) / mpp, (y_top - y1) / mpp, colour, max(1, round(4 / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
 
@@ -191,37 +228,54 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("saves", nargs="+")
     ap.add_argument("--mpp", type=int, default=4)
+    ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--no-network", action="store_true")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
     args = ap.parse_args()
-    if args.mpp < 4 or args.mpp % 4:
-        ap.error("--mpp must be a multiple of 4 (the heightmap spacing)")
+    if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
+        ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
+    crop = None
+    if args.crop:
+        try:
+            crop = tuple(float(v) for v in args.crop.split(","))
+            assert len(crop) == 3 and crop[2] > 0
+        except (ValueError, AssertionError):
+            ap.error("--crop wants X,Y,R in metres")
     os.makedirs(args.out_dir, exist_ok=True)
-    step = args.mpp // 4
+    step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 else 1)
     for path in args.saves:
         try:
             raw = open(path, "rb").read()
             data = raw if args.stream else decompress(raw)
             tx, ty, off_z, unit, water = read_terrain(data)
             map_w, map_h = tx * 256, ty * 256
-            side = max(map_w, map_h) // args.mpp + 1
+            side = (2 * crop[2] if crop else max(map_w, map_h)) // args.mpp + 1
             if side > MAX_SIDE and not args.force_size:
                 print("REFUSED %s: %d x %d m at %d m/px is %d px on a side; raise --mpp"
                       % (os.path.basename(path), map_w, map_h, args.mpp, side))
                 continue
+            if args.mpp < 4 and not crop:
+                print("REFUSED %s: --mpp %d needs --crop" % (os.path.basename(path), args.mpp))
+                continue
             rows = read_heightmap(data, tx, ty)
-            img, size = render(rows, step, off_z, unit, water)
+            x_left, y_top = -map_w / 2, map_h / 2
+            if crop:
+                rows, (x_left, y_top) = crop_grid(rows, tx, ty, *crop)
+            if fine > 1:
+                rows = upsample(rows, fine)
+            img, size = render(rows, step, off_z, unit, water, args.mpp)
             roads = rails = 0
             if not args.no_network:
-                roads, rails = draw_network(img, size, map_w, map_h, args.mpp, read_edges(data))
+                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, read_edges(data))
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
-        dest = os.path.join(args.out_dir, os.path.splitext(os.path.basename(path))[0] + "-terrain.png")
+        dest = os.path.join(args.out_dir, os.path.splitext(os.path.basename(path))[0]
+                            + ("-crop" if crop else "") + "-terrain.png")
         open(dest, "wb").write(png_bytes(size[0], size[1], bytes(img)))
-        print("%s  %d x %d px, %d m/px, map %d x %d m, %d road and %d rail edges"
-              % (dest, size[0], size[1], args.mpp, map_w, map_h, roads, rails))
+        print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
+              % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails))
 
 
 if __name__ == "__main__":
