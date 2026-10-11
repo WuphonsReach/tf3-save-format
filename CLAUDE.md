@@ -29,6 +29,7 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Before adding a fact, grep for it. Each fact has one home note; other notes link to it instead of repeating it.
 - Renaming or deleting a note: fix every link to it and its row in the index.
 - Run `python3 -I tools/check_links.py` before committing a change to any `.md` file. It must report 0 problems. It flags dead links and anchors, notes missing from `docs/README.md` and scripts missing from `tools/README.md`.
+- To look for drift or repeated facts, run `python3 -I tools/facts_index.py` (sizes, link counts, notes over the word limit) and `python3 -I tools/find_dupes.py --note docs/NOTE.md` (what else mentions the terms in a note you changed) or `--where TERM` before reading whole notes. Open only the sections they name (`facts_index.py --outline`).
 - Put no counts or dates in the README tables (see Conventions); they belong in `docs/versions.md`.
 - A graph or index tool's output (for example a generated knowledge graph) stays out of git. Add its output folder to `.gitignore` before the first run.
 
