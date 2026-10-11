@@ -108,6 +108,7 @@ MAX_PIXELS = 64_000_000
 
 ROAD = (50, 50, 50)
 RAIL = (205, 30, 30)
+LABEL_TINTS = ("#ffffff", "#ffe34d", "#5fe0ff", "#ff9ee0")   # edge label halo and node dot colours, in turn
 ROAD_HEX, RAIL_HEX = "#323232", "#cd1e1e"      # the same two colours, for the SVG
 
 # height ramp (metres, colour), interpolated; water and land are told apart by waterLevel
@@ -435,29 +436,46 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
     names = names or {}
     fs = 4 * mpp + 4                                  # label size in metres: 8 px at 1 m/px
     halo = ' paint-order="stroke" stroke="#fff" stroke-width="%g" stroke-linejoin="round"' % (fs / 4)
-    out = []
+    out, top = [], []                                 # `top` is the labels layer, drawn above the vehicles
     unmatched = set(labels or {})
     if labels:
         lfs = fs * 0.7
-        out.append('<g id="labels" inkscape:groupmode="layer" inkscape:label="Edge labels" transform="scale(%g)"'
+        top.append('<g id="labels" inkscape:groupmode="layer" inkscape:label="Edge labels" transform="scale(%g)"'
                    ' font-family="monospace" font-size="%g" text-anchor="middle" fill="#000">' % (1.0 / mpp, lfs))
-        for e in edges:
+        picked = [e for e in edges if frozenset((e["a"], e["b"])) in labels]
+        tint = {}                                                   # one light colour per labelled edge
+        for e in picked:
+            tint.setdefault(frozenset((e["a"], e["b"])), LABEL_TINTS[len(tint) % len(LABEL_TINTS)])
+        ends = {}                                                   # node point -> [(tint, direction along the edge)]
+        for e in picked:
+            c = tint[frozenset((e["a"], e["b"]))]
+            for (x, y, _), (xo, yo, _) in ((e["p0"], e["p1"]), (e["p1"], e["p0"])):
+                ends.setdefault((round(x, 1), round(y, 1)), []).append((c, (y - yo, xo - x)))
+        for e in picked:
             key = frozenset((e["a"], e["b"]))
-            if key not in labels:
-                continue
             unmatched.discard(key)
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
             text = labels[key] or "%x>%x" % (e["a"], e["b"])
             if e.get("e"):
                 text += " e%x" % e["e"]
-            for x, y in ((x0, y0), (x1, y1)):
-                out.append('<circle cx="%.1f" cy="%.1f" r="%g" fill="#000"/>' % (y_left - y, x_top - x, lfs * 0.25))
             angle = math.degrees(math.atan2(x0 - x1, y0 - y1))     # the edge in picture axes
             if angle > 90 or angle < -90:                           # keep the text upright
                 angle -= 180 if angle > 0 else -180
-            out.append('<text transform="translate(%.1f %.1f) rotate(%.1f)" y="%g"%s>%s</text>'
-                       % (y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1, halo, text))
-        out.append("</g>")
+            top.append('<text transform="translate(%.1f %.1f) rotate(%.1f)" y="%g" paint-order="stroke" stroke="%s"'
+                       ' stroke-width="%g" stroke-linejoin="round">%s</text>'
+                       % (y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1, tint[key], fs / 4, text))
+        r = lfs * 0.3
+        ring = 'stroke="#000" stroke-width="%g"' % (lfs * 0.08)
+        for (x, y), parts in ends.items():
+            cx, cy = y_left - y, x_top - x
+            top.append('<circle cx="%.1f" cy="%.1f" r="%g" fill="%s" %s/>' % (cx, cy, r, parts[-1][0], ring))
+            if len(parts) > 1:                                      # a join: the half toward the first edge in its colour
+                dx, dy = parts[0][1]
+                n = math.hypot(dx, dy) or 1
+                px_, py_ = -dy / n * r, dx / n * r
+                top.append('<path d="M%.1f %.1f A%g %g 0 0 0 %.1f %.1f Z" fill="%s" %s/>'
+                           % (cx + px_, cy + py_, r, r, cx - px_, cy - py_, parts[0][0], ring))
+        top.append("</g>")
     if vehicles:
         out.append('<g id="vehicles" inkscape:groupmode="layer" inkscape:label="Vehicles" transform="scale(%g)"'
                    ' font-family="sans-serif" font-size="%g">' % (1.0 / mpp, fs))
@@ -476,7 +494,7 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
                 out.append('<text x="%.1f" y="%.1f"%s>%s</text>'
                            % (px + max(length, 8) / 2 + 2, py - width / 2 - 1, halo, short_name(names[v["slot"]])))
         out.append("</g>")
-    return out, unmatched
+    return out + top, unmatched
 
 
 def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1):
