@@ -79,8 +79,10 @@ def _plausible(a, b, p0, p1, t0, t1):
 def read_edges(data):
     """The street-edge table as a list of dicts: `a`, `b` (node entity ids), `p0`, `p1` (x, y, z),
     `length` (horizontal, metres), `type` (street or track type without folder, or None if the type
-    string was not found), `family` (`street` or `track`, from the folder; None with the type) and
-    `offset` (of the record's first node id in the stream)."""
+    string was not found), `family` (`street` or `track`, from the folder; None with the type),
+    `template` (the path under `infrastructure/` without the suffix, such as
+    `street/town/town_old_small`; None with the type) and `offset` (of the record's first node id
+    in the stream)."""
     out = []
     end = min(len(data), SEARCH_LIMIT)
     for m in _START.finditer(data, 0, end):
@@ -90,13 +92,13 @@ def read_edges(data):
             continue
         start = m.start() + len(b".street")
         window = data[start:start + TEMPLATE_WINDOW]
-        t = family = None
+        t = family = template = None
         for tm in _TEMPLATE.finditer(window):
             if len(tm.group(2)) == tm.group(1)[0] - len(b".street_template"):
                 parts = tm.group(2).decode().split("/")
-                t, family = parts[-1], parts[1]
+                t, family, template = parts[-1], parts[1], "/".join(parts[1:])
                 break
-        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t, "family": family,
+        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t, "family": family, "template": template,
                     "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     return out
 

@@ -11,7 +11,7 @@ The street-edge table (one record per road segment, with its two end nodes, thei
 | `u32 a`, `u32 b` | The entity ids of the edge's two end nodes |
 | `vec3 f32` twice | The end positions: x, y, z in metres, node `a` first |
 | `vec3 f32` twice | The tangents at the two ends. For a straight edge both are the difference vector of the two positions (34.7, 48.2 for a 59 m edge) |
-| about 124 bytes | Lane data, not decoded. A road of the 60 km/h type held the float 16.67 (60 km/h in m/s), which is a lead, not a reading |
+| about 124 bytes | Lane data, not decoded. A road of the 60 km/h type held the float 16.67 (60 km/h in m/s), which is a lead, not a reading. The lane count itself comes from the type's template ([street-templates.md](street-templates.md)) |
 | `str` | The street type as `.../<type>.street_template` |
 | `u32` | 0 |
 | `str` | The base street type, `.../<base>.street` (`town_old.street` for `town_old_small`, `country_old.street` for the barrier road) |
@@ -79,7 +79,7 @@ These were found by comparing the saves; the first two are written up less firml
 
 ## Open
 
-- What the lane data holds, which leftover records a later edit clears, and whether the 100 m limit depends on the street type (four types were drawn).
+- What the lane block of the edge record holds (the lane count itself is in the templates, [street-templates.md](street-templates.md)), which leftover records a later edit clears, and whether the 100 m limit depends on the street type (four types were drawn).
 - How the junction table is kept in step, and why the strip entry of the stub stays.
 - Why only 161 of 358 edges have a strip entry, and what the other strip entries belong to.
 - Whether a road drawn over water or on a bridge shows in the same table (a railway does, see above).

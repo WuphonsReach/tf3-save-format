@@ -27,6 +27,11 @@ game's own palette.
              look at a station or a junction.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
              wide (at least one pixel).
+--game DIR   the game's install folder. A road is drawn with a stroke in proportion to its vehicle
+             lane count over two (two lanes keep the base width, a track has one lane), read from
+             the install's street and track templates when the script runs (nothing is copied
+             into the tool or the picture). Without an install, or for a type the install lacks
+             (a mod's), the width is the two-lane one. Default: the usual Steam folders.
 --no-network leave the roads and rails out.
 --stream     the files are decompressed streams, not saves.
 
@@ -46,6 +51,7 @@ import os
 import re
 import struct
 import sys
+import zipfile
 from array import array
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -66,6 +72,53 @@ ROAD_HEX, RAIL_HEX = "#323232", "#cd1e1e"      # the same two colours, for the S
 LAND = [(0, (190, 205, 140)), (30, (130, 175, 105)), (100, (165, 155, 105)),
         (200, (140, 120, 100)), (300, (235, 235, 235))]
 SHALLOW, DEEP = (120, 175, 220), (30, 75, 125)
+
+
+GAME_DIRS = ("~/.steam/steam", "~/.local/share/Steam", "~/snap/steam/common/.local/share/Steam",
+             "~/.var/app/com.valvesoftware.Steam/.local/share/Steam")
+VEHICLE_MODES = re.compile(r'"(?:CAR|BUS|TRUCK|TRAM|ELECTRIC_TRAM|TRAIN|ELECTRIC_TRAIN)"')   # whole names: "CARGO" is not "CAR"
+_LANES = re.compile(r"laneConfigs\s*=\s*\{(.*?)\n\t\t\},", re.S)
+_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
+
+
+def find_content(game_dir=None):
+    """The game's `base/content/infrastructure` folder, from `game_dir` (the install folder) or
+    the usual Steam places, or None."""
+    roots = [os.path.expanduser(game_dir)] if game_dir else \
+        [os.path.join(os.path.expanduser(d), "steamapps", "common", "Transport Fever 3") for d in GAME_DIRS]
+    for root in roots:
+        path = os.path.join(root, "base", "content", "infrastructure")
+        if os.path.isdir(path):
+            return path
+    return None
+
+
+def read_lane_counts(content):
+    """{template: vehicle lane count} for every street and track template in the install's
+    `infrastructure/street.zip` and `track.zip`, read when the script runs (nothing is stored).
+    A template's `laneConfigs` list has one entry per lane; lanes that only take people and cargo
+    (the footpaths) and lanes with no mode do not count."""
+    out = {}
+    for name in ("street", "track"):
+        try:
+            zf = zipfile.ZipFile(os.path.join(content, name + ".zip"))
+        except (OSError, zipfile.BadZipFile):
+            continue
+        for member in zf.namelist():
+            if not member.endswith(".street_template.lua"):
+                continue
+            m = _LANES.search(zf.read(member).decode("utf-8", "replace"))
+            lanes = _MODES.findall(m.group(1)) if m else []
+            out[member[:-len(".street_template.lua")]] = sum(1 for modes in lanes if VEHICLE_MODES.search(modes))
+    return out
+
+
+def edge_width(edge, lanes, unit, mpp):
+    """Stroke width in metres: `unit` for two vehicle lanes, in proportion to the lane count over
+    two (a track has one lane, so half), never under one terrain pixel. A type with no lane count
+    (a mod's, or no install) counts as two lanes."""
+    n = lanes.get(edge["template"]) or 2
+    return max(unit * n / 2.0, mpp)
 
 
 def read_terrain(data):
@@ -223,7 +276,7 @@ def _line(img, w, h, x0, y0, x1, y1, colour, width=1):
             y0 += sy
 
 
-def draw_network(img, size, x_left, y_top, mpp, edges):
+def draw_network(img, size, x_left, y_top, mpp, edges, lanes):
     """Draw roads, then rails over them. Returns (roads drawn, rails drawn)."""
     w, h = size
     n = {"street": 0, "track": 0}
@@ -233,30 +286,31 @@ def draw_network(img, size, x_left, y_top, mpp, edges):
                 continue
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
             _line(img, w, h, (x0 - x_left) / mpp, (y_top - y0) / mpp,
-                  (x1 - x_left) / mpp, (y_top - y1) / mpp, colour, max(1, round(4 / mpp)))
+                  (x1 - x_left) / mpp, (y_top - y1) / mpp, colour,
+                  max(1, round(edge_width(e, lanes, max(3.0, 1.5 * mpp), mpp) / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
 
 
-def svg_document(png, size, mpp, x_left, y_top, edges):
+def svg_document(png, size, mpp, x_left, y_top, edges, lanes):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
     Coordinates inside the layers are metres from the image's top-left corner."""
     w, h = size[0] * mpp, size[1] * mpp
-    width = max(3.0, 1.5 * mpp)                          # metres: 1.5 terrain pixels, scales with the picture
+    unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
     groups = {"road": {}, "rail": {}}
     for e in edges:
         fam = "rail" if e["family"] == "track" else "road"
         (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-        groups[fam].setdefault(e["type"] or "unknown", []).append(
+        groups[fam].setdefault((e["type"] or "unknown", edge_width(e, lanes, unit, mpp)), []).append(
             "M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
              '<title>Terrain, roads and rails</title>',
              '<style>.road{stroke:%s}.rail{stroke:%s}'
-             '.road,.rail{fill:none;stroke-width:%g;stroke-linecap:round;stroke-linejoin:round}</style>'
-             % (ROAD_HEX, RAIL_HEX, width),
+             '.road,.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}</style>'
+             % (ROAD_HEX, RAIL_HEX),
              '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain" transform="scale(%g)">' % (1.0 / mpp),
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
@@ -264,7 +318,7 @@ def svg_document(png, size, mpp, x_left, y_top, edges):
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
         parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
                      % (fam, label, 1.0 / mpp))
-        for t, segs in sorted(groups[fam].items()):
+        for (t, width), segs in sorted(groups[fam].items()):
             parts.append('<path class="%s %s" d="%s" fill="none" stroke="%s" stroke-width="%g"'
                          ' stroke-linecap="round" stroke-linejoin="round"/>'
                          % (fam, t, "".join(segs), ROAD_HEX if fam == "road" else RAIL_HEX, width))
@@ -280,6 +334,8 @@ def main():
     ap.add_argument("--mpp", type=int, default=4)
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
+    ap.add_argument("--game", help="the game's install folder, for the lane counts "
+                    "(default: the usual Steam places)")
     ap.add_argument("--no-network", action="store_true")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
@@ -294,6 +350,10 @@ def main():
         except (ValueError, AssertionError):
             ap.error("--crop wants X,Y,R in metres")
     os.makedirs(args.out_dir, exist_ok=True)
+    content = find_content(args.game)
+    lanes = read_lane_counts(content) if content else {}
+    print("lane counts: %s" % (("%d templates read from the install" % len(lanes)) if lanes else
+                               "no install found (--game DIR), every road drawn at two-lane width"))
     step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 else 1)
     for path in args.saves:
         try:
@@ -330,7 +390,7 @@ def main():
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
             elif edges:
-                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, edges)
+                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, edges, lanes)
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
@@ -340,7 +400,7 @@ def main():
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges))
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges, lanes))
         else:
             open(dest, "wb").write(png)
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
