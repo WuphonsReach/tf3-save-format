@@ -34,7 +34,7 @@ A new town starts with one commercial and one industrial cargo. In a 34-town gam
 
 ## How the game adds cargo to a town
 
-**Observed**, read from the 604 build's files, not tested in the game. The economy's `townLevels2CargoInfos` (every economy file uses `getDefaultTownLevels2CargoInfos` in `economy/placementparamsutil.lua`, in `economy.zip`) lists, per town level, one cargo slot to fill and the tiers allowed for it. `game_mechanics/towns/town_growth.script.tl` (in `game_mechanics.zip`) fills the slots when a town levels up, once cargo has been delivered to it:
+**Observed**, read from the 604 build's files, not tested in the game; the table, the tier weights, the pick rule and the fish test were re-read in those files. The economy's `townLevels2CargoInfos` (every economy file uses `getDefaultTownLevels2CargoInfos` in `economy/placementparamsutil.lua`, in `economy.zip`) lists, per town level, one cargo slot to fill and the tiers allowed for it. `game_mechanics/towns/town_growth.script.tl` (in `game_mechanics.zip`) fills the slots when a town levels up, once cargo has been delivered to it:
 
 | Town level | Slot added | Tiers allowed |
 |---|---|---|
@@ -45,8 +45,8 @@ A new town starts with one commercial and one industrial cargo. In a 34-town gam
 | 11 | third industrial | 0 to 2 |
 
 - The tier limit is soft. A candidate outside the tiers is not excluded; it gets weight 0.01 against 1.0 inside them, so it is picked only when nothing inside is left.
-- Each candidate's weight is also multiplied by how many fewer towns use the cargo than the most-used one of that district type, so rarer cargo wins. The script then takes the highest weight (no random draw), and skips a cargo the town already has. Fish is a candidate only while some industry is producing fish (`isCargoAvailable` in the same file). Why a cargo an economy leaves out of towns ([climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo)) never shows up is not in this file (**Open**; probably the category data of the economy's cargo).
-- The settings option `economy.townDevelopment.cargoNeedsPerTown` ([settings.md](settings.md)) is not read in these two files; how it limits the slots is **Open**.
+- Each candidate's weight is also multiplied by one plus the gap between the number of towns using the most-used cargo of that district type and the number using this cargo (counted over all towns when the slot is filled), so the most-used cargo gets factor 1 and rarer cargo wins. The script then takes the highest weight (no random draw; a tie is settled by an unstable sort, so its order is **Open**), and skips a cargo the town already has. Fish is a candidate only while some industry is producing fish (`isCargoAvailable` in the same file). Why a cargo an economy leaves out of towns ([climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo)) never shows up is not in this file (**Open**; probably the category data of the economy's cargo).
+- The settings option `economy.townDevelopment.cargoNeedsPerTown` ([settings.md](settings.md)) is not read in these two files. `base/mod.script.tl` in `base.zip` copies it into the base config (default 2, otherwise scaled by the difficulty level in `base/difficulty_util.tl`); no script file reads it from there, so how it limits the slots is **Open**.
 - The 34-town game in [Starting cargo in new towns](#starting-cargo-in-new-towns) stayed on tier 0, as the 0.01 weight predicts while tier 0 candidates are left.
 
 ## Ids from the statistics lists
