@@ -93,7 +93,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
 ### The bottom bar's Earnings is the current period's
 
-**Observed** on 604, the same game at clock 2,246,600 (journal 1,718 bookings, balance 2,495,976,310, the same figure as the Account on the bottom bar). The bar's Earnings read -4,938,203 although the all-time sum of bookings other than `LOAN` was 2,481,833,458. The sum of those bookings from 1,461,000 (the start of the period the clock is in, see [Periods](#periods)) was exactly -4,938,203. So the bar shows the current period, and in the first game of this series (clock below 1,461,000) it showed what looked like a total. The bar's cargo figure (124) was `cargoDeliveredCount` and its passenger figure (0) `passengerTransportedCount`. 18 loan payments (3,857,148 in all) had been made, so the loan sum stood at 14,142,852.
+**Observed** on 604, the same game at clock 2,246,600 (journal 1,718 bookings, balance 2,495,976,310, the same figure as the Account on the bottom bar). The bar's Earnings read -4,938,203 although the all-time sum of bookings other than `LOAN` was 2,481,833,458. The sum of those bookings from 1,461,000 (the start of the period the clock is in, see [Periods](#periods)) was exactly -4,938,203. So the bar shows the current period, and in the first game of this series (clock below 1,461,000) it showed what looked like a total. The bar's cargo figure (124) was `cargoDeliveredCount` and its passenger figure (0) `passengerTransportedCount` ([script-states.md](script-states.md#counters-and-achievements)). 18 loan payments (3,857,148 in all) had been made, so the loan sum stood at 14,142,852.
 
 ### A new game's first batch of bookings while paused
 

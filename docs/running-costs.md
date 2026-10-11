@@ -4,7 +4,7 @@ How the money journal books the upkeep of buildings and the running costs of veh
 
 ## Upkeep and running costs are booked in batches (604)
 
-**Observed** on 604, that game after about 570 seconds of play (the header's clock at 569,800, the date still 1 January 1900 with the date stopped, see [calendar.md](calendar.md)), with 210 bookings in the journal.
+**Observed** on 604 in the save of [the journal after ten minutes](finances.md#loan-payments-and-income-over-ten-minutes) (clock 569,800).
 
 - **Upkeep comes in a batch every 60,000 clock units.** There were 9 batches (at 60,000 to 540,000), each of 20 bookings: 11 `MAINTENANCE` / `INFRASTRUCTURE` (5 road, 5 water, 1 carrier `OTHER` for the warehouse), 2 vehicle maintenance (one road, one water) and 7 vehicle running costs (one per vehicle). The period is in clock units, not days: the date did not move while these were booked. The sums per batch ran from -23,886 to -25,158.
 - **A batch is a fraction of a year.** The warehouse's window showed $50,000/Year, and its booking per batch (carrier `OTHER`) was -2,053. A year is 1,461,000 units ([finances.md](finances.md#periods)), so 24.35 batches make a year, and 24.35 x 2,053 = 49,990, within rounding of the window. **Observed**, one warehouse. The same window showed 21 fish in stock with 18 incoming and 8 outgoing in its chart, which did not add up at first (18 - 8 = 10). The stream held 29 unloaded and 8 loaded, so the stock of 21 was right, and the chart bar left out the newest entry, see [statistics-lists.md](statistics-lists.md#a-small-new-game-one-fish-line-three-windows-604). A later save showed 18 in stock with 30 incoming and 12 outgoing, which add up. **Observed**.

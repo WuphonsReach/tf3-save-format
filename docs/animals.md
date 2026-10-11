@@ -41,7 +41,7 @@ Find it by the prefix `01 00 00 00 ff ff ff ff ?? 00 00 00 00 00 00 00`, then th
 
 ### Which animals they are
 
-The `Animal` record has no model. Each animal also has a model instance (the `ModelInstanceList` component and `ModelInstance` record in `api/tealdef`: a model id, the transform at the previous frame, the transform), and its model id indexes the model table at the start of the stream. **Observed** on 604 in eighteen test saves: A to G, a desert save of another seed, the temperate pair and eight tropical saves of one seed.
+The `Animal` record has no model. Each animal also has a model instance ([models.md](models.md#the-model-instance-record)), and its model id indexes the model table at the start of the stream. **Observed** on 604 in eighteen test saves: A to G, a desert save of another seed, the temperate pair and eight tropical saves of one seed.
 
 - **The model table** at the start of the stream maps a model id to a path ([models.md](models.md#the-model-table)). The 28 models under `animal/` are ids 0 to 27 and a mod's follow, for example `urbangames_deluxe_upgrade_pack` with `animal/bison/bison.mdl` and `animal/boar_m/boar_m.mdl`.
 - **The link.** There is one record per animal, in the same order as the animal list, in the layout of [models.md](models.md#the-model-instance-record). The model id of the animal is the `u32` 52 bytes before its position.

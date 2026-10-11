@@ -1,6 +1,6 @@
 # Script states: basics, weather, achievements, mods
 
-What the game keeps in script states, and how to find them. The container is described in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). The states with a note of their own are listed [below](#states-seen); this note covers how to read them and the states that have no note of their own. The game clock, the calendar speed and the date shown are not script states; they are in [calendar.md](calendar.md).
+What the game keeps in script states, and how to find them. The container is described in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). The states with a note of their own are listed [below](#states-seen); this note covers how to read them and the states that have no note of their own. The game clock, the calendar speed and the date shown are not script states; they are in [calendar.md](calendar.md). Where the Lua parts sit in a save and how deep the states go is in [lua-overview.md](lua-overview.md).
 
 Checked on 604 ([one game](test-games.md#the-2061-game) played into 2061, and catalog saves [6417707](https://mod.io/g/transportfever3/m/333151), [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) and [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) compared with the game's windows) and 585 (two saves). 568 was not read for this note, apart from the counter keys under Counters and achievements.
 
