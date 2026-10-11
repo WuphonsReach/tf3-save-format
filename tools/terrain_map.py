@@ -59,7 +59,7 @@ game's own palette.
 --zoom N     (SVG only) the root's width and height are N times the picture's pixels, so a viewer
              opens a small crop larger; the `viewBox` and the layers do not change.
 --vehicles   (SVG only) add a `vehicles` layer: every model instance under `vehicle/` in the
-             picture, drawn as a rectangle with a triangle on the front end (the facing is the
+             picture, drawn as one five-sided shape, a rectangle with a pointed front end, a white outline (mid-dark grey for trains and trams, which run on the red track) and an interior by class: train engine dark orange, trailing unpowered train car light orange, tram purple, truck dark blue, bus dark green, ship dark grey (the water is blue), car and the rest mid grey (the facing is the
              first row of the instance's transform, docs/models.md), sized by class (the save
              holds no vehicle length: train 20 x 3 m, wagon and tram 14 x 3, truck 7 x 2.5, bus
              10 x 2.6, car 4.5 x 1.8, ship 40 x 8, other 6 x 2.5), and labelled only if named.
@@ -406,6 +406,13 @@ def svg_metadata(size, mpp, x_top, y_left, map_size, crop=None, grid=None, sourc
 VEHICLE_SIZE = (("vehicle/train/", (20, 3)), ("vehicle/waggon/", (14, 3)), ("vehicle/tram/", (14, 3)),
                 ("vehicle/truck/", (7, 2.5)), ("vehicle/bus/", (10, 2.6)), ("vehicle/car/", (4.5, 1.8)),
                 ("vehicle/ship/", (40, 8)))
+VEHICLE_FILL = (("vehicle/train/", "#d96a00"), ("vehicle/waggon/", "#ffc27a"), ("vehicle/tram/", "#8a4fc0"),
+                ("vehicle/truck/", "#1f4fa8"), ("vehicle/bus/", "#1f7a3a"), ("vehicle/ship/", "#3c3c3c"))
+RAIL_BOUND = ("vehicle/train/", "vehicle/waggon/", "vehicle/tram/")     # these get a grey outline: the track under them is red
+RAIL_OUTLINE = "#5c5c5c"
+VEHICLE_GREY = "#808080"                         # cars and anything else
+
+
 SHORT_NAME = re.compile(r"^(Road Vehicle|Train|Ship|Tram|Aircraft) (\d+)(\??)$")
 SHORT_PREFIX = {"Road Vehicle": "RV", "Train": "RR", "Ship": "S", "Tram": "TRM", "Aircraft": "AIR"}
 
@@ -418,13 +425,10 @@ def short_name(text):
     return SHORT_PREFIX[m.group(1)] + m.group(2) + m.group(3) if m else text
 
 
-VEHICLE_COLOUR = {"train": "#ff9d00", "waggon": "#ffd34d", "tram": "#ffd34d", "truck": "#2f8fff",
-                  "bus": "#2f8fff", "car": "#9ab", "ship": "#2fd1c5"}
-
 
 def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, names=None):
     """SVG text for the `labels` layer (edge node pairs) and the `vehicles` layer (a rectangle with
-    a triangle on its front end per vehicle instance, with a text only for a slot in `names`),
+    a five-sided shape (the body with a pointed front) per vehicle instance, with a text only for a slot in `names`),
     in the same metre units as the other layers. `edges` and `vehicles` may be empty. Returns the
     SVG lines and the set of requested edge labels that matched no edge. `labels` is
     {frozenset of two node ids: text or None}."""
@@ -459,16 +463,15 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
                    ' font-family="sans-serif" font-size="%g">' % (1.0 / mpp, fs))
         for v in vehicles:
             length, width = next((sz for pre, sz in VEHICLE_SIZE if v["model"].startswith(pre)), (6, 2.5))
-            kind = v["model"].split("/")[1] if v["model"].count("/") > 1 else ""
-            fill = VEHICLE_COLOUR.get(kind, "#c6c")
             px, py = y_left - v["y"], x_top - v["x"]
             angle = math.degrees(math.atan2(-v["fx"], -v["fy"]))      # the facing in picture axes
-            tip = width * 0.9
-            out.append('<g transform="translate(%.1f %.1f) rotate(%.1f)">'
-                       '<rect x="%g" y="%g" width="%g" height="%g" fill="%s" stroke="#000" stroke-width="0.4"/>'
-                       '<path d="M%g %gL%g 0L%g %gZ" fill="#000"/></g>'
-                       % (px, py, angle, -length / 2, -width / 2, length, width, fill,
-                          length / 2, -width / 2, length / 2 + tip, length / 2, width / 2))
+            tip = min(width * 0.9, length / 2)                        # the point's length comes out of the body's
+            fill = next((c for pre, c in VEHICLE_FILL if v["model"].startswith(pre)), VEHICLE_GREY)
+            edge = RAIL_OUTLINE if v["model"].startswith(RAIL_BOUND) else "#fff"
+            x0, x1, hw = -length / 2, length / 2, width / 2
+            out.append('<polygon transform="translate(%.1f %.1f) rotate(%.1f)" points="%g,%g %g,%g %g,0 %g,%g %g,%g"'
+                       ' fill="%s" stroke="%s" stroke-width="0.5" stroke-linejoin="round"/>'
+                       % (px, py, angle, x0, -hw, x1 - tip, -hw, x1, x1 - tip, hw, x0, hw, fill, edge))
             if v["slot"] in names:
                 out.append('<text x="%.1f" y="%.1f"%s>%s</text>'
                            % (px + max(length, 8) / 2 + 2, py - width / 2 - 1, halo, short_name(names[v["slot"]])))
