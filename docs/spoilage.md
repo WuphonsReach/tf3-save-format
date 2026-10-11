@@ -1,6 +1,6 @@
 # Spoiled cargo
 
-How a save shows cargo that went bad on the way: the spoiled counters of the game's windows, the `itemsLost` and "unsatisfied" statistics lists, and what a warehouse does with spoiled cargo. Where the spoiled count itself is kept is **Open**. Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game) and its fish chain ([statistics-lists.md](statistics-lists.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604)).
+How a save shows cargo that went bad on the way: the spoiled counters of the game's windows, the `itemsLost` and "unsatisfied" statistics lists, and what a warehouse does with spoiled cargo. Where the spoiled count itself is kept is **Open**. Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game) and its fish chain ([fish-chain.md](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604)).
 
 ## Spoiled cargo and `itemsLost` (604)
 
@@ -34,14 +34,14 @@ How a save shows cargo that went bad on the way: the spoiled counters of the gam
 
 ## The 15 spoiled fish: a candidate group, and the warehouse keeps them
 
-In the fish chain of [statistics-lists.md](statistics-lists.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604), three paused saves at clock about 14.9 to 15.6 million.
+In the fish chain of [fish-chain.md](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604), three paused saves at clock about 14.9 to 15.6 million.
 
 - A group with `itemsAtStopUnsatisfied1_c6` (one entry, total 15, time 10,174,800) sits beside an `itemsAtStop1_c6` list (570). 10,174,800 is just before the ship unloaded its 15 spoiled fish ([above](#spoiled-cargo-and-itemslost-604)). It was identical in all three saves. This fits as the home of that count, matched by value and time only. **Open**: a save made after the warehouse loses them would show it change.
 - **The warehouse still held the 15** in a screenshot about 4.7 million units after they arrived (2.8 times the fish delivery time of 1,687,500 units), at stock 496 of 500, while 104 fish a period were leaving it. This extends the 1.06 million units of save `1427` ([above](#spoiled-cargo-and-itemslost-604)): in this game the warehouse does not discard spoiled fish.
 
 ## "Unsatisfied" counts at the stops (604)
 
-**Observed** in the same game, saves `1700` to `1710`, after the stuck cart of [statistics-lists.md](statistics-lists.md#releasing-the-stuck-cart-the-queue-drains-604) was released and the queue of aged carts reached the town stop.
+**Observed** in the same game, saves `1700` to `1710`, after the stuck cart of [fish-chain.md](fish-chain.md#releasing-the-stuck-cart-the-queue-drains-604) was released and the queue of aged carts reached the town stop.
 
 - **An `itemsAtStopUnsatisfied1_c6` list appeared at the town stop**, in the group that holds its `itemsAtStop1_c6` list: 12 in `1701`, 20 in `1702`, absent in `1700`. It grew while the queue of aged carts reached the stop, and the carts' windows showed 11 spoiled fish in the queue before. So the list is a candidate for fish that reached a stop and were not accepted or were spoiled. The earlier stop group with 15 (the port) stayed 15. **Open**: which of the two, spoiled or refused, and whether those fish ended in the unloaded total (they did in `1702`, where arrivals and unloaded were equal).
 - **The commercial buildings' lists gained about what the stop and port delivered.** Matching the 53 building groups present in both saves by the first time of their lists, the buildings' unloaded totals rose 41 and consumed 40 between `1700` and `1702`. The town stop's unloaded rose 36 and the port minus warehouse surplus rose 6, together 42. So the spoiled fish counted as unloaded and as consumed in these lists. The player suspected that spoiled fish do not add to a building's stock; the totals do not show a refusal, but a list of fish consumed is not the same as an inventory count, so the suspicion is not tested (it needs one building's window with its stock and satisfaction before and after a delivery). **Observed** once.
@@ -52,7 +52,8 @@ In the fish chain of [statistics-lists.md](statistics-lists.md#a-fish-chain-read
 
 ## After trucks replaced the carts (604)
 
-**Observed** in the two autosaves of [statistics-lists.md](statistics-lists.md#the-same-chain-after-seven-trucks-replaced-the-carts-drained-stocks-a-second-stop-604) (clock 45,001,200 and 46,198,800).
+**Observed** in the two autosaves of [fish-chain.md](fish-chain.md#the-same-chain-after-seven-trucks-replaced-the-carts-drained-stocks-a-second-stop-604) (clock 45,001,200 and 46,198,800).
 
 - **Spoiled arrivals came as a burst, then stopped.** The first stop's unsatisfied list holds a carried 453 (clock 43,302,600) and then seven entries of 5, 5, 8, 12, 12, 6 and 12 between 43,591,200 and 43,849,600, which is 60 spoiled of 84 fish, the old stock leaving the warehouse. There was none at all until 44,682,400, then 9 in five entries of 1 to 3 at the first stop and 9 in five entries at the second until 44,995,800, and none in either list from there to 46,198,800. So, from the unsatisfied lists, fish reaching the road stops have been fresh for about 1.2 million units.
 - **`itemsLost6` is not that spoiled count.** The three industries' `itemsLost6` lists had an entry every 100,000 to 200,000 units until clock 43,423,600, none from there to 44,916,000, and entries again from 44.9 million: 6 to 37 fish per 200,000 units, about half of what the industries load, while the unsatisfied lists stayed silent. It does not move with spoiled arrivals, and what it counts is still **Open** (this corrects a reading of mine from the first of the two saves, that its fall to zero meant fresher fish).
+- **The unsatisfied lists stayed silent to clock 54.6 million, and `itemsLost6` stopped when the warehouse emptied** (autosave at 54,600,400, [fish-chain.md](fish-chain.md#the-fish-chain-at-clock-546-million-an-empty-warehouse-overflow-fish-to-buildings-604)). No unsatisfied list at the stops, the edges or destination 25,505 grew after 46.2 million. The three industries' `itemsLost6` lists have their last entries at 48.28 to 48.80 million, when the warehouse stock reached 0, and none since. From 45.0 to 48.3 million the trucks loaded 3,516 to 4,494 at the warehouse while the two stops unloaded 3,443 to 4,050: the difference grew by 371 (from 73 to 444) and has stayed at 444 to 465 since. In the same stretch `itemsLost6` rose by 406. So about as many fish left the warehouse and reached neither stop as the industries counted lost, while the old stock was being drained. That suggests `itemsLost6` counts fish dropped for age before delivery, credited back to the industry that made them. The two figures differ by 35 and the fish were not followed, so this is a lead, not a result (**Open**).

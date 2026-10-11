@@ -60,7 +60,7 @@ Extractive industries, no input needed:
 
 Reading it as a graph: tools come from the tool_factory, machines from the machine_factory and fertilizer from the oil_refinery, so the boosters tie the extractive industries back into the manufacturing ones. Towns and the wonders consume the finished goods ([cargo-ids.md](cargo-ids.md#tiers-and-weights)).
 
-**Checked against a save**: the cement ratio matches the statistics lists of a subarctic game, where a cement plant consumed 36 and 28 stone for 18 and 14 cement ([cargo-ids.md](cargo-ids.md#the-ids-across-economies)), so 2 stone per cement. Reading a recipe's ratio off a save's `itemsConsumed` and `itemsProduced` lists ([statistics-lists.md](statistics-lists.md)) is the quickest way to see what a particular game uses.
+**Checked against a save**: the cement ratio matches the statistics lists of a subarctic game, where a cement plant consumed 36 and 28 stone for 18 and 14 cement ([cargo-ids.md](cargo-ids.md#the-ids-across-economies)), and the same plant's totals at clock 54.6 million were 1,852 stone for 926 cement ([cement-chain.md](cement-chain.md)), so 2 stone per cement. Reading a recipe's ratio off a save's `itemsConsumed` and `itemsProduced` lists ([statistics-lists.md](statistics-lists.md)) is the quickest way to see what a particular game uses.
 
 ## Which climates have which industry
 
