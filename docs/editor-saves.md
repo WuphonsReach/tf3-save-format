@@ -9,6 +9,7 @@ Checked on 604.
 - Header money is 0 and the counter is low (0, 1024 and 1678 seen). The info table is empty.
 - A different set of script states, and an empty `townStates` table.
 - Town records are in the same layout, so the town component is not editor-only. The last 17 bytes of each record are zero.
+- Starting cargo is in two places: the town record and the stock records of the town's existing buildings. Patching only the record changes the export and not the buildings ([building-stocks.md](building-stocks.md)).
 - The entity data as a whole was not compared, so other differences are possible.
 
 The game keeps editor saves in `save_maps/` and regular saves in `save/`, both under the game's `local/` folder in Steam userdata.

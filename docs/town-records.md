@@ -33,7 +33,7 @@ A town with one commercial and one industrial cargo, as the game creates them:
 | 57 | u32 | 1. **Open** |
 | 61 | 17 bytes | Zero in editor saves. Not zero in played saves, **open** |
 
-**Confirmed**: changing the cargo ids and weights in place in an editor save changes the towns' starting cargo. The game loads the save, and its Towns export shows the new cargo with positions and sizes unchanged.
+**Confirmed**: changing the cargo ids and weights in place in an editor save changes the towns' starting cargo. The game loads the save, and its Towns export shows the new cargo with positions and sizes unchanged. That holds for the record and the export only: the buildings that already exist keep the cargo they had, so the Towns table and a building's window still show the old cargo ([building-stocks.md](building-stocks.md), **Observed** on 604, one editor map). The editor's Editor tab changes both.
 
 ## Longer records
 
@@ -77,7 +77,7 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 
 ## The Towns tab columns against the record
 
-**Observed** on 604, in the map editor's Towns tab of catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) (paused, never run), 24 towns paired with their records by capacities. Figures from earlier working notes; not rechecked since.
+**Open**, 604. These figures are from earlier working notes, read off a Towns tab, and are not rechecked. They are said to come from catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) (day 1 of 1900, paused), but the file does not fit them in two ways: it holds 32 town records, all in the starting layout with floats of 1.0 and capacities of 125 to 568, and none has capacities of 1600 / 1600 / 1600 (that town is in the record list of [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods), above). Treat the figures below as leads until the columns are read again against one save.
 
 - **Population** is 0 to 4 below the record's residential capacity in 22 of the 24 towns (one town is 1 above, one 11 below, probably edited by hand). So the record's capacity is a target and the tab shows the current value, as in [the new-game comparison above](#a-new-games-three-towns-against-the-town-window).
 - **The car-icon column** (meaning **Open**) is about half the sum of the commercial and industrial capacities: correlation 0.96 over the 24 towns, typical error 20, outliers up to 90. It is not population. A town with capacities 1600 / 1600 / 1600 and no industrial cargo shows 1,473.
