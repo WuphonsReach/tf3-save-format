@@ -2,26 +2,91 @@
 
 State of `game_mechanics/notifications/notifications.gs`. The game's popups and its log keep one entry per notification here. Subsidy offers are notifications ([subsidies.md](subsidies.md)), and so is the hot air balloon sighting ([fun-elements.md](fun-elements.md#the-notification)). The state is read like any script state ([script-states.md](script-states.md#finding-a-table)).
 
-## Entry fields
+## The state and its entries
 
-**Observed** on 585 and 604 for subsidy entries, on 604 for the balloon entry.
+**Observed** on 604, in the latest autosave of the Small subarctic game of [finances.md](finances.md) (start year 1900, clock 45,001,200, 1914). The balloon and subsidy entries were first read on 585 and 604 in other games, see [Entry layout](#entry-layout).
+
+### Top-level keys
 
 | Key | Holds |
 |---|---|
-| `type` | A script path. The base game's start with `::/game_mechanics/notifications/types/` (for example `subvention_notification.script`). A mod's carries the mod id before `::` (`urbangames_deluxe_upgrade_pack::/fun_elements/balloon_notification.script`) |
-| `params` | What the type needs. Subsidies: a resource path under `::/game_mechanics/subventions/`, `stockListEntity`, and `simParams.mapping` with the name of the industry or town. Balloon: `entity` and `townEntity`, each `{entity, revision.num}` |
-| `simParams` | Empty in the balloon entry |
-| `timestamp` | Game-clock time ([calendar.md](calendar.md)) |
-| `dismissed`, `hidden`, `hideInLogAndPopups`, `playedInitialSound` | Booleans |
-| `autoDismissDuration`, `expired` | Seen on the balloon entry: 60,000 (15 days at 1.00x) and `true` after it left |
+| `notifications` | The entries, keyed by id |
+| `history` | A list: position 1, 2, ... to the id of the entry at that place, oldest first. Its ids are exactly the keys of `notifications` |
+| `maxId` | The id of the newest entry |
+| `version` | 24 here. The game's script names 24 as the current schema and converts older states on load |
+| `ignored` | `fully` (boolean) and `types`, a table from a type path to a boolean |
+| `wastedVehicles`, `vehicle2problem`, `stationGroup2overflowResolvedTimestamp`, `noRoadConnectionUpdateTimestamp`, `line2problemTimestamp` | Bookkeeping that decides when a warning is raised ([below](#bookkeeping-tables)) |
 
-- The table `ignored.types` lists notification types with a boolean, next to the base game's types. The balloon's type is in it with `false`.
-- An entry stays in the table after it is dismissed or has expired (**Observed**, balloon).
-- The subsidy type string appears once in a game near its start and 9 and 10 times in a game 160 years in. The game showed both an industry request ("looking for a reputable transportation company") and a town request ("requires a skilled logistics firm"). How the two kinds are told apart in the file is **Open**.
+- **The table holds at most 100 entries.** The game's script (`game_mechanics/notifications/notification_util.tl` in `base/content/game_mechanics.zip`) names the limit `maxEntries` = 100. When a new entry is added the oldest ones are dropped, except one that still has a `persisting` list. The save had exactly 100 entries with the consecutive ids 765 to 864 and `maxId` 864, and the oldest `timestamp` was 2.4 million clock units (about 3 game years at 2,000 units a day) before the save. An entry therefore stays in the table only while newer ones are few; in this game (start year 1900) the oldest entry was from late 1910, so the first ten years were gone and a long game cannot be read for its early notifications from this table.
+- `ignored.types` held a boolean for 30 types: the base game's notification types, the company, town, landmark and mission ones, and the balloon mod's. `true` means ignored by default: the 11 types that the game's own `.res.lua` files mark `initiallyIgnoredType = true` were the 11 that read `true` here (`company_notification_greenify`, `_marketing`, `_prospection`, `cargo_rtc_warning`, `noroadconnection`, `overcrowding`, `station_useless`, `stuck_vehicle`, `town_warning`, `vehicle_warning`, `vehiclecondition`), and all the others `false`. Whether this save's player had changed any is not known; the game's notification settings window was not compared. `fully` was `false`.
+- **An entry's `tracked` is the negation of its type's `ignored.types` value at the time it was made** (the game's script: `tracked = not ignored.types[type]`). All 69 overcrowding and 9 vehicle-condition entries had `tracked` false; the other 22 had it true. An ignored type still gets entries, they are just not shown as popups.
+
+### Entry layout
+
+Each entry is `{notification, timestamp, dismissed, expired, tracked, playedInitialSound}`, plus `persisting` when there is one. The entry's kind is inside `notification`:
+
+| Key | Holds |
+|---|---|
+| `notification.type` | A script path. The base game's start with `::/game_mechanics/notifications/types/` (for example `subvention_notification.script`); company, town and mission types have their own folders (`::/game_mechanics/company/company_notification_rank_up.script`, `::/game_mechanics/towns/town_notification.script`, `::/mission/notification.script`). A mod's carries the mod id before `::` (`urbangames_deluxe_upgrade_pack::/fun_elements/balloon_notification.script`) |
+| `notification.params` | What the type needs ([per type](#params-by-type)) |
+| `notification.simParams` | What the game's sim script has looked up for the text, usually `mapping` from an entity id to its name. Rewritten on a rename ([below](#industry-spawn-notifications-604)). Empty for the types that need no name |
+| `notification.autoDismissDuration` | Only on some types: 60,000 clock units (30 game days at 2,000 units a day, 15 at 1.00x) |
+| `timestamp` | Game-clock time ([calendar.md](calendar.md)) |
+| `dismissed`, `expired`, `tracked`, `playedInitialSound` | Booleans. `hidden` and `hideInLogAndPopups` were seen on the balloon entry and not here |
+| `persisting` | A list of `{entity, revision}`: the entities a still-open warning is about. See [below](#persistent-warnings) |
+
+- **Open:** [fun-elements.md](fun-elements.md#the-notification) lists the balloon entry's `type` and `params` at entry level. They were read in another game and not re-read; in this save they sit under `notification` for every type, and the balloon entry very likely does too.
+- **Expiring sets `dismissed` too.** No entry had `expired` true with `dismissed` false. An entry expires when `timestamp` + `autoDismissDuration` has passed, or when every entity in `params.entities` has changed (the script's `entityChanged0`, which compares only the first revision number). `dismissed` true with `expired` false is the player closing the popup.
+- **`revision.num` has three numbers.** The warnings that are raised from a periodic check (overcrowding, vehicle condition, town rating, industry closing) store `{n, 0, 0}`, the first number of the entity's revision. The ones raised by an event (industry spawn, town level, new cargo demand) store all three (`3, 14, 1` for an industry, `1, 6, 247187` for a town). What the second and third numbers are is **Open**. A subsidy entry keeps only the first, as a pair under `entitiesAndRevisions0`.
+- The subsidy type string appears once in a game near its start and 9 and 10 times in a game 160 years in. The game showed both an industry request ("looking for a reputable transportation company") and a town request ("requires a skilled logistics firm"). In the file they are told apart by `params.id`, a `.res` path under `::/game_mechanics/subventions/`: `deliver_cargo` for an industry (its `params.params` is `stockListEntity`) and `deliver_cargo_town` for a town (`cargoType` and `townEntity`). **Observed** on 604.
 
 ## Types
 
-Path strings for notification scripts under `::/game_mechanics/notifications/types/` appear in the stream. A played 604 game had 21 different ones: `animaldespawn`, `availability`, `cargo_rtc_warning`, `con_availability`, `industry_close`, `industry_spawn`, `line_station_warning`, `line_warning`, `newcargodemand`, `noroadconnection`, `overcrowding`, `station_useless`, `stuck_vehicle`, `subvention`, `subvention_missed`, `subvention_notification`, `town_rating_warning`, `town_rating_warning_nonperistent`, `town_warning`, `vehicle_warning`, `vehiclecondition`. **Observed**; which one drives which message in the game was not matched, for example the "Town Rating Decreasing" popup most likely uses one of the two `town_rating_warning` types.
+Path strings for notification scripts under `::/game_mechanics/notifications/types/` appear in the stream. A played 604 game had 21 different ones: `animaldespawn`, `availability`, `cargo_rtc_warning`, `con_availability`, `industry_close`, `industry_spawn`, `line_station_warning`, `line_warning`, `newcargodemand`, `noroadconnection`, `overcrowding`, `station_useless`, `stuck_vehicle`, `subvention`, `subvention_missed`, `subvention_notification`, `town_rating_warning`, `town_rating_warning_nonperistent`, `town_warning`, `vehicle_warning`, `vehiclecondition`. **Observed**. Others live outside that folder: `company_notification_greenify`, `_marketing`, `_prospection` and `_rank_up` (`::/game_mechanics/company/`), `town_notification` (`::/game_mechanics/towns/`), the two landmark ones (`::/landmarks/landmarks_notification.script` and `_nonpersistent`) and `::/mission/notification.script`. With the balloon mod's, these are the 30 keys of `ignored.types` in the 604 game above.
+
+### Params by type
+
+**Observed** on 604 in the latest autosave. Its 100 entries held 11 types, which are the first 11 rows of the table; the last row is from the game's script only. The popup titles are the game's English UI text (the `useDataState` function of each type in `base/content/game_mechanics.zip`; blank where that script was not read). A cargo id is a position in the save's own cargo list ([cargo-ids.md](cargo-ids.md)).
+
+| Type | Popup title | `params` | `simParams` |
+|---|---|---|---|
+| `overcrowding` | Station Overcrowded | `entity`: a **station group** entity | `mapping`: entity to the group's name |
+| `vehiclecondition` | Vehicle Condition | `entities`: list of one vehicle | `mapping` (entity to "Road Vehicle 79") and `typeMapping` (entity to "Truck" or "Bus") |
+| `town_rating_warning_nonperistent` | Town Rating Decreasing | `entities`: list of one town; `param.key`: the rating (`noise`, `cargo_delivery`) | `mapping` |
+| `town_notification` | Town Level Up | `townEntity` and `level` | `townName` |
+| `newcargodemand` | New Cargo Demand | `entity` (the town) and `cargoTypeId` | `name`: the town |
+| `company_notification_rank_up` | Time To Celebrate | `companyEntity` and `rank` | empty |
+| `industry_spawn` | | `entity`, `resName` (the `.con` path) | `mapping` |
+| `industry_close` | | `entity`, `resName` | `mapping` |
+| `availability` | | `models`, `multipleUnits` | empty |
+| `subvention_notification` | | `id`, `uid`, `status`, `params`, `entitiesAndRevisions0` | `mapping` |
+| `subvention_missed` | | `subventionId`, `reason`, `params`, `entitiesAndRevisions0` | `mapping` |
+| `town_rating_warning` | Town Rating Very Poor | the same shape as the `_nonperistent` one | |
+
+- **The "Town Rating Decreasing" popup is `town_rating_warning_nonperistent`** and "Town Rating Very Poor" is `town_rating_warning` (from the scripts' titles). Despite the "nonperistent" in its name, one of the five entries of the first had a `persisting` list. `param.key` is one of the six rating keys of [town-states.md](town-states.md); the popup text names the rating.
+- **`rank` is the rank number counted from 1** and is the `potentialLevel` of the company ([company.md](company.md#company-and-rank)): the one rank-up entry had `rank` 6, the game's role table (`company_static_util.tl`) has Team Leader at place 6, and the save's `potentialLevel` was 6 (`level`, the rank claimed, was 3).
+- **`level` of a town notification is a place in the game's town-level names, from 1**: Small Hamlet, Hamlet, Large Hamlet, Small Village, Village, Large Village, Small Town, and so on, so 7 is Small Town. Read from the script's list; the town's own level was not compared.
+- **`cargoTypeId` 31 was furniture**, the 32nd place of the save's 37-entry cargo list. A second anchor: the next entry (11,400 clock units later) is a town subsidy offer for the same town whose `params.params.cargoType` is `::/cargos/furniture/furniture.cargo`.
+- **`uid` of a subsidy offer is the entity id times 10,000 plus a counter.** In the `usedUids` of `subventions.gs`, the industry offers (`deliver_cargo`) all ended in 0000 (497,020,000 for entity 49,702), and the town offers (`deliver_cargo_town`) read 179,120,006, 179,120,015, 179,120,031 and 179,120,035 for town 17,912. The saw mill offer of the game in [Industry closing notifications](#industry-closing-notifications-604) fits too (13,865 times 10,000). The second offer in [subsidies.md](subsidies.md) (uid 35,826) does not, so this is **Observed**, not a rule. `status` was 1 in both subsidy entries; its meaning is **Open**.
+- **A missed offer.** The `subvention_missed` entry (`reason` `"Timeout"`) names the same town and cargo as the town offer 607,600 units earlier, and that offer's uid (179,120,031) reads `false` in `usedUids`, like any offer that is no longer open. The live industry offer (uid 497,020,000, `true`) is the one with the entry stamped 400 after its `spawnTime`, as under [Dismissing a notification](#dismissing-a-notification-and-what-else-changes-604).
+
+### One kind can fill the table
+
+69 of the 100 entries were `overcrowding`, for just two station groups (44 and 25 entries), spread over the whole span of the table. 67 were `dismissed` and `expired`; the latest of each group (ids 862 and 864) was `dismissed` with `expired` false, and only those two carried `persisting`. Why the game makes a new entry for a group that already had one, and why the old ones expire, was not worked out: **Open**. The effect is that the 100 slots held 31 entries of every other kind.
+
+### Persistent warnings
+
+A warning that follows a state (a vehicle in poor condition, a full station, an industry about to close) is made with a `persisting` list naming its entities. The game's script re-checks the state periodically, sets the list when it makes the warning and clears it when the problem is gone or the parameters change; if the problem returns it makes a new entry. **Observed** on 604: 10 of the 100 entries had one (5 vehicle condition, 2 overcrowding, 1 town rating, 1 industry closing, 1 industry subsidy offer), and an entry that has one is not dropped when the table is trimmed.
+
+### Bookkeeping tables
+
+**Observed** on 604, same save. The rules are from the game's `notifications.script.tl` in `base/content/game_mechanics.zip`.
+
+- **`wastedVehicles`**: vehicle entity to `true`. A transport vehicle of the player enters when its maintenance state is 0.2 or less and leaves only once it is above 0.3. The save had 5 entries, and they were exactly the 5 vehicles with a `vehiclecondition` entry that carried `persisting`. One of them (38,667) also had an older entry that had expired: a vehicle that recovers and falls again gets a new entry.
+- **`vehicle2problem`**: vehicle entity to `{problemSince}`. A vehicle on its way, not stopped by the player, with speed 0 enters with the clock value at which it is first seen so. The `stuck_vehicle` warning is made once it has stood 300,000 units (the script's `1000 * 60 * 5`). The save had 3 entries, stamped 44,981,400, 44,983,800 and 45,000,600, 600 to 19,800 units before the save's clock (45,001,200), so none had reached the limit and there was no stuck-vehicle entry.
+- **`stationGroup2overflowResolvedTimestamp`**: station group entity to a clock value, set the first time the group is seen not full and not changed again (the cooldown code that would use it is commented out in the script). 95 entries; the values run from 600 to 44,560,600, many of them 600. Both groups that have overcrowding entries are keys.
+- **`noRoadConnectionUpdateTimestamp`** (44,819,800 here): when the no-road-connection check last ran. It runs again after 75 game days (75 times the default day length of 4,000 units, so 300,000); the save was 181,400 later.
+- **`line2problemTimestamp`**: line entity to the clock value its problem was first seen. Empty in this save, which had no line warnings.
 
 ## The availability state
 
@@ -35,16 +100,16 @@ The state of `game_mechanics/notifications/availability_notifications.gs` has a 
 - **The year comes from the model's own data, not from the save.** The install's `.mdl` file of each vehicle (a text file inside its zip under `base/content/vehicle/`) has an `availability` block with `yearFrom` and `yearTo`. Reading all of them (355 models with a block): the five 1910 models (`ps_trillium`, `freightcar_24s`, `halle`, `boxcar_2_verb`, `suburban_2nd`) are exactly the five single-model entries stamped 1910, no model has `yearFrom` 1911 and the save has no entry for 1911, and the three 1912 models (`benz1912_bulk`, `benz1912_box`, `liquid_2_zh`) are exactly the three models in the two entries stamped 1912.
 - **A group makes one popup.** The two Benz trucks share a `notificationGroup` (`benz1912`) with `notificationSortKey` 100 (bulk) and 200 (box), and the entry lists them in that order: the first is named in the popup ("has hit the market") and the rest follow under "The following are also available". The wagon has no group and got its own entry (and its own popup). 75 of the 355 models have a group name and 25 names are shared by more than one model.
 - **Infrastructure has its own type.** The one `con_availability.script` entry (1910, same timestamp as the five vehicles; params `name`, `image`, `special` = `TramCatenary`) names a tram track catenary, not a model. The 1912 popup had no such entry.
-- **Open:** whether `yearTo` ends anything (no popup was seen for it); what a game that skips a year (the calendar set forward) does with the models of the years skipped; whether mod vehicles get entries the same way. **Prediction, not yet tested:** 1 January 1913 should bring two separate entries (`et13` and `univ_2_r`, the two models with `yearFrom` 1913, neither in a group).
+- **Open:** whether `yearTo` ends anything (no popup was seen for it); what a game that skips a year (the calendar set forward) does with the models of the years skipped; whether mod vehicles get entries the same way. - **The 1913 and 1914 prediction held** (**Observed**, same game, latest autosave of 9 April 1914). The table still held entries 827 and 828, one model each (`vehicle/bus/et13/et13.mdl` and `vehicle/waggon/univ_2_r/univ_2_r.mdl`), both stamped 44,074,000, the start of 1 January 1913 in the day table; and entry 853 with one model (`vehicle/train/br75_4/br75_4.mdl`) at 44,804,000, 1 January 1914. The install's `.mdl` files have exactly those three models with `yearFrom` 1913 (two) and 1914 (one), none with a `notificationGroup`. All four were `dismissed` and `expired` (60,000 units after their stamp). No entry for 1911 is expected, as no model has `yearFrom` 1911; the 1912 entries (800 and 801) were still in the table and the 1910 ones had been trimmed out of it ([above](#top-level-keys)).
 
 ## Dismissing a notification, and what else changes (604)
 
 **Observed** on 604, one new game, two saves 46,400 clock units apart (2,246,600 and 2,293,000) with the player dismissing notifications between them and a new subsidy offer arriving.
 
 - **Dismissing sets `dismissed` and nothing else.** The "active reward effect" banner of the completed subsidy ([subsidies.md](subsidies.md#completion-604)), entry 15 of the notification state (`subvention_notification.script`, timestamp 2,196,600, 600 units after the subsidy's `completedTime`), went from `dismissed = false` to `true`. Its `expired` stayed `false`, `tracked` stayed `true` and the entry stayed in the table. The subsidy's own state and its effect were unchanged.
-- **A dismissed offer is still on offer.** The second subsidy offer (a "Supply Industry" offer, `deliver_cargo`, spawned at clock 2,253,000) appeared as a new entry 17 with timestamp 2,253,400 (400 after the spawn), already `dismissed = true` and `expired = false` when saved. In the subsidies state it was still in `proposedSubventions` and its uid was in `usedUids`. So dismissing the popup does not decline or remove the offer. The entry's `simParams.mapping` names the industry the offer is about, as in the other subsidy notifications. `maxId` rose from 16 to 17, and a new id was added to the list of ids just before it, so the ids are kept in two places.
+- **A dismissed offer is still on offer.** The second subsidy offer (a "Supply Industry" offer, `deliver_cargo`, spawned at clock 2,253,000) appeared as a new entry 17 with timestamp 2,253,400 (400 after the spawn), already `dismissed = true` and `expired = false` when saved. In the subsidies state it was still in `proposedSubventions` and its uid was in `usedUids`. So dismissing the popup does not decline or remove the offer. The entry's `simParams.mapping` names the industry the offer is about, as in the other subsidy notifications. `maxId` rose from 16 to 17, and the new id was added to `history`, so the ids are kept in two places.
 - **Entries expire with a `persisting` reference.** Entry 12 (a `vehiclecondition.script` notification for one road vehicle) went from `expired = false` to `true` between the saves, and its `persisting` list (one entity reference, the vehicle's) disappeared at the same time. An expired entry keeps its place and flags but drops the reference. Why this one expired is **Open**. An industry-spawn entry (16) went from `dismissed = false`, `expired = false` to `true`, `true`.
-- Another table in the same state (a list of ids with a `problemSince` clock value, 10 to 14 entries) changed entirely: ids appeared and disappeared with `problemSince` set to the clock of the save or a little before. It looks like the set of entities that currently have a problem (the vehicle-condition warnings), refreshed each time. **Open**.
+- Another table in the same state (entity ids with a `problemSince` clock value, 10 to 14 entries) changed entirely between the saves. It is `vehicle2problem`, the vehicles standing still on their way, and not the vehicle-condition warnings ([bookkeeping tables](#bookkeeping-tables)); the game rebuilds it at each check.
 
 ## Industry spawn notifications (604)
 
@@ -63,9 +128,12 @@ The state of `game_mechanics/notifications/availability_notifications.gs` has a 
 - **Where it is in the file.** In `1440` the value 14,622,000 appears once in the whole stream, as an `i64` in a small record that starts with the industry's entity id (a `u32`), followed by a `u32` (8,480 for the saw mill), a `u32` 1, a `u32` 0 and the `i64`. The same record in `1439` and `1438` held 0 in that place. Find it by searching for the entity id taken from the notification, then checking the shape. The records of the other industries in the same run (the cement plant, canning factory and steel mill with the third value 1; a livestock farm, a quarry, a crop farm and a fishing industry with 5) held 0, as none was closing. What the third value means is **Open**.
 - **The numbers agree.** 14,622,000 minus the countdown of 2 x 1,461,000 (a year, [finances.md](finances.md#periods)) is 11,700,000, 600 units before the notification's timestamp. The popup's 47m 11s is 2,831,000 units, which is 14,622,000 minus the save's clock. So the notification is written 600 units after the field is set, and the popup counts down to the field at the game clock.
 
+- **A second closing (604, Observed).** The latest autosave of the Small subarctic game (clock 45,001,200) held an `industry_close` entry for a fishing industry: `timestamp` 44,460,600, `dismissed` and `expired` false, `persisting` set, and no `autoDismissDuration`. The record described above was there: searching the stream for the date 44,460,000 plus 2 x 1,461,000, that is 47,382,000, found it once, as the `i64` after the industry's entity id (49,616), a `u32` (49,454), a `u32` 8 and a `u32` 0. So the countdown rule held for a second industry, and the entry was stamped 600 after the field was set, as in the first. The `u32` after the id is not a count here (49,454); the third value was 8, where the saw mill had 1 and the fishing industries in that game 5, so it is not a type code that a fishing industry always has. What it is remains **Open**.
+
 ## Stuck-vehicle notifications (604)
 
 **Observed** on 604 in the Small 1 : 3 game of [subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604), in a save at clock 10,026,200 (`1401`), made while ships queued for the one terminal of a port.
 
 - **Type.** `::/game_mechanics/notifications/types/stuck_vehicle.script`. The string occurred once in the save 3.6 million units earlier (clock 6,428,600, only in the type list) and six times in `1401`: once in the type list and five in notification entries.
 - **The five entries** carry `timestamp` 7,747,800, 8,017,400, 8,166,200, 8,322,200 and 9,392,600, and in `params` an `entity` (a plain number, 17,914 in the first, which is also the entity id of the largest of the game's three towns in the town building records of [town-records.md](town-records.md#town-buildings-and-historic-preservation-604), so at least that entry's entity may be a town and not the ship, and 33,629 in the last; in the other three it was not a plain number and was not read). The player's screenshots from before the save showed a ship window with the line "Ship 8 has been stuck for a while without moving" and 0 km/h, with three fishing lines on one port terminal. Which entity id is Ship 8, and whether one of the five entries is that message, was not worked out. The entries give the time the warning was raised, not how long the vehicle had stood. Spoiled cargo seen in the same window: [statistics-lists.md](statistics-lists.md#spoiled-cargo-and-itemslost-604).
+- **What the game's script says about the entity.** The stuck-vehicle check (`notifications.script.tl`) puts the vehicle in `params.entity`, as `{entity, revision}`, and the popup is titled "Vehicle Stuck" with "{vehicleName} has been stuck for a while without moving" (or "... in the depot", a case the script has commented out). So the entity of each entry should be a vehicle, which fits the ship window the player saw. That entity 17,914 was also a town's id, and that the entities were plain numbers and not `{entity, revision}`, is not explained; the five entries may come from a different notification schema version than the 24 of the later game. **Open.** The vehicles currently standing are in [`vehicle2problem`](#bookkeeping-tables).

@@ -34,7 +34,7 @@ A balloon entry:
 
 ## The notification
 
-An entry in the `notifications` table of `game_mechanics/notifications/notifications.gs`, the same table as the subsidy entries. The fields are in [notifications.md](notifications.md#entry-fields). What this entry held:
+An entry in the `notifications` table of `game_mechanics/notifications/notifications.gs`, the same table as the subsidy entries. The fields are in [notifications.md](notifications.md#entry-layout). What this entry held:
 
 - `type` is `urbangames_deluxe_upgrade_pack::/fun_elements/balloon_notification.script`.
 - `params.entity` is `{entity, revision.num}` for the balloon (6786, revision 5). `params.townEntity` is a town (3784, the town that the subsidy entries' `simParams.mapping` in the same save names Middleham). So the sighting is tied to a town, not to an industry. How the town is picked, for example the nearest one, is **Open**.

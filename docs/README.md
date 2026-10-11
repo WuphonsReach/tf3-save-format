@@ -20,7 +20,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
 | [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
 | [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
-| [notifications.md](notifications.md) | The notification entries, their types, the industry-spawn, industry-closing (deadline field on the industry) and stuck-vehicle entries, the "New Vehicles Available" popups and the model years behind them |
+| [notifications.md](notifications.md) | The notifications state: the limit on entries, `history`, entry layout and flags, `ignored.types` (the game's defaults) and `tracked`, params of each type seen, persistent warnings and the bookkeeping tables (`wastedVehicles`, `vehicle2problem` and others), subsidy `uid`, the industry-spawn, industry-closing (deadline field on the industry) and stuck-vehicle entries, the "New Vehicles Available" popups and the model years behind them |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
 | [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |

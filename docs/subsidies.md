@@ -4,7 +4,7 @@ The subsidy offers, active and finished subsidies, and what they pay. A subsidy 
 
 ## The notification entry
 
-A subsidy is a notification entry of type `subvention_notification.script`. Its `params` hold a resource path under `::/game_mechanics/subventions/` (for example `deliver_cargo/deliver_cargo.res`), `stockListEntity`, and `simParams.mapping` with the name of the industry or town. The other fields are in [notifications.md](notifications.md#entry-fields). **Observed** on 585 and 604.
+A subsidy is a notification entry of type `subvention_notification.script`. Its `params` hold a resource path under `::/game_mechanics/subventions/` (for example `deliver_cargo/deliver_cargo.res`), `stockListEntity`, and `simParams.mapping` with the name of the industry or town. The other fields are in [notifications.md](notifications.md#entry-layout). **Observed** on 585 and 604.
 
 ## Active and completed subsidies
 
