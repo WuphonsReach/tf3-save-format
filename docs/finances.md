@@ -117,7 +117,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - **Later purchases and sales in the same game (clock 58.4 to 62.7 million, 1917 and 1918)** kept the pattern: one booking per vehicle, same category bytes, sales positive.
   - **The booked price was $35 below the buy window's.** Three batches of the same model, 7, 14 and 13 Benz 3-Ton Bulk, were bought with the window showing $368,586 each (7 for $2,580,102, 13 for $4,791,618), and each vehicle was booked at -368,551 (at 58,426,800, 61,148,400 and 62,722,000). In 1912 the same window price had been booked in full. Prices of one model also differed slightly in the first months of the game (carts at 60,903 and 60,912, ships at 438,891 and 438,912). What sets the booked price is **Open**.
   - **Sale prices are per model.** Nine horse carts of two models sold for +2,712 each (four of one model) and +1,210 each (five of the other): 4 x 2,712 + 2 x 1,210 = +13,268 at 58,811,600, the change in the bottom bar's Earnings across the sale (-187,412 to -174,144, paused), and 3 x 1,210 later. Sixteen old trucks of one model sold for +593 each, in batches of 7 and 9.
-  - **With the game running, a sale was booked about two game days after the player's screenshot of the confirm dialog** (twice, at 0.25x and play speed 4), so read a sale's time from the journal, not from the screen.
+  - **Read a sale's time from the journal, not from a screenshot.** Twice, with the game running, the booking came about two game days after the player's screenshot of the confirm dialog. At 0.25x and play speed 4 a game day is about 4 real seconds, so that is the few seconds before the button was clicked, not a delay in the game.
 
 ## The balance history run
 
