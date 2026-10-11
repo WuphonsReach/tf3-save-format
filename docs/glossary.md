@@ -112,7 +112,7 @@ Do not pick a key for these without context:
 - **port**: the `harbor_modular` station, or an industry on the water.
 - **depot**: a vehicle depot (`road_depot`, `rail_depot`, `water_depot`), never a `warehouse`.
 - **station**: one terminal or a whole station group.
-- **carriage, coach, wagon, cart**: a horse-drawn passenger `bus`, a horse-drawn cargo `truck`, a rail `waggon` or a tram car; the words overlap in English (a cart has two wheels, a carriage carries people, a coach is large and enclosed, a wagon is a utility vehicle), and the game's labels do not follow them. Read the cargo or passenger context.
+- **carriage, coach, wagon, cart**: a horse-drawn passenger `bus`, a horse-drawn cargo `truck`, the horse tram (`tram` model `double_horse`), a rail `waggon` or a tram car; "coach" can also be a motor `bus` (a motor coach). The words overlap in English (a cart has two wheels, a carriage carries people, a coach is large and enclosed, a wagon is a utility vehicle), and the game's labels do not follow them; a player may call any horse-drawn vehicle a cart. Mods add more horse-drawn models (the Early Road Vehicles `truck` models `horsewagon_1850_v2` and `horsewagon_1850_usa_v2`). In a note, name the model key at the first mention in a section; "cart" or "coach" may follow for the same vehicles.
 - **car**: a private `car`, a tram car or a train car.
 - **cargo platform**: a module of `modular_terminal`, not a separate station.
 - **dock**: `harbor_modular` or `water_depot`.
