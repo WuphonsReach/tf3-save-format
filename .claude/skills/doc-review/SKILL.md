@@ -34,10 +34,10 @@ For each lead, write the key in code font. Add the label in parentheses only whe
 - it is a false positive: a verb ("the timer of the cargo stops"), or a word inside a longer name;
 - the word could be two keys and the context does not settle it ("small pier": a landing or `HARBOR_SMALL`?; "stagecoach": `american_post_coach` or `droshky`?). Grep `local/games/` for the test log first, then ask the user. Do not guess.
 
-`--ambiguous` returns hundreds of leads, mostly noise: "field" (a data field), "stop", "station" and "depot" (defined note words), and "metal", "food", "iron" inside "sheet metal", "tinned food", "iron ore". Filter it to the words that matter before reading:
+`--ambiguous` returns hundreds of leads, mostly noise: "field" (a data field), and "stop", "station" and "depot" (words the notes define). Words inside a longer key or label ("sheet metal", "road stop") and words with their key beside them are already skipped. Narrow the run to the words that matter before reading:
 
 ```
-python3 -I tools/glossary_check.py --ambiguous | grep -E "'(steel|grain|oil|ore|dock|coach|carriage|cart|wagon|car|engine)'"
+python3 -I tools/glossary_check.py --ambiguous --word dock --word coach --word carriage --word cart --word wagon --word car --word engine --word oil --word ore --word grain --word food
 ```
 
 ## 3. Size and placement

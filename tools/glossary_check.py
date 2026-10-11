@@ -12,7 +12,9 @@ checked too. A key written with spaces ("tinned food") counts as the key. Skippe
 fenced code, a capitalised word in mid-sentence (a proper name such as a line's name or a quoted label), inline code spans, link targets, URLs, and text in double quotes (the notes quote
 the screen's own wording; --include-quoted checks those too). A label is only checked when the
 row has one plain key: rows keyed by `small_*` or a string id would flag the repo's own
-"road stop" and "port".
+"road stop" and "port". Also skipped: a word inside a longer key or label that the glossary
+names ("metal" in "sheet metal", "steel" in "steel mill", "stop" in "road stop"), and a word
+whose own key is in code font within 60 characters ("the two `modular_terminal` cargo stations").
 
 PATH defaults to docs/*.md and tools/*.md. docs/glossary.md is never checked (it lists the words).
 `--since REV` checks only the lines added since git revision REV, so a change can be checked
@@ -20,7 +22,8 @@ before it is committed. `--stdin` checks text from standard input, for example a
     git log -1 --format=%B | python3 -I tools/glossary_check.py --stdin
 
 A word the glossary marks "(ambiguous)", and the bold words in its "Ambiguous words" list, are
-skipped unless --ambiguous: they may be right. A hit is a lead, not a defect (a quoted player's
+skipped unless --ambiguous: they may be right. `--word W` (repeatable) checks only those words,
+for example `--ambiguous --word dock --word coach`. A hit is a lead, not a defect (a quoted player's
 word, a cargo class such as "bulk", a word used in its plain sense). Open the line and judge.
 Exit status is 0 unless the glossary cannot be read.
 """
@@ -97,6 +100,31 @@ def parse_glossary(text):
     return out
 
 
+def known_names(text):
+    """Regexes for the multi-word keys and labels the glossary names (`sheet_metal`, Road Stop)."""
+    names = {norm(k) for k in re.findall(r"`([a-z][a-z0-9_]*)`", text)}
+    lines = text.splitlines()
+    for i, ln in enumerate(lines):
+        if ln.startswith("|") and i + 1 < len(lines) and set(lines[i + 1].replace("|", "").strip()) <= set("-: "):
+            head = [h.lower() for h in cells(ln)]
+            if "label" in head:
+                lab = head.index("label")
+                for row in lines[i + 2:]:
+                    if not row.startswith("|"):
+                        break
+                    r = cells(row)
+                    if len(r) == len(head):
+                        names |= {norm(w) for w in re.split(r",| or ", r[lab]) if w.strip()}
+    names = sorted((n for n in names if " " in n), key=len, reverse=True)
+    return [re.compile(r"(?<!\w)" + re.escape(n).replace(r"\ ", r"[\s_-]+") + r"(?:s|es)?(?!\w)", re.I) for n in names]
+
+
+def key_patterns(key):
+    """Code-span regexes for the identifiers in an entry's key cell (`small_*` matches `small_old`)."""
+    ids = [w for w in re.findall(r"[A-Za-z][A-Za-z0-9_*]*", key) if "_" in w or w.islower()]
+    return [re.compile("`" + re.escape(w).replace(r"\*", "[a-z0-9_]*") + "`") for w in ids if len(w) > 2]
+
+
 def prose_of(line, quoted):
     """Blank out what is not prose: code spans, link targets, URLs, and (unless asked) quotes."""
     line = re.sub(r"`[^`]*`", lambda m: " " * len(m.group(0)), line)
@@ -112,11 +140,11 @@ def compile_entries(entries):
     for e in entries:
         words = re.escape(norm(e["word"])).replace(r"\ ", r"[\s_-]+")
         rx = re.compile(r"(?<![\w/])" + words + r"(?:s|es)?(?![\w/])", re.I)
-        out.append((rx, e))
+        out.append((rx, e, key_patterns(e["key"])))
     return out
 
 
-def scan_lines(numbered, compiled, include_amb, quoted):
+def scan_lines(numbered, compiled, include_amb, quoted, names=()):
     """numbered: iterable of (lineno, text). Yields (lineno, matched text, entry, text)."""
     fence = False
     for no, text in numbered:
@@ -126,12 +154,19 @@ def scan_lines(numbered, compiled, include_amb, quoted):
         if fence:
             continue
         prose = prose_of(text, quoted)
-        for rx, e in compiled:
+        spans = [m.span() for nx in names for m in nx.finditer(prose)]
+        for rx, e, keys in compiled:
             if e["ambiguous"] and not include_amb:
                 continue
             for m in rx.finditer(prose):
                 if m.group(0)[0].isupper() and not re.search(r"(^|[.!?:|]\s|\|\s|^[-*>\s]*(\*\*)?)$", prose[:m.start()]):
                     continue  # a capital mid-sentence is a proper name or a quoted label
+                s, t = m.span()
+                if any(a <= s and t <= b and b - a > t - s for a, b in spans):
+                    continue  # part of a longer key or label ("sheet metal")
+                near = text[max(0, s - 60): t + 60]
+                if any(k.search(near) for k in keys):
+                    continue  # its key is written beside it
                 yield no, m.group(0), e, text
 
 
@@ -159,6 +194,7 @@ def main():
     ap.add_argument("--summary", action="store_true", help="only the count per word")
     ap.add_argument("--ambiguous", action="store_true", help="also report the ambiguous words")
     ap.add_argument("--include-quoted", action="store_true")
+    ap.add_argument("--word", action="append", metavar="W", help="check only this word (repeatable)")
     a = ap.parse_args()
 
     root = Path(".")
@@ -166,15 +202,20 @@ def main():
     if rest and (Path(rest[0]) / GLOSSARY).is_file():
         root = Path(rest.pop(0))
     try:
-        entries = parse_glossary((root / GLOSSARY).read_text(encoding="utf-8"))
+        gtext = (root / GLOSSARY).read_text(encoding="utf-8")
     except OSError as e:
         sys.exit(f"cannot read {GLOSSARY}: {e.strerror}")
+    entries = parse_glossary(gtext)
+    if a.word:
+        want = {norm(w) for w in a.word}
+        entries = [e for e in entries if norm(e["word"]) in want]
     compiled = compile_entries(entries)
+    names = known_names(gtext)
 
     hits = []  # (where, lineno, matched, entry, text)
     if a.stdin:
         numbered = enumerate(sys.stdin.read().splitlines(), 1)
-        hits = [("stdin", no, m, e, t) for no, m, e, t in scan_lines(numbered, compiled, a.ambiguous, a.include_quoted)]
+        hits = [("stdin", no, m, e, t) for no, m, e, t in scan_lines(numbered, compiled, a.ambiguous, a.include_quoted, names)]
     else:
         paths = rest or ["docs", "tools"]
         if a.since:
@@ -183,7 +224,7 @@ def main():
                 if p.endswith(".md") and p != GLOSSARY:
                     by_file.setdefault(p, []).append((no, t))
             for p, nl in by_file.items():
-                hits += [(p, no, m, e, t) for no, m, e, t in scan_lines(nl, compiled, a.ambiguous, a.include_quoted)]
+                hits += [(p, no, m, e, t) for no, m, e, t in scan_lines(nl, compiled, a.ambiguous, a.include_quoted, names)]
         else:
             files = []
             for p in paths:
@@ -195,7 +236,7 @@ def main():
                 if rel == GLOSSARY:
                     continue
                 text = f.read_text(encoding="utf-8").splitlines()
-                hits += [(rel, no, m, e, t) for no, m, e, t in scan_lines(enumerate(text, 1), compiled, a.ambiguous, a.include_quoted)]
+                hits += [(rel, no, m, e, t) for no, m, e, t in scan_lines(enumerate(text, 1), compiled, a.ambiguous, a.include_quoted, names)]
 
     if not a.summary:
         for where, no, m, e, t in hits:
