@@ -39,5 +39,5 @@ An SVG with a data-URI terrain does not preview in every viewer. A headless brow
 
 - Vehicles need `--crop`. A vehicle in a depot with no line has no instance and is not drawn.
 - Only edges asked for get a label; there is no auto-label.
-- `model_instances.py` can pick up a stray match in other data; the model id must be inside the table,, which keeps it rare.
+- `model_instances.py` can pick up a stray match in other data; the model id must be inside the table, which keeps it rare.
 - Checked on 604 only (and rail edges on 568 to 604 in `docs/road-network.md`).
