@@ -32,6 +32,23 @@ The weight stored with each cargo in a town record is the cargo's `townConsumpti
 
 A new town starts with one commercial and one industrial cargo. In a 34-town game started in 1900, every town got tier 0 cargo, spread almost evenly (11 / 12 / 11 commercial, 11 / 11 / 12 industrial). The map editor's Town Builder allows any cargo, so editor-made maps can start towns on tier 1 or vehicles.
 
+## How the game adds cargo to a town
+
+**Observed**, read from the 604 build's files, not tested in the game. The economy's `townLevels2CargoInfos` (every economy file uses `getDefaultTownLevels2CargoInfos` in `economy/placementparamsutil.lua`, in `economy.zip`) lists, per town level, one cargo slot to fill and the tiers allowed for it. `game_mechanics/towns/town_growth.script.tl` (in `game_mechanics.zip`) fills the slots when a town levels up, once cargo has been delivered to it:
+
+| Town level | Slot added | Tiers allowed |
+|---|---|---|
+| 0 | first commercial, first industrial | 0 to 1 |
+| 5 | second commercial | 0 to 1 |
+| 7 | second industrial | 0 to 1 |
+| 9 | third commercial | 0 to 2 |
+| 11 | third industrial | 0 to 2 |
+
+- The tier limit is soft. A candidate outside the tiers is not excluded; it gets weight 0.01 against 1.0 inside them, so it is picked only when nothing inside is left.
+- Each candidate's weight is also multiplied by how many fewer towns use the cargo than the most-used one of that district type, so rarer cargo wins. The script then takes the highest weight (no random draw), and skips a cargo the town already has. Fish is a candidate only while some industry is producing fish (`isCargoAvailable` in the same file). Why a cargo an economy leaves out of towns ([climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo)) never shows up is not in this file (**Open**; probably the category data of the economy's cargo).
+- The settings option `economy.townDevelopment.cargoNeedsPerTown` ([settings.md](settings.md)) is not read in these two files; how it limits the slots is **Open**.
+- The 34-town game in [Starting cargo in new towns](#starting-cargo-in-new-towns) stayed on tier 0, as the 0.01 weight predicts while tier 0 candidates are left.
+
 ## Ids from the statistics lists
 
 The statistics lists in [statistics-lists.md](statistics-lists.md) carry the cargo id in a name such as `itemsUnloaded19`. In a subarctic game (catalog save [6417707](https://mod.io/g/transportfever3/m/333151)) they gave chemicals 19, matched to a ship's chemicals, and agreed with meat 7, cement 15, clothes 27, tinned food 28 and furniture 31 from the table above. A flatbed warehouse's window read as steel 10 and sheet metal 11, the reverse of the cargo list below (see [Open](#the-id-is-the-position-in-the-cargo-list)). **Observed**, one save series. A second game put id 29 on a purple-cube goods icon ([statistics-lists.md](statistics-lists.md)), which the cargo list names plastic.

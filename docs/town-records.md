@@ -75,6 +75,14 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 - **The second float is the population over the first residential capacity.** The record's four floats were 1.0, 1.2025, 1.0669, 1.1203 for the first town (475 people, capacity 396), 1.0 four times for the second (161 people, capacity 164) and 1.0, 1.7057, 2.3288, 1.2277 for the third (482 people, capacity 282). The window populations divided by the capacities are 1.1995, 0.98 and 1.709, so the second float follows the population (to about 0.3%), with a floor of 1.0 for the stagnant town. **Observed**, three towns. The first float stayed 1.0 in all three, and what the third (2.33) and fourth floats measure is **Open**: the supplies panel's demand figures (fish 146, cement 99 in the first town, fish 177, tin 88 and fuel 122 in the third) are 0.33 to 0.36 of the capacity times the float for the commercial cargo (fish) and the industrial one, but not exactly, so no formula is claimed.
 - **The last 8 bytes of the 78 kept growing.** The pairs (offset 70 and 74) were 72.7 and 3,251.0 for the first town, 67.1 and 5,642.1 for the second and 71.0 and 10,614.5 for the third, up from 66.9 and 181.2, 63.0 and 138.3, and 66.1 and 3,555.6 in the new game. The second town's window said "No Experience Earned Last Year" and showed 2,250 points to the next level, yet its second float rose by about 5,500, so the second float is not the experience earned. The windows' experience to go (Retford 2,471, Bromsgrove 2,250) matches none of the figures by a plain difference. **Open**.
 
+## The Towns tab columns against the record
+
+**Observed** on 604, in the map editor's Towns tab of catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) (paused, never run), 24 towns paired with their records by capacities. Figures from earlier working notes; not rechecked since.
+
+- **Population** is 0 to 4 below the record's residential capacity in 22 of the 24 towns (one town is 1 above, one 11 below, probably edited by hand). So the record's capacity is a target and the tab shows the current value, as in [the new-game comparison above](#a-new-games-three-towns-against-the-town-window).
+- **The car-icon column** (meaning **Open**) is about half the sum of the commercial and industrial capacities: correlation 0.96 over the 24 towns, typical error 20, outliers up to 90. It is not population. A town with capacities 1600 / 1600 / 1600 and no industrial cargo shows 1,473.
+- **Demand** is about 0.68 times the car-icon column (range 0.64 to 0.73), so it follows the commercial and industrial capacities and not population. Compare the 0.33 to 0.36 per cargo in the new-game window above.
+
 ## Town buildings
 
 Each building in a town has a record of its own, separate from the town record: [town-buildings.md](town-buildings.md).
