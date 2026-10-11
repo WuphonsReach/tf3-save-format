@@ -1,20 +1,25 @@
 #!/usr/bin/env python3
-"""Draw a save's terrain as a PNG, with its roads and rails on top.
+"""Draw a save's terrain as an SVG, with its roads and rails on top.
 
-Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--no-network] [--stream]
+Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--png] [--no-network] [--stream]
 
-Read only: no save is written. The image goes to OUT_DIR/<save name>-terrain.png and the script
-prints its size, the metres per pixel and the edge counts. The terrain colours are a plain
+Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
+prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
+embedded PNG and the roads and rails as vector paths on top, one group per street or track type
+(class `road` or `rail` plus the type name, for styling). Its user units are map metres with the
+image's top-left corner at 0, 0, and the lines keep a constant pixel width when zoomed. The terrain colours are a plain
 height ramp with hill shading (water below the save's `waterLevel` in blue); they are not the
 game's own palette.
 
---mpp M      metres per pixel: 1 or 2, or a multiple of 4 (default 4, the heightmap's own
-             spacing). Larger values keep every (M / 4)th grid point. 1 and 2 interpolate the
-             terrain between grid points (no new height detail) so the lines can be drawn
-             finer; they are for a --crop.
+--mpp M      metres per pixel of the terrain image: 1 or 2, or a multiple of 4 (default 4, the
+             heightmap's own spacing). Larger values keep every (M / 4)th grid point. 1 and 2
+             interpolate the terrain between grid points (no new height detail) and need --crop.
+             A map that would come out wider or taller than 8,000 pixels is refused unless --mpp
+             is raised or --force-size is given.
 --crop X,Y,R draw only the square of half-width R metres around map point (X, Y), for a close
-             look at a station or a junction. Lines are drawn about 4 m wide (at least one pixel). A map that would come out wider or taller
-             than 8,000 pixels is refused unless --mpp is raised or --force-size is given.
+             look at a station or a junction.
+--png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
+             wide (at least one pixel).
 --no-network leave the roads and rails out.
 --stream     the files are decompressed streams, not saves.
 
@@ -25,10 +30,11 @@ image: row 0 is the largest y. That y points north is the usual top-down reading
 map and was not checked against the game's compass.
 
 The roads and rails are the street-edge table (docs/road-network.md, street_edges.py), straight
-chords between the end positions, one pixel wide: roads dark grey, rails red. Bridges and tunnels
+chords between the end positions: roads dark grey, rails red. Bridges and tunnels
 are not told apart from the rest. A deleted road can stay in the table for one save.
 """
 import argparse
+import base64
 import os
 import struct
 import sys
@@ -223,12 +229,37 @@ def draw_network(img, size, x_left, y_top, mpp, edges):
     return n["street"], n["track"]
 
 
+def svg_document(png, size, mpp, x_left, y_top, edges):
+    """SVG text: the terrain PNG as a data URI, then one `<g>` per (family, type) holding one
+    path of its edges. Coordinates are metres from the image's top-left corner."""
+    w, h = size[0] * mpp, size[1] * mpp
+    groups = {}
+    for e in edges:
+        key = ("rail" if e["family"] == "track" else "road", e["type"] or "unknown")
+        (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
+        groups.setdefault(key, []).append("M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">' % (w, h),
+             '<title>Terrain, roads and rails</title>',
+             '<style>.road{stroke:#323232}.rail{stroke:#cd1e1e}'
+             '.road,.rail{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linecap:round}'
+             'path{vector-effect:non-scaling-stroke}</style>',
+             '<image width="%d" height="%d" href="data:image/png;base64,%s"/>'
+             % (w, h, base64.b64encode(png).decode())]
+    for fam in ("road", "rail"):                         # rails last, so they draw on top
+        for (f, t), segs in sorted(groups.items()):
+            if f == fam:
+                parts.append('<path class="%s %s" d="%s"/>' % (f, t, "".join(segs)))
+    parts.append("</svg>")
+    return "\n".join(parts)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("out_dir")
     ap.add_argument("saves", nargs="+")
     ap.add_argument("--mpp", type=int, default=4)
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
+    ap.add_argument("--png", action="store_true")
     ap.add_argument("--no-network", action="store_true")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
@@ -266,14 +297,28 @@ def main():
                 rows = upsample(rows, fine)
             img, size = render(rows, step, off_z, unit, water, args.mpp)
             roads = rails = 0
-            if not args.no_network:
-                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, read_edges(data))
+            edges = [] if args.no_network else read_edges(data)
+            if crop:                                  # only the edges that touch the picture
+                x1, y1 = x_left + size[0] * args.mpp, y_top - size[1] * args.mpp
+                edges = [e for e in edges
+                         if max(e["p0"][0], e["p1"][0]) >= x_left and min(e["p0"][0], e["p1"][0]) <= x1
+                         and max(e["p0"][1], e["p1"][1]) >= y1 and min(e["p0"][1], e["p1"][1]) <= y_top]
+            if not args.png:
+                roads = sum(e["family"] != "track" for e in edges)
+                rails = len(edges) - roads
+            elif edges:
+                roads, rails = draw_network(img, size, x_left, y_top, args.mpp, edges)
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
         dest = os.path.join(args.out_dir, os.path.splitext(os.path.basename(path))[0]
                             + ("-crop" if crop else "") + "-terrain.png")
-        open(dest, "wb").write(png_bytes(size[0], size[1], bytes(img)))
+        png = png_bytes(size[0], size[1], bytes(img))
+        if not args.png:
+            dest = dest[:-len(".png")] + ".svg"
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges))
+        else:
+            open(dest, "wb").write(png)
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
               % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails))
 
