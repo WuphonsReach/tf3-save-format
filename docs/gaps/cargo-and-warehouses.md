@@ -1,0 +1,37 @@
+# Gaps: cargo, spoilage and warehouses
+
+Format of an entry: see [README.md](README.md).
+
+## Spoilage
+
+- **Where the spoiled count is kept** (604) The windows show a spoiled counter, but no field was found: per unit or per delivery batch is argued both ways by the player. Home: [spoilage.md](../spoilage.md). Needs: new save made while late fish sit in a warehouse, then another after they are carried out.
+- **What `itemsLost` counts** (604) For fish a lead says it counts cargo dropped for age; for clothes and other cargos in a larger chain it does not reconcile (see below). Whether it counts aging in vehicles or at stops, what a lost passenger is, and where the `itemsLost6` lists and the second `itemsLost`/`itemsLost0` group belong (they exist in one save and not an earlier one) are open. Home: [spoilage.md](../spoilage.md#the-itemslost-lists). Needs: existing saves.
+- **Whether a warehouse discards spoiled units** (604, one game) Fifteen spoiled fish stayed in a warehouse over a span of about a million clock units. Whether specialized warehouses pause the spoil timer (a player says yes, universal ones do not) is untested. Home: [spoilage.md](../spoilage.md#the-spoiled-fish-stay-in-the-warehouse-stock). Needs: new save before and after the warehouse loses them.
+- **Whether a building refuses spoiled cargo** (604, one game) Buildings' lists gained about what the stop and port delivered, so no refusal showed. Home: [spoilage.md](../spoilage.md#town-buildings-take-the-fish). Needs: game window (one building's stock and fish % before and after a delivery of spoiled fish).
+- **Where the port's surplus fish go** (604, one game) Fifty-three fish left the port toward a nearby building by destination keys. Home: [fish-chain.md](../fish-chain.md). Needs: existing saves.
+
+## Counters that do not reconcile
+
+- **The clothes chain of 6425796** (604) Clothes produced 2,628 against 1,938 delivered and 873 on the lost list (690 would fit); fabric loaded 4,120 against 3,504 unloaded at the factory; dyes 2,985 at the hub against 2,052 at the factory; wool 4,152 leaving the farms against 4,120 at the mill. Home: [analysis example](../analysis-examples/clothes-train2-supply-chain-starvation-6425796.md). Needs: existing saves and what `itemsLost` counts.
+- **Loads against trucks** (604, one game) A line's windows hold 13 to 16 loads from 23 trucks; the others may leave with nothing, since an empty departure would add no entry. Home: [cement-chain.md](../cement-chain.md). Needs: existing saves.
+- **Cement missing from building lists** (604, one game) A town's buildings hold fewer cement than its stop unloaded, and the figure changes between saves. Home: [cement-chain.md](../cement-chain.md). Needs: existing saves.
+- **The station's Loaded list is two per period above the warehouse's outgoing list** (604, one game, 236 against 232 fish). Home: [fish-chain.md](../fish-chain.md). Needs: existing saves.
+- **Fish that leave the port without entering a warehouse that has room** (604, one game) Twelve fish in all; either a building takes fish first or the two lists' stamps are offset. Home: [fish-chain.md](../fish-chain.md). Needs: existing saves.
+- **What another stop's `itemsAtStopUnsatisfied0_c6` counts** (604, one game) A stop showed 47 where the town stop showed 35. Home: [spoilage.md](../spoilage.md#unsatisfied-counts-at-the-stops-604). Needs: existing saves.
+- **Whether the industry's destroyed fish are overflow only** (604, one game) The first quarry period (70 produced, 70 destroyed, stock full) fits. Home: [industries.md](../industries.md). Suggested test: keep one industry's output full with nothing loading for a cycle and compare destroyed with each production pulse.
+
+## Warehouses
+
+- **Where a module's cargo assignment lives** (604, one game) When there is no `tagToCargoType` the record holds no cargo; the stock sits in the statistics lists as unloaded minus loaded. What the icons list is for a warehouse with no assignment (13 goods icons at 0 stock) is unknown. Home: [warehouses.md](../warehouses.md#a-second-game-records-without-cargo-tags). Needs: existing saves.
+- **The claiming rule for goods modules** (604, one game) A module emptied of wool was taken by plastic; the rule was inferred from timing only, and whether the player can stop it is unknown. Home: [warehouses.md](../warehouses.md#a-full-goods-space-blocks-another-goods-cargo-604-observed-one-game). Needs: new save pair: empty one plastic module, save, then save again later; one change per save.
+- **What the module keys and the `__module_` id list encode** (604) Keys of 622,502,550 to 672,502,500 differ by 40 or 50 in groups; the id list has 12 ids in a 15-module record. Home: [warehouses.md](../warehouses.md#the-construction-record). Needs: existing saves.
+- **The `year` key** (604) Runs 1906 to 1930 in one game and 1900 to 1977 in another, never past the game date; probably the build year. Home: [warehouses.md](../warehouses.md#a-second-game-records-without-cargo-tags). Needs: new save with a warehouse built on a known date.
+- **How a station group relates to its stops** (604, one game) A group equal to the sum of two stops' groups held once; whether it holds for other stations, and whether another station is part of it, is open. Home: [statistics-lists.md](../statistics-lists.md#groups). Needs: existing saves.
+
+## Cargo ids
+
+- **Steel and sheet metal order** (604) The save's cargo list puts sheet metal at 10 and steel at 11; a flatbed warehouse window read them the other way. Home: [cargo-ids.md](../cargo-ids.md#the-id-is-the-position-in-the-cargo-list). Needs: game window (a steel mill's production against its input).
+- **Cargo with equal `order`** and **the statistics lists in a mod game** Position among ties is unknown, and `itemsUnloaded<id>` and `itemsProduced<id>` in a game with a cargo mod were not read. Home: [cargo-ids.md](../cargo-ids.md#the-id-is-the-position-in-the-cargo-list). Needs: new save from a game with the cargo mod (the sugar mod, mod.io 6436164, is the test case); the tool side is in [tools-and-analysis.md](tools-and-analysis.md#tool-defects).
+- **How `cargoNeedsPerTown` limits a town's cargo slots, and why an economy-excluded cargo never shows up** (604) The option is copied into the base config, but no script file read it from there, so its use is unknown. Home: [cargo-ids.md](../cargo-ids.md), [climates-economies.md](../climates-economies.md#what-each-economy-leaves-out-of-town-cargo). Needs: game files.
+- **Recipe details** (Observed) The unit of a recipe's `capacity` (a cycle length); how a food factory picks when both fish and meat are in stock; the use of `waterIndustryFraction`, `initWeight` and the weights in `cargoRequiredIndustries` and `companyRankRequiredIndustries`; recipe rules that still name a cargo their climate lacks. Home: [industry-chains.md](../industry-chains.md). Needs: game files.
+- **How a mod's files override the base ones** No modded industry file has been read. Home: [industry-chains.md](../industry-chains.md). Needs: game files (a mod's own files; check what may be read first).
