@@ -32,3 +32,12 @@ Somewhere after the header (2.7 to 3.9 MB in the animal test saves) there is one
 - **A train is one instance per unit (Observed, 604, one train).** In an autosave of catalog game 6425796 a stopped passenger train (the `class_prr_gg1` unit at the front and 8 `streamlined_nyc` cars, the 8 the player's window showed) was nine instances in nine places of the run, not next to one another in it. The cars lay 24.8 to 25.6 m apart along the track behind the `class_prr_gg1`, all facing the way it did (-y, first transform row about -0.1, -1), so the facing is the direction of travel and the unit's length is not in the instance. [terrain_map.py](../tools/terrain_map.py) `--vehicles` draws each unit as a five-sided shape (a rectangle with a pointed front end).
 
 How to find a vehicle's instance, and what a depot, a line, a purchase or a sale does to it, is in [vehicles.md](vehicles.md).
+
+## A road maintenance building's instance: origin, facing and footprint
+
+**Observed** on 604 in the Small subarctic game (save `1930`, two buildings), with the player's top-down screenshots of both.
+
+- **One instance per building.** The model is `road_maint_station`. Its translation is the construction's origin and the first two floats of its matrix (the "facing" that `tools/model_instances.py` prints) are the map image of the model's x axis. The model's y axis is that pair turned a quarter turn: for a facing (fx, fy) the point at local (a, b) lies at the origin plus a times (fx, fy) plus b times (-fy, fx).
+- **The ground face is a 26.3 by 26.05 m rectangle, off centre.** In the construction script (`road/road_maint_station.script.lua` in `base/content/depots/road.zip`) it runs from -12.5 to 13.8 in local x and from -15.0 to 11.05 in local y, so its centre is about 2 m from the origin. Drawn from the saved origin and facing, it matched both screenshots: its edges ran within about 5 degrees of the outlines, and a corner touched the road at one building and stood a couple of metres clear at the other. Which way the front faces was not checked.
+- **The script sets a catchment radius of 600 m (a default) and a pool of 16**, centred on the origin. The pool matches the "0/16" and "2/16" in the windows. Whether the 600 m is what the game uses for the range, and what decides which building a truck is listed under, is **Open**: a truck 504 m from one building and 411 m from the other was listed only under the farther one.
+
