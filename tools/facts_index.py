@@ -1,12 +1,15 @@
 """Outline the notes in docs/: size, sections, links in and out.
 
-Usage: facts_index.py [REPO_ROOT] [--max-words N] [--max-section-words N] [--outline NOTE]
+Usage: facts_index.py [REPO_ROOT] [--max-words N] [--max-section-words N]
+                      [--outline NOTE [--bullets]]
 
 Read only, no saves. The default view is one row per note in docs/ (words, sections, links to it
 from other notes, links from it to other notes), biggest first, with a mark on every note over
 --max-words (default 3500) as a candidate for splitting. `--outline docs/NOTE.md` prints that
 note's headings with line numbers and the words under each, so a reader can open one section
-instead of the whole note. Sections whose own text (subsections not counted) is over
+instead of the whole note. `--bullets` adds, under each heading, one row per paragraph or
+top-level bullet (line number, words, the first words of it), a table or code block as one row:
+enough to regroup a long section into subsections without reading it. Sections whose own text (subsections not counted) is over
 --max-section-words (default 1500) are listed after the table: a long section is where the next
 split will have to cut. Links in code fences and inline code are not counted. Exit status is
 always 0; the marks are advice.
@@ -83,12 +86,46 @@ def section_words(lines, sections):
     return out
 
 
-def outline(root, note):
+def blocks(lines, start, end):
+    """Return (first line, words, kind, text) per paragraph, top-level bullet, table or code block
+    of lines start..end-1 (1-based); an indented line continues the block before it."""
+    out = []
+    for n, text, in_fence in lines[start - 1:end - 1]:
+        if not text.strip() or _HEADING.match(text) and not in_fence:
+            if not in_fence and out and out[-1][2] not in ("code",):
+                out[-1][2] = out[-1][2] + "/end"
+            continue
+        kind = "code" if in_fence else "table" if text.lstrip().startswith("|") else \
+            "item" if re.match(r"[-*] |\d+\. ", text) else "text"
+        prev = out[-1] if out else None
+        joins = prev and (prev[2] == kind == "code" or prev[2] == kind == "table"
+                          or (not prev[2].endswith("/end") and text.startswith((" ", "\t")))
+                          or (kind == "text" and prev[2] == "text"))
+        if joins:
+            prev[1] += 0 if kind == "code" else len(text.split())
+            prev[4] += 1
+        else:
+            out.append([n, 0 if kind == "code" else len(text.split()), kind, text, 1])
+    return [(n, w, kind.split("/")[0], text, count) for n, w, kind, text, count in out]
+
+
+def outline(root, note, bullets=False, width=90):
     lines, sections, _ = read_note(os.path.join(root, note))
     total = words(lines)
     print(f"{note}: {total} words, {len(sections)} headings")
-    for level, title, start, w in section_words(lines, sections):
+    for i, (level, title, start, w) in enumerate(section_words(lines, sections)):
         print(f"{start:5d} {w:5d}w {'  ' * (level - 1)}{title}")
+        if not bullets:
+            continue
+        end = sections[i + 1][2] if i + 1 < len(sections) else len(lines) + 1
+        for n, bw, kind, text, count in blocks(lines, start + 1, end):
+            if kind == "code":
+                lead = f"[code, {count} lines]"
+            elif kind == "table":
+                lead = f"[table, {count - 2} rows] {' '.join(text.split())[:width - 20]}"
+            else:
+                lead = " ".join(text.replace("**", "").split())[:width]
+            print(f"{n:5d} {bw:5d}w {'  ' * level}{lead}")
 
 
 def main():
@@ -97,11 +134,12 @@ def main():
     ap.add_argument("--max-words", type=int, default=3500)
     ap.add_argument("--max-section-words", type=int, default=1500)
     ap.add_argument("--outline", metavar="NOTE")
+    ap.add_argument("--bullets", action="store_true", help="with --outline: one row per paragraph or bullet")
     args = ap.parse_args()
     root = os.path.abspath(args.root)
 
     if args.outline:
-        outline(root, args.outline)
+        outline(root, args.outline, args.bullets)
         return 0
 
     files = md_files(root)
