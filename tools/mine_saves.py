@@ -55,7 +55,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_header import read_header  # noqa: E402
 from tf3save import (RANKS, calendar_speed_label, cargo_entries, date_of_day, day_table_regular,  # noqa: E402
-                     decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label)
+                     decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label,
+                     town_names)
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -85,6 +86,12 @@ def summarise_records(recs, cargo_names):
                                     for i, n in sorted(c.items())}
         out["capacity_totals"] = [sum(r["caps"][k] for r in start) for k in range(3)]
     return out
+
+
+def summarise_towns(data, recs, states):
+    """Town names from the entity names table (town_names in tf3save.py); null where they cannot be told."""
+    names = town_names(data, max(len(recs), states or 0))
+    return {"count": len(names), "names": names} if names else None
 
 
 def num(v):
@@ -199,14 +206,14 @@ def slug(s):
 SUMMARY_FILE = "tf3-save-summary.json"
 OLD_SUMMARY_FILE = "summary.json"
 # Any layout change raises the version and adds a new schema file; committed ones are never edited.
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
               f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
 # Every key, in the order written (the schema file of SCHEMA_VERSION).
 FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
           "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
-          "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records",
+          "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
 INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
@@ -238,6 +245,7 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
         res = dict(h.get("resources", []))
         entries = cargo_entries(data)
         cargo_names = [n for _, n, _ in entries] if entries else None
+        states = summarise_states(data)
         summary.update({
             "version": h["version"],
             "first_version": h.get("first_version"),
@@ -254,8 +262,9 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
             "header_partial": h["partial"],
             "stream_bytes": h["stream_len"],
             "calendar": summarise_calendar(data),
-            **summarise_states(data),
-            "town_records": summarise_records(scan_records(data), cargo_names),
+            **states,
+            "town_records": summarise_records(recs := scan_records(data), cargo_names),
+            "towns": summarise_towns(data, recs, states["town_states"]),
             "settings": {k: setting_label(k, v) for k, v in sorted(s.items())} if s else None,
             "mods": [m["id"] for m in h["mods"]],
             "cargo_list": cargo_names,

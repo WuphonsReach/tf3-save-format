@@ -119,6 +119,116 @@ def scan_records(data):
     return recs
 
 
+_NO_NAME = struct.pack("<I", 7) + b"no name"
+
+
+def _str_at(data, p):
+    """The `str` (u32 length + UTF-8 bytes) at p as (text, end offset), or None if it is not one."""
+    if p < 0 or p + 4 > len(data):
+        return None
+    n = struct.unpack_from("<I", data, p)[0]
+    if n > 400 or p + 4 + n > len(data):
+        return None
+    try:
+        text = data[p + 4:p + 4 + n].decode()
+    except UnicodeDecodeError:
+        return None
+    return None if any(ord(c) < 32 for c in text) else (text, p + 4 + n)
+
+
+def _str_before(data, p):
+    """Start of the `str` that ends exactly at p, or None."""
+    for n in range(300):
+        q = p - 4 - n
+        if q < 0:
+            return None
+        if struct.unpack_from("<I", data, q)[0] == n:
+            r = _str_at(data, q)
+            if r and r[1] == p:
+                return q
+    return None
+
+
+def entity_names(data):
+    """The entity names table (docs/entity-names.md): the list of strings, company first, or None.
+
+    The table has no marker. This finds a `no name` entry (most entities have none), walks back
+    `str` by `str` to the table's first string and forwards to its end, and keeps the longest
+    run of the first few `no name` hits. The list can end in the two empty strings that follow
+    the table.
+    """
+    best = None
+    i = -1
+    for _ in range(6):
+        i = data.find(_NO_NAME, i + 1)
+        if i < 0:
+            break
+        p, n = i, 0
+        while (q := _str_before(data, p)) is not None:
+            p, n = q, n + 1
+        if best is None or n > best[0]:
+            best = (n, p)
+    if best is None or best[0] < 3:
+        return None
+    names, p = [], best[1]
+    while (r := _str_at(data, p)):
+        names.append(r[0])
+        p = r[1]
+    return names
+
+
+def _town_run(names, strict):
+    """Names from slot 1 on, up to the first `no name` or name built on an earlier town's name.
+
+    Lax: the name starts with a town's name and a space. Strict also stops at a name that holds
+    a town's name as a space-separated word or starts with it and a hyphen (`East Retford Crop
+    Farm`, `Weston-super-Mare Crop Farm`), as the industries of a renamed or hyphenated town do.
+    """
+    towns = []
+    for n in names[1:]:
+        if n in ("no name", ""):
+            break
+        words = n.split(" ")
+        built = any(n != t and (n.startswith(t + " ") or (strict and (t in words or n.startswith(t + "-"))))
+                    for t in towns)
+        if built:
+            break
+        towns.append(n)
+    return towns
+
+
+def town_names(data, min_towns=0):
+    """Town names read from the entity names table, or None when they cannot be told.
+
+    New and played games write the towns directly after the company (slot 0) and before the
+    industries, whose names are built on their town's name (`Sapporo Crop Farm`). The towns
+    are the run of names from slot 1 to the first `no name` or industry-like name (see
+    `_town_run`). The strict stop is tried first and the lax one if the strict run is shorter
+    than `min_towns`, a count the run must reach (the larger of the town records and the town
+    states found). A shorter run is returned as None, because it is then another kind of entity:
+    the map editor's Giant map (18 town records) gave five person names. So is a run in which
+    fewer than half of the towns have a later name built on theirs (people, or industries).
+    A town whose name contains an earlier town's name as a word would end the run early.
+    Position and population are not read (docs/gaps/towns-and-buildings.md).
+    """
+    names = entity_names(data)
+    if not names:
+        return None
+    for strict in (True, False):
+        towns = _town_run(names, strict)
+        if towns and len(towns) >= min_towns and _anchored(names, towns):
+            return towns
+    return None
+
+
+def _anchored(names, towns):
+    """True when at least half of the towns have a later name built on theirs (`<town> Station`)."""
+    rest = names[1 + len(towns):]
+    heads = {t: t + " " for t in towns}
+    hit = {t for n in rest for t in towns if n.startswith(heads[t])}
+    return 2 * len(hit) >= len(towns)
+
+
 # The game speed component: ... 09 00.. | 01 00 00 00 | u32 millisPerDay | u32 playSpeed | 8 zero bytes
 # | 01 00 00 00 | 08 00.. | 01 00 00 00 | u64 t1 | 01 | u64 t2. See docs/calendar.md.
 _GAME_SPEED = re.compile(rb"(?s)\x09\0{7}\x01\0\0\0(.{4})(.{4})\0{8}\x01\0\0\0\x08\0{7}\x01\0\0\0(.{8})\x01(.{8})")

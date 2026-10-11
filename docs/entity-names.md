@@ -46,6 +46,12 @@ There is no marker for the table. A way that worked on both saves:
 - The default vehicle words are stored as text at creation: the game's UI was English for both screenshots, and the Asian save's Chinese names showed unchanged (as boxes, see below). Whether the words come from the name list or from the language the author's game ran in is **Open**, since the catalog authors' languages are unknown.
 - The UI font showed boxes for Chinese characters. Each box is one character, so a screenshot is enough to tell a name's length and shape. A six-stop line shown as six two-box groups joined by dashes matched the one name of that shape in the save.
 
+## Town names (604)
+
+**Observed** on 604, six saves of ours (new, played and editor): in a new or played game the towns are the names directly after the company, in slot order, and the industries follow with names built on their town's (`<town> Crop Farm`). `tf3save.entity_names` finds the table (the longest run of `str` around a `no name` entry) and `tf3save.town_names` takes the run from slot 1 up to the first `no name` or the first name that holds an earlier town's name as a whole word (`East Retford Crop Farm`) or starts with it and a hyphen. The run is dropped when it is shorter than the town records or town states found, or when fewer than half of its names have a later name built on them (`<town> Station`). That is how it refuses the Giant editor map, whose table held only five person names after the company although the map has 18 town records; where an editor map keeps its town names is **Open**. Also **Open**: a town whose name holds an earlier town's name as a word ends the run early, and a town with no industry or station named after it is not told apart from an industry named another way.
+
+Position and population are not in the table, and the town record has neither ([town-records.md](town-records.md)). The mined summaries carry the names as `towns` ([tools/README.md](../tools/README.md)).
+
 ## Not found
 
 - How a line refers to its vehicles. (For road vehicles in 604 the records that name a line and a vehicle are trip records whose owner is not found, [lines.md](lines.md#trip-plans-line-stops-and-vehicle-or-a-building-604); a vehicle's own line assignment was not found. The tram case below was not rechecked.) The tram's id appeared 34 times in the first save, mostly in sorted lists of u64 entity ids (an id then four zero bytes), none close to a candidate line id.
