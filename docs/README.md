@@ -37,7 +37,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
 | [entity-names.md](entity-names.md) | The table of entity names: layout, how to find it, default name patterns, what a rename of an industry, line, stop or person does, households in consecutive slots |
 | [lines.md](lines.md) | Line stops' configuration record: force unload, stop times; what a new line adds, the trip-plan records (a line with two stops and a vehicle, or a building), the stop names in vehicle windows |
-| [models.md](models.md) | The model table and the model instance records, vehicles, people and animals in one run, matching road vehicles to instance slots by depot and maintenance-station positions |
+| [models.md](models.md) | The model table (ids by position, mods' models after the base game's) and the model instance record; vehicles, people and animals in one run |
+| [vehicles.md](vehicles.md) | A vehicle's model instance: finding it, slot order and vehicle numbers, positions and headings, depots and lines and when a vehicle has an instance, matching road vehicles to slots by depot and maintenance-station positions, purchases and sales; pointers to a vehicle's name, count, bookings and warnings |
 | [terrain.md](terrain.md) | What the map seed and the terrain sliders do to the data after the header: same-seed and changed-slider comparisons, simulation state, the terrain record and the heightmap, generators |
 | [animals.md](animals.md) | The animals list, which animals they are, how many there are |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |

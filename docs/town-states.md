@@ -25,7 +25,7 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 
 ## Not here
 
-Town size, cargo demand and positions are not in the script states. They are in the entity data, see [town-records.md](town-records.md). The industries' script state is just as bare, see [script-states.md](industries.md#the-industries-script-state).
+Town size, cargo demand and positions are not in the script states. They are in the entity data, see [town-records.md](town-records.md). The industries' script state is just as bare, see [industries.md](industries.md#the-industries-script-state).
 
 ## A new game's three towns against their windows (604)
 
