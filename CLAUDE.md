@@ -29,7 +29,10 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Before adding a fact, grep for it. Each fact has one home note; other notes link to it instead of repeating it.
 - Renaming or deleting a note: fix every link to it and its row in the index.
 - Run `python3 -I tools/check_links.py` before committing a change to any `.md` file. It must report 0 problems. It flags dead links and anchors, notes missing from `docs/README.md` and scripts missing from `tools/README.md`.
-- To look for drift or repeated facts, run `python3 -I tools/facts_index.py` (sizes, link counts, notes over the word limit) and `python3 -I tools/find_dupes.py --note docs/NOTE.md` (what else mentions the terms in a note you changed) or `--where TERM` before reading whole notes. Open only the sections they name (`facts_index.py --outline`).
+- Before a consistency pass, a split or a "does another note say this?" check, use the two index scripts and not whole-note reads (a pass that read most of `docs/` several times cost hundreds of thousands of tokens):
+  - `python3 -I tools/facts_index.py` lists note sizes, link counts and notes over the word limit. Split a flagged note before it grows further. `--outline docs/NOTE.md` gives a note's headings with line numbers and word counts; open only the sections you need.
+  - `python3 -I tools/find_dupes.py --note docs/NOTE.md` lists the terms (code spans, long numbers) that note shares with others, run after changing it. `--where TERM` lists every mention of one term with its heading. Add `--kind code` to drop the number coincidences.
+  - A shared term is a lead, not a defect: a pointer to the home note shares terms with it. Read the lines `--where` names and judge whether the fact itself is stated twice. A split raises the shared-term count, so it is not a score to minimise. The scripts compare identifiers, not wording: for a stale phrase, grep the phrase (and its variants) across `docs/`.
 - Put no counts or dates in the README tables (see Conventions); they belong in `docs/versions.md`.
 - A graph or index tool's output (for example a generated knowledge graph) stays out of git. Add its output folder to `.gitignore` before the first run.
 

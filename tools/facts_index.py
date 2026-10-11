@@ -8,6 +8,12 @@ from other notes, links from it to other notes), biggest first, with a mark on e
 note's headings with line numbers and the words under each, so a reader can open one section
 instead of the whole note. Links in code fences and inline code are not counted. Exit status is
 always 0; the marks are advice.
+
+Use it before reading notes to find where a fact probably lives and which notes have grown too
+big (a note over the limit was the usual reason a whole-corpus consistency pass was needed), and
+before a split to see what links to the note. Split a note when it is flagged, not after it has
+become unmanageable. A note with no links from other notes (the "no note links to" line) is
+reachable only through docs/README.md; that is a hint, not an error.
 """
 import argparse
 import os

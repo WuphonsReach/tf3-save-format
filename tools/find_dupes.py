@@ -6,18 +6,30 @@ Usage: find_dupes.py [REPO_ROOT] [--note NOTE] [--top N] [--max-notes N] [--excl
 
 Read only, no saves. A fact has one home note and the others link to it, so a term that turns up
 in several notes is where drift starts. The terms compared are the inline code spans (field names,
-keys, resource paths; a plain lowercase word such as `true` or `name` is skipped) and the numbers of four or more digits (entity ids, clock values, counts;
-bare years are skipped, commas are ignored so `60,000` equals `60000`). Code fences and link
-targets are not scanned.
+keys, resource paths; a plain lowercase word such as `true` or `name` is skipped) and the numbers
+of four or more digits (entity ids, clock values, counts; bare years are skipped, commas are
+ignored so `60,000` equals `60000`). Code fences and link targets are not scanned.
 
 The default report has two parts: the terms found in 2 to --max-notes notes (default 6; a term in
 more is a glossary word like `u32`), most notes first, and the pairs of notes that share the most
-terms, which are the candidates for merging or for moving a section. `--note docs/NOTE.md` keeps
-only what involves that note: run it after changing a note to see which others to check.
-`--where TERM` lists every line mentioning TERM (case-insensitive, commas ignored in numbers) with
-its note, line number and nearest heading. docs/versions.md (dated counts) is left out of the
-default report; `--exclude` adds more. `--kind code` or `--kind number` compares only one
-kind (code spans are the less noisy). Exit status is always 0.
+terms. `--note docs/NOTE.md` keeps only what involves that note: run it after changing a note to
+see which others to check. `--where TERM` lists every line mentioning TERM (case-insensitive,
+commas ignored in numbers) with its note, line number and nearest heading, so a reader opens
+those sections and not whole notes. docs/versions.md (dated counts) is left out of the default
+report; `--exclude` adds more. `--kind code` or `--kind number` compares only one kind (code
+spans are the less noisy; numbers include entity ids that two tests happened to show).
+
+How to read it:
+  - A shared term is a lead, not a defect. A link, a pointer sentence or a one-line reminder
+    shares terms with the home note and is how the notes are meant to refer to each other. Open
+    the lines (`--where`) and check whether the fact itself, not just its name, is stated twice.
+  - A split raises the count. Moving a section to a new note leaves pointers and the terms they
+    name in both places, so do not push the count down as if it were a score.
+  - The pair list shows where two notes lean on each other; it is a hint for merging or moving a
+    section, never proof.
+  - It compares identifiers, not wording. A claim that went stale in prose ("names are not in the
+    save" after the cargo list was found) is only found by grepping the phrase.
+Exit status is always 0.
 """
 import argparse
 import os
