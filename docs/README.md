@@ -25,7 +25,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [notifications.md](notifications.md) | The notifications state: the limit on entries, `history`, entry layout and flags, `ignored.types` (the game's defaults) and `tracked`, params of each type seen, persistent warnings and the bookkeeping tables (`wastedVehicles`, `vehicle2problem` and others), subsidy `uid`, the availability state's `lastYear` |
 | [notifications-in-play.md](notifications-in-play.md) | Notification entries seen in play (604): the "New Vehicles Available" popups and the model years behind them, what dismissing changes, the industry-spawn, industry-closing and stuck-vehicle entries |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
-| [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties |
+| [town-states.md](town-states.md) | The town script's `townStates` table: ratings and penalties, a new game's three towns against their windows, the window's Reputation as `eventFactors.score`, the demolish penalty and its recovery by game clock |
 | [landmarks.md](landmarks.md) | Landmark (wonder) construction: delivered amounts per cargo, town modifiers |
 | [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
 | [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories, old bookings merged by month and later by year, a new game's first bookings, loan payments, income per carrier, vehicle purchase and sale bookings (booked price below the buy window's, sale price per model); the balance history |
