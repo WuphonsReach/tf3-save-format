@@ -5,17 +5,22 @@ Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--png] [-
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
-embedded PNG and the roads and rails as vector paths on top, one group per street or track type
+embedded PNG and the roads and rails as vector paths on top, in three layers (`terrain`,
+`roads`, `rails`; groups with Inkscape's layer attributes) with one path per street or track type
 (class `road` or `rail` plus the type name, for styling). Its user units are map metres with the
-image's top-left corner at 0, 0, and the lines keep a constant pixel width when zoomed. The terrain colours are a plain
+image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
+3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
+(`vector-effect: non-scaling-stroke`) turned short edges into blobs in VS Code's preview.
+The terrain colours are a plain
 height ramp with hill shading (water below the save's `waterLevel` in blue); they are not the
 game's own palette.
 
 --mpp M      metres per pixel of the terrain image: 1 or 2, or a multiple of 4 (default 4, the
              heightmap's own spacing). Larger values keep every (M / 4)th grid point. 1 and 2
              interpolate the terrain between grid points (no new height detail) and need --crop.
-             A map that would come out wider or taller than 8,000 pixels is refused unless --mpp
-             is raised or --force-size is given.
+             A picture over 64 million pixels (a 4 m map of 32 x 32 km, or the 20 x 41 km
+             Giant map at 4 m, 52 million) is refused unless --mpp is raised or --force-size is
+             given. A 52 million pixel map took 42 s and 1.3 GB, and its SVG was 81 MB.
 --crop X,Y,R draw only the square of half-width R metres around map point (X, Y), for a close
              look at a station or a junction.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
@@ -36,6 +41,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 import argparse
 import base64
 import os
+import re
 import struct
 import sys
 from array import array
@@ -48,7 +54,7 @@ from tf3save import decompress  # noqa: E402
 RESOLUTION = bytes.fromhex("0000804000008040cdcc4c3d")      # 4.0, 4.0, 0.05
 TILE_POINTS = 65 * 65
 GRID_STEP = 4.0                                              # metres per grid step
-MAX_SIDE = 8000
+MAX_PIXELS = 64_000_000
 
 ROAD = (50, 50, 50)
 RAIL = (205, 30, 30)
@@ -230,25 +236,31 @@ def draw_network(img, size, x_left, y_top, mpp, edges):
 
 
 def svg_document(png, size, mpp, x_left, y_top, edges):
-    """SVG text: the terrain PNG as a data URI, then one `<g>` per (family, type) holding one
-    path of its edges. Coordinates are metres from the image's top-left corner."""
+    """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
+    data URI), `roads` and `rails`, each holding one path per street or track type.
+    Coordinates are metres from the image's top-left corner."""
     w, h = size[0] * mpp, size[1] * mpp
-    groups = {}
+    width = max(3.0, 1.5 * mpp)                          # metres: 1.5 terrain pixels, scales with the picture
+    groups = {"road": {}, "rail": {}}
     for e in edges:
-        key = ("rail" if e["family"] == "track" else "road", e["type"] or "unknown")
+        fam = "rail" if e["family"] == "track" else "road"
         (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-        groups.setdefault(key, []).append("M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
-    parts = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 %d %d">' % (w, h),
+        groups[fam].setdefault(e["type"] or "unknown", []).append(
+            "M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
+    parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
+             ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="0 0 %d %d">' % (w, h),
              '<title>Terrain, roads and rails</title>',
              '<style>.road{stroke:#323232}.rail{stroke:#cd1e1e}'
-             '.road,.rail{fill:none;stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linecap:round}'
-             'path{vector-effect:non-scaling-stroke}</style>',
-             '<image width="%d" height="%d" href="data:image/png;base64,%s"/>'
-             % (w, h, base64.b64encode(png).decode())]
-    for fam in ("road", "rail"):                         # rails last, so they draw on top
-        for (f, t), segs in sorted(groups.items()):
-            if f == fam:
-                parts.append('<path class="%s %s" d="%s"/>' % (f, t, "".join(segs)))
+             '.road,.rail{fill:none;stroke-width:%g;stroke-linecap:round;stroke-linejoin:round}</style>' % width,
+             '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain">',
+             '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
+             % (w, h, base64.b64encode(png).decode()),
+             '</g>']
+    for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
+        parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s">' % (fam, label))
+        for t, segs in sorted(groups[fam].items()):
+            parts.append('<path class="%s %s" d="%s"/>' % (fam, t, "".join(segs)))
+        parts.append("</g>")
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -281,10 +293,13 @@ def main():
             data = raw if args.stream else decompress(raw)
             tx, ty, off_z, unit, water = read_terrain(data)
             map_w, map_h = tx * 256, ty * 256
-            side = (2 * crop[2] if crop else max(map_w, map_h)) // args.mpp + 1
-            if side > MAX_SIDE and not args.force_size:
-                print("REFUSED %s: %d x %d m at %d m/px is %d px on a side; raise --mpp"
-                      % (os.path.basename(path), map_w, map_h, args.mpp, side))
+            if crop:
+                pixels = (2 * crop[2] // args.mpp + 1) ** 2
+            else:
+                pixels = (map_w // args.mpp + 1) * (map_h // args.mpp + 1)
+            if pixels > MAX_PIXELS and not args.force_size:
+                print("REFUSED %s: %d x %d m at %d m/px is %d million pixels; raise --mpp"
+                      % (os.path.basename(path), map_w, map_h, args.mpp, pixels // 1000000))
                 continue
             if args.mpp < 4 and not crop:
                 print("REFUSED %s: --mpp %d needs --crop" % (os.path.basename(path), args.mpp))
@@ -311,8 +326,9 @@ def main():
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
-        dest = os.path.join(args.out_dir, os.path.splitext(os.path.basename(path))[0]
-                            + ("-crop" if crop else "") + "-terrain.png")
+        name = re.sub(r"\s+", "_", os.path.splitext(os.path.basename(path))[0])
+        dest = os.path.join(args.out_dir, name
+                            + ("-crop%d_%d_%d" % crop if crop else "") + "-terrain.png")
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
