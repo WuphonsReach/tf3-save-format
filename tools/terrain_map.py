@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Draw a save's terrain as an SVG, with its roads and rails on top.
 
-Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--png] [--no-network] [--stream]
+Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png]
+       [--game DIR] [--no-network] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
@@ -27,6 +28,11 @@ game's own palette.
              look at a station or a junction.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
              wide (at least one pixel).
+--grid N     (SVG only) add a `grid` layer: a line at every multiple of N metres of map x and y,
+             labelled `x -3000` along the top and `y 4500` along the left, so a place seen in the
+             picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
+             Lines at multiples of 1000 are darker and thicker, the others dotted and faint; the
+             lines are one layer under the roads and the labels another over everything.
 --game DIR   the game's install folder. A road is drawn with a stroke in proportion to its vehicle
              lane count over two (two lanes keep the base width, a track has one lane), read from
              the install's street and track templates when the script runs (nothing is copied
@@ -292,7 +298,38 @@ def draw_network(img, size, x_left, y_top, mpp, edges, lanes):
     return n["street"], n["track"]
 
 
-def svg_document(png, size, mpp, x_left, y_top, edges, lanes):
+def grid_layers(size, mpp, x_left, y_top, step):
+    """The grid as two layers, `grid` (the lines) and `grid-labels` (the coordinates, at the top
+    and left edges, meant to be drawn last so they sit over the network). A line at every
+    multiple of `step` metres in map x and y: those at multiples of 1000 m are darker and
+    thicker, the others dotted and faint. Coordinates inside are metres from the image's
+    top-left corner, like the other layers."""
+    w, h = size[0] * mpp, size[1] * mpp
+    size_t = max(7 * mpp, step * 0.07)                   # label size in metres
+    major = 'fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="%g"' % max(mpp, 1.0)
+    minor = ('fill="none" stroke="#000" stroke-opacity="0.3" stroke-width="%g" stroke-dasharray="%g %g"'
+             % (max(0.5 * mpp, 0.5), 2 * mpp, 4 * mpp))
+    text = ('font-family="sans-serif" font-size="%g" fill="#000" stroke="#fff" stroke-width="%g"'
+            ' paint-order="stroke"' % (size_t, size_t / 5))
+    scale = "scale(%g)" % (1.0 / mpp)
+    lines = ['<g id="grid" inkscape:groupmode="layer" inkscape:label="Grid %d m" transform="%s">' % (step, scale)]
+    labels = ['<g id="grid-labels" inkscape:groupmode="layer" inkscape:label="Grid labels" transform="%s">' % scale]
+    x = -(-x_left // step) * step                        # the first multiple of step at or after x_left
+    while x <= x_left + w:
+        px = x - x_left
+        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if x % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>x %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, x))
+        x += step
+    y = -(-(y_top - h) // step) * step
+    while y <= y_top:
+        py = y_top - y
+        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if y % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>y %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, y))
+        y += step
+    return lines + ["</g>"], labels + ["</g>"]
+
+
+def svg_document(png, size, mpp, x_left, y_top, edges, lanes, grid=None):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
     Coordinates inside the layers are metres from the image's top-left corner."""
@@ -315,6 +352,10 @@ def svg_document(png, size, mpp, x_left, y_top, edges, lanes):
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
              '</g>']
+    grid_labels = []
+    if grid:                                             # the lines above the terrain, under the network
+        grid_lines, grid_labels = grid_layers(size, mpp, x_left, y_top, grid)
+        parts += grid_lines
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
         parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
                      % (fam, label, 1.0 / mpp))
@@ -323,6 +364,7 @@ def svg_document(png, size, mpp, x_left, y_top, edges, lanes):
                          ' stroke-linecap="round" stroke-linejoin="round"/>'
                          % (fam, t, "".join(segs), ROAD_HEX if fam == "road" else RAIL_HEX, width))
         parts.append("</g>")
+    parts += grid_labels                                 # the coordinates over everything
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -334,6 +376,7 @@ def main():
     ap.add_argument("--mpp", type=int, default=4)
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
+    ap.add_argument("--grid", type=int, metavar="N", help="SVG only: a labelled line every N metres of map x and y")
     ap.add_argument("--game", help="the game's install folder, for the lane counts "
                     "(default: the usual Steam places)")
     ap.add_argument("--no-network", action="store_true")
@@ -342,6 +385,8 @@ def main():
     args = ap.parse_args()
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
+    if args.grid is not None and (args.grid < 1 or args.png):
+        ap.error("--grid wants a step of 1 metre or more, and only works with the SVG")
     crop = None
     if args.crop:
         try:
@@ -396,11 +441,12 @@ def main():
             continue
         name = re.sub(r"\s+", "_", os.path.splitext(os.path.basename(path))[0])
         dest = os.path.join(args.out_dir, name
-                            + ("-crop%d_%d_%d" % crop if crop else "") + "-terrain.png")
+                            + ("-crop%d_%d_%d" % crop if crop else "")
+                            + ("-grid%d" % args.grid if args.grid else "") + "-terrain.png")
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges, lanes))
+            open(dest, "w").write(svg_document(png, size, args.mpp, x_left, y_top, edges, lanes, args.grid))
         else:
             open(dest, "wb").write(png)
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges"
