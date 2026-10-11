@@ -7,8 +7,9 @@ Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.s
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
 embedded PNG and the roads and rails as vector paths on top, in three layers (`terrain`,
 `roads`, `rails`; groups with Inkscape's layer attributes) with one path per street or track type
-(class `road` or `rail` plus the type name, for styling). Its user units are map metres with the
-image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
+(class `road` or `rail` plus the type name, for styling). The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
+it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
+the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
 3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
 (`vector-effect: non-scaling-stroke`) turned short edges into blobs in VS Code's preview.
 The terrain colours are a plain
@@ -238,7 +239,7 @@ def draw_network(img, size, x_left, y_top, mpp, edges):
 def svg_document(png, size, mpp, x_left, y_top, edges):
     """SVG text in three layers (groups that Inkscape shows as layers): `terrain` (the PNG as a
     data URI), `roads` and `rails`, each holding one path per street or track type.
-    Coordinates are metres from the image's top-left corner."""
+    Coordinates inside the layers are metres from the image's top-left corner."""
     w, h = size[0] * mpp, size[1] * mpp
     width = max(3.0, 1.5 * mpp)                          # metres: 1.5 terrain pixels, scales with the picture
     groups = {"road": {}, "rail": {}}
@@ -248,16 +249,18 @@ def svg_document(png, size, mpp, x_left, y_top, edges):
         groups[fam].setdefault(e["type"] or "unknown", []).append(
             "M%.1f %.1fL%.1f %.1f" % (x0 - x_left, y_top - y0, x1 - x_left, y_top - y1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
-             ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" viewBox="0 0 %d %d">' % (w, h),
+             ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
+             ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0], size[1], size[0], size[1]),
              '<title>Terrain, roads and rails</title>',
              '<style>.road{stroke:#323232}.rail{stroke:#cd1e1e}'
              '.road,.rail{fill:none;stroke-width:%g;stroke-linecap:round;stroke-linejoin:round}</style>' % width,
-             '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain">',
+             '<g id="terrain" inkscape:groupmode="layer" inkscape:label="Terrain" transform="scale(%g)">' % (1.0 / mpp),
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
              '</g>']
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
-        parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s">' % (fam, label))
+        parts.append('<g id="%ss" inkscape:groupmode="layer" inkscape:label="%s" transform="scale(%g)">'
+                     % (fam, label, 1.0 / mpp))
         for t, segs in sorted(groups[fam].items()):
             parts.append('<path class="%s %s" d="%s"/>' % (fam, t, "".join(segs)))
         parts.append("</g>")
