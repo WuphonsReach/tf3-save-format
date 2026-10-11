@@ -52,7 +52,7 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 
 ### A second offer while the first was finished (604)
 
-**Observed** in the save 46,400 units after the completion save. A new proposal had been spawned at 2,253,000 (`lastSpawnTime`): a "Supply Industry" offer (`deliver_cargo`, uid 138,650,000) for a saw mill, 55 to deliver, `upfront` 2,850,000, `failure` of 2,850,000 and 5,400,000, `expireDurationProposed` 772,000 and `expireDuration` 8,522,500 (the first offer's was 4,626,500, so it is not a constant). `spawnIntervalModifier` had gone back from 0.5 to 1. The player dismissed its notification, and the offer stayed in `proposedSubventions` ([notifications.md](notifications.md#dismissing-a-notification-and-what-else-changes-604)). The spawn times seen so far are worked through in [the next section](#an-offer-that-expires-unaccepted-604).
+**Observed** in the save 46,400 units after the completion save. A new proposal had been spawned at 2,253,000 (`lastSpawnTime`): a "Supply Industry" offer (`deliver_cargo`, uid 138,650,000) for a saw mill, 55 to deliver, `upfront` 2,850,000, `failure` of 2,850,000 and 5,400,000, `expireDurationProposed` 772,000 and `expireDuration` 8,522,500 (the first offer's was 4,626,500, so it is not a constant). `spawnIntervalModifier` had gone back from 0.5 to 1. The player dismissed its notification, and the offer stayed in `proposedSubventions` ([notifications.md](notifications-in-play.md#dismissing-a-notification-and-what-else-changes-604)). The spawn times seen so far are worked through in [the next section](#an-offer-that-expires-unaccepted-604).
 
 ### An offer that expires unaccepted (604)
 

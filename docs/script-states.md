@@ -20,7 +20,7 @@ Script paths as they appear in the stream, and where each is described. A mod's 
 | `game_mechanics/game_time/game_time.gs` | [Weather and time of day](#weather-and-time-of-day) |
 | `game_mechanics/company/company.gs`, `company_progression.gs` | [company.md](company.md) |
 | `game_mechanics/achievements/achievements.gs` | [Counters and achievements](#counters-and-achievements) |
-| `game_mechanics/notifications/notifications.gs`, `availability_notifications.gs` | [notifications.md](notifications.md) |
+| `game_mechanics/notifications/notifications.gs`, `game_mechanics/notifications/availability_notifications.gs` | [notifications.md](notifications.md) |
 | `game_mechanics/subventions/subventions.gs` | [subsidies.md](subsidies.md) |
 | `game_mechanics/towns/town.gs` | [town-states.md](town-states.md) |
 | `game_mechanics/towns/town_cargo.gs` | `cargoDemandsSorted`, in [cargo-ids.md](cargo-ids.md) |
