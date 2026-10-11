@@ -15,7 +15,7 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots` and `tram-depots` (`--depots`), `coverage` (`--coverage`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `coverage` (`--coverage`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
@@ -79,21 +79,24 @@ game's own palette.
              `AIR6`; any other text is written as given. The scan reads the whole stream (model_instances.py). Only the instances
              named get a text label; the run prints every instance drawn (slot, model, position,
              facing), so the caller can pick slots and run again.
---depots     (SVG only) add three layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
-             `road-depots` and `tram-depots`: each building's ground face as a dull orange (maintenance), teal (road
-             depot) or purple (tram depot) rectangle with a black outline, its origin as a white dot and a red line along the
+--depots     (SVG only) add six layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
+             `road-depots`, `tram-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (the Boathouse
+             mod's `ingo_bootsschuppen`): each building's ground face as a rectangle or polygon, one colour per carrier
+             (road orange, tram purple, ship pink; provisional), with a black outline, its origin as a white dot and a red line along the
              model's x axis, one `<g class="depot KIND" id="depot-SLOT" data-slot data-model data-x data-y data-pool
              data-radius data-modes>` each. The rectangle is the first `ground_face` of the building's script in the
              install (`base/content/depots/road.zip`), placed from the instance's origin and facing as in docs/models.md;
              nothing of it is copied into the tool, so without an install no building is drawn. A road depot's second
-             instance (`road_depot_sm`) and a mod's depots are left out. Reads the whole stream; no `--crop` needed.
+             instance (`road_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
+             usual mod.io places) and it has no ground face, so only its origin dot and facing line are drawn; the free
+             decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
 --coverage   (SVG only) add a `coverage` layer under the roads, a sublayer per building kind
-             (`coverage-maintenance-buildings`, `coverage-road-depots`, `coverage-tram-depots`) holding one dashed circle
+             (`coverage-` plus each layer id above) holding one dashed circle
              per building, centred on its origin, with the `catchmentArea` radius of its script (a maintenance building
              600 m, a depot 400 m: a default the script lets a caller change, which no save was checked for). The pool
              and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
-             covers buses and trucks, a tram depot trams, the maintenance building all three. Rail, ship and
-             aircraft maintenance have their own scripts and are not drawn. Needs the install like `--depots`.
+             covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
+             maintenance building 1400 m, boathouse 600 m. Rail and aircraft maintenance are not drawn. Needs the install like `--depots`.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -109,6 +112,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 """
 import argparse
 import base64
+import glob
 import math
 import os
 import re
@@ -179,15 +183,26 @@ def read_lane_counts(content):
     return out
 
 
-# road-vehicle maintenance buildings: (layer id, label, script path in depots/road.zip, model path, colour)
+# maintenance buildings and depots: (layer id, label, archive in the install's depots folder, script path, model path,
+# colour). An archive of None is a mod's building: the script is read from the mod's folder (`find_mod_script`) and
+# its ground face is not drawn (the script's ground faces are a 4 m patch beside the model, not its footprint).
 DEPOT_KINDS = (
-    ("maintenance-buildings", "Road maintenance buildings", "road/road_maint_station.script.lua",
+    ("maintenance-buildings", "Road maintenance buildings", "road.zip", "road/road_maint_station.script.lua",
      "depots/road/road_maint_station/road_maint_station.mdl", "#f5a300"),
-    ("road-depots", "Road depots", "road/road_depot/road_depot.script.lua",
-     "depots/road/road_depot/road_depot.mdl", "#2a9d8f"),
-    ("tram-depots", "Tram depots", "road/tram_depot/tram_depot.script.lua",
+    ("road-depots", "Road depots", "road.zip", "road/road_depot/road_depot.script.lua",
+     "depots/road/road_depot/road_depot.mdl", "#f5a300"),
+    ("tram-depots", "Tram depots", "road.zip", "road/tram_depot/tram_depot.script.lua",
      "depots/road/tram_depot/tram_depot.mdl", "#8e5ea2"),
+    ("ship-maintenance-buildings", "Ship maintenance buildings", "water.zip", "water/water_maint_station.script.lua",
+     "depots/water/water_maint_station/water_maint_station.mdl", "#d6336c"),
+    ("ship-depots", "Ship depots", "water.zip", "water/water_depot.script.lua",
+     "depots/water/water_depot.mdl", "#d6336c"),
+    ("boathouses", "Boathouses (Boathouse mod)", None,
+     "content/assets/ingo_bootsschuppen/ingo_bootsschuppen_maint.script.lua",
+     "assets/ingo_bootsschuppen/ingo_bootsschuppen.mdl", "#d6336c"),
 )
+MOD_DIRS = ("~/snap/steam/common/mod.io/common/10640/mods", "~/.local/share/mod.io/common/10640/mods")
+DEPOT_PREFIXES = ("depots/", "assets/ingo_bootsschuppen/")
 _FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
 _POINT = re.compile(r"\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _RADIUS = re.compile(r"catchmentArea\s*=\s*\{\s*radius\s*=\s*(?:captureParams\.radius or )?(\d+)")
@@ -195,27 +210,49 @@ _POOL = re.compile(r"maintenancePool\s*=\s*(\d+)")
 _DEPOT_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
 
 
-def read_depot_specs(content):
-    """{layer id: {"face": [(a, b) ...], "radius", "pool", "modes"}} for the road maintenance building,
-    the road depot and the tram depot, read when the script runs from the install's `depots/road.zip`
-    (`content` is the `infrastructure` folder `find_content` returns): the first `ground_face` rectangle of the
-    building's script in its own axes, the `catchmentArea` radius, the `maintenancePool` and the transport
+def find_mod_script(rel, mods_dir=None):
+    """The text of the script at `content/...` path `rel` inside any mod folder of `mods_dir` (or the usual
+    mod.io places), or None."""
+    for d in ([mods_dir] if mods_dir else MOD_DIRS):
+        for mod in sorted(glob.glob(os.path.join(os.path.expanduser(d), "*", rel))):
+            try:
+                with open(mod, encoding="utf-8", errors="replace") as f:
+                    return f.read()
+            except OSError:
+                pass
+    return None
+
+
+def read_depot_specs(content, mods_dir=None):
+    """{layer id: {"face": [(a, b) ...], "radius", "pool", "modes"}} for every kind in `DEPOT_KINDS`, read when the
+    script runs from the install's `depots/` archives (`content` is the `infrastructure` folder `find_content`
+    returns) or, for a mod's building, from the mod's folder: the first `ground_face` rectangle of the building's
+    script in its own axes (none for a mod's), the `catchmentArea` radius, the `maintenancePool` and the transport
     modes. A kind whose script or fields are missing is left out. Nothing is stored."""
     out = {}
-    if not content:
-        return out
-    try:
-        zf = zipfile.ZipFile(os.path.join(os.path.dirname(content), "depots", "road.zip"))
-    except (OSError, zipfile.BadZipFile):
-        return out
-    for lid, _label, script, _model, _colour in DEPOT_KINDS:
-        try:
-            text = zf.read(script).decode("utf-8", "replace")
-        except KeyError:
-            continue
+    zips = {}
+    for lid, _label, archive, script, _model, _colour in DEPOT_KINDS:
+        if archive:
+            if not content:
+                continue
+            if archive not in zips:
+                try:
+                    zips[archive] = zipfile.ZipFile(os.path.join(os.path.dirname(content), "depots", archive))
+                except (OSError, zipfile.BadZipFile):
+                    zips[archive] = None
+            if not zips[archive]:
+                continue
+            try:
+                text = zips[archive].read(script).decode("utf-8", "replace")
+            except KeyError:
+                continue
+        else:
+            text = find_mod_script(script, mods_dir)
+            if text is None:
+                continue
         face, radius, pool, modes = _FACE.search(text), _RADIUS.search(text), _POOL.search(text), _DEPOT_MODES.search(text)
-        if face and radius:
-            out[lid] = {"face": [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))],
+        if radius and (face or not archive):
+            out[lid] = {"face": [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))] if face else [],
                         "radius": int(radius.group(1)), "pool": int(pool.group(1)) if pool else 0,
                         "modes": ",".join(re.findall(r'"(\w+)"', modes.group(1))) if modes else ""}
     return out
@@ -610,7 +647,7 @@ def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
     k = max(1.0, mpp / 2.0)
     under, over = [], []
     cover = []
-    for lid, label, _script, model, colour in DEPOT_KINDS:
+    for lid, label, _archive, _script, model, colour in DEPOT_KINDS:
         spec = specs.get(lid)
         rows = [i for i in instances if i["model"] == model]
         if not spec or not rows:
@@ -627,8 +664,9 @@ def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
                 pts = " ".join("%.2f,%.2f" % local(a, b) for a, b in spec["face"])
                 o, tip = local(0, 0), local(10 * k, 0)
                 over.append("<g %s>" % attrs(i))
-                over.append('<polygon points="%s" fill="%s" fill-opacity="0.28" stroke="#000" stroke-width="%g"/>'
-                            % (pts, colour, 0.35 * k))
+                if pts:
+                    over.append('<polygon points="%s" fill="%s" fill-opacity="0.28" stroke="#000" stroke-width="%g"/>'
+                                % (pts, colour, 0.35 * k))
                 over.append('<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="#c00" stroke-width="%g"/>'
                             % (o[0], o[1], tip[0], tip[1], 0.35 * k))
                 over.append('<circle cx="%.2f" cy="%.2f" r="%g" fill="#fff" stroke="#000" stroke-width="%g"/>'
@@ -718,6 +756,7 @@ def main():
                     help="rename one vehicle instance in the picture (repeatable)")
     ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
                     "and tram depots (ground faces from the install)")
+    ap.add_argument("--mods", help="the mod.io game's mods folder, for a mod's depots (default: the usual places)")
     ap.add_argument("--coverage", action="store_true", help="SVG only: draw their maintenance coverage circles")
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
@@ -752,7 +791,7 @@ def main():
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
     lanes = read_lane_counts(content) if content else {}
-    depot_specs = read_depot_specs(content) if args.depots or args.coverage else {}
+    depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
     print("lane counts: %s" % (("%d templates read from the install" % len(lanes)) if lanes else
@@ -796,8 +835,8 @@ def main():
             depot_rows = []
             if depot_specs:
                 px_bot, px_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
-                for i in read_instances(data, ("depots/road/",)):
-                    spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[3] == i["model"] and k[0] in depot_specs), None)
+                for i in read_instances(data, DEPOT_PREFIXES):
+                    spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[4] == i["model"] and k[0] in depot_specs), None)
                     if not spec:
                         continue
                     r = spec["radius"] if args.coverage else 40       # the circle or the footprint may reach the picture
