@@ -12,6 +12,7 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 
 - Facts about the format only. Never commit `.sav` files or decompressed streams; `.gitignore` blocks the common ones.
 - Images (`*.jpg`, `*.jpeg`, `*.png`, `*.webp`) are gitignored. Add one only when the user asks for that file, with `git add -f`, and only our own work: diagrams, or screenshots of our own saves. Never extracted previews or screenshots of other people's maps.
+- Use the game's internal name for a thing, not the player's word or the on-screen label: `cement` for "concrete", `vegetables` for cabbage or lettuce, `ship` for boat or trawler. `docs/glossary.md` lists keys, labels and common aliases, and the words that could be two keys (ask, do not guess). Add a word to it when the user corrects one.
 - Write notes in our own words. Do not copy text from `tf3-save-editor`'s `FORMAT.md`. Link to it and credit it instead. Code ported from it keeps a pointer to `THIRD_PARTY_NOTICES.md`.
 - Cite mod.io catalog saves by mod id and URL. Record only facts read from them (version, map size, start year, mod list, counts). No per-save dumps in the repo.
 - Strip local details before committing: home paths, file mtimes, Steam user ids, install paths. Tool output must not contain them either (`mine_saves.py` keeps size and mtime in a gitignored `.mine_state.json`).

@@ -12,6 +12,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
 | [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |
 | [industry-chains.md](industry-chains.md) | Base-game recipes (what each industry takes and gives), boosters, which climates have which industry, the rank-to-industry table, each cargo's transport class, and why mods can change all of it |
+| [glossary.md](glossary.md) | The game's internal names against labels and what players call things: cargo, industries, stops, stations, ports, depots, warehouses and vehicles, with the aliases players use for each and the loose words that could be two keys |
 | [versions.md](versions.md) | Format versions seen in the wild, with dated counts |
 | [platform.md](platform.md) | Whether a save says which platform made it |
 | [calendar.md](calendar.md) | Game clock (and its rate against real time at each play speed), calendar speed, what the autosave interval counts, the day table that turns clock values into dates, the date in the header |
