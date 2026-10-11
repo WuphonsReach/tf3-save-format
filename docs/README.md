@@ -49,6 +49,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [animals.md](animals.md) | The animals list, which animals they are, how many there are |
 | [editor-saves.md](editor-saves.md) | Map editor saves vs regular saves, converting one to the other |
 | [test-games.md](test-games.md) | Our own test games, each described once: seed, climate, map size, mods, save names and the notes that use it; the catalog games we re-saved |
+| [analysis-examples/CLAUDE.md](analysis-examples/CLAUDE.md) | Working rules for the analysis-examples folder: its goal, the file-name pattern with the mod.io id suffix, what each example holds, the support table |
+| [analysis-examples/clothes-train2-supply-chain-starvation-6425796.md](analysis-examples/clothes-train2-supply-chain-starvation-6425796.md) | Worked examples that test whether the notes and tools can support a player-style analysis, with a table of what is supported and what is a gap. First: "where is the bottleneck on this line?" from the statistics lists (per-period differences to the save's clock, last-entry times, matching a line by its loads, a backlog that turned into lost cargo) |
 | [developer/vscode-schema.md](developer/vscode-schema.md) | Clearing VS Code's "untrusted schema" warning on the summaries' `$schema` line |
 
 The money journal and the script-state container are documented in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). These notes do not repeat them.
