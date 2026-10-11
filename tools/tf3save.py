@@ -207,7 +207,7 @@ def town_names(data, min_towns=0):
     than `min_towns`, a count the run must reach (the larger of the town records and the town
     states found). A shorter run is returned as None, because it is then another kind of entity:
     the map editor's Giant map (18 town records) gave five person names. So is a run in which
-    fewer than half of the towns have a later name built on theirs (people, or industries).
+    fewer than a tenth of the towns appear in a later name (people, or industries).
     A town whose name contains an earlier town's name as a word would end the run early.
     Position and population are not read (docs/gaps/towns-and-buildings.md).
     """
@@ -222,11 +222,18 @@ def town_names(data, min_towns=0):
 
 
 def _anchored(names, towns):
-    """True when at least half of the towns have a later name built on theirs (`<town> Station`)."""
-    rest = names[1 + len(towns):]
-    heads = {t: t + " " for t in towns}
-    hit = {t for n in rest for t in towns if n.startswith(heads[t])}
-    return 2 * len(hit) >= len(towns)
+    """True when at least a tenth of the towns appear in a later name (`<town> Station`, `Farm <town>`).
+
+    A word of the later name or its start before a hyphen; the words around the town name may
+    be in the game's language (`Landbouwbedrijf <town>`), so only the town name is matched.
+    """
+    hit = set()
+    for n in names[1 + len(towns):]:
+        padded = " " + n + " "
+        for t in towns:
+            if t not in hit and n != t and (" " + t + " " in padded or n.startswith(t + "-")):
+                hit.add(t)
+    return len(hit) > 0 and 10 * len(hit) >= len(towns)
 
 
 # The game speed component: ... 09 00.. | 01 00 00 00 | u32 millisPerDay | u32 playSpeed | 8 zero bytes
