@@ -15,7 +15,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [glossary.md](glossary.md) | The game's internal names against labels and what players call things: cargo, industries, stops, stations, ports, depots, warehouses and vehicles, with the aliases players use for each and the loose words that could be two keys |
 | [versions.md](versions.md) | Format versions seen in the wild, with dated counts |
 | [platform.md](platform.md) | Whether a save says which platform made it |
-| [calendar.md](calendar.md) | Game clock (and its rate against real time at each play speed), calendar speed, what the autosave interval counts, the day table that turns clock values into dates, the date in the header |
+| [calendar.md](calendar.md) | Game clock (and its rate against real time at each play speed), the calendar speed field and its values, what the autosave interval counts, the day table that turns clock values into dates, the date in the header |
+| [calendar-speed.md](calendar-speed.md) | The calendar speed in play: one save holds the setting at save time, not a history; Paused; a calendar started again after a long stop; a speed change while running and how to place it; the speed and date in the game's windows |
 | [lua-values.md](lua-values.md) | How Lua values are encoded (settings, script states) |
 | [lua-overview.md](lua-overview.md) | Where Lua sits in the stream, layers and depth of the 28 script states in a 604 game, the markers in the binary middle (named strings, counts, embedded Lua tables) across 568 to 604, what the file labels and what it does not, what the game's script files say about the states (declarations, state types, the `version` key) |
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |

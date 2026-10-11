@@ -54,7 +54,7 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 
 - The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
 - A save with both cycles on Dynamic (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), 604, and a paused re-save of it a day of stored time later, **Observed**): `timeOfDayTarget` 33,736 (0.39 of a day) and the time slider sat at 0.39 on the Weather and Time window, but `cloudCoverageTarget` 0.26 (speed 0.001) with the weather slider at about 0.54, so only the time slider matched. `nextChange` 94,691,800 and `nextTimeOfDayChange` 94,542,400 were 363,000 and 213,600 units after the newest list timestamp (94,328,800). The state was identical in the two saves.
-- The Calendar Speed row of the same window is covered in [calendar.md](calendar.md#calendar-speed-in-the-games-windows).
+- The Calendar Speed row of the same window is covered in [calendar.md](calendar-speed.md#calendar-speed-in-the-games-windows).
 - The settings table (see [settings.md](settings.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
 
 ## Counters and achievements
