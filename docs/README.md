@@ -27,7 +27,8 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [fun-elements.md](fun-elements.md) | The Deluxe Upgrade hot air balloon: script state, sighting notification, position and model instance; the UFO timer |
 | [finances.md](finances.md) | The Finances tab against the money journal: periods, rows and booking categories, vehicle purchase and sale bookings; the balance history |
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids: the save's own cargo list (id = position, cargo mods shift the ids), the base-game id table, tiers and weights, starting cargo |
-| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, the town building component and its Historic Preservation flag, building records replaced or changing level in play |
+| [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, how to find the records, the floats that follow population, a town gaining a cargo |
+| [town-buildings.md](town-buildings.md) | The town building record: level, parcels, height, build time, owning town and the Historic Preservation flag; finding and listing the records, what a tick changes, buildings replaced or changing level in play, the town boundary |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost |
 | [statistics-lists.md](statistics-lists.md) | The `items*` statistics lists: warehouse stock as unloaded minus loaded, yearly bars from the running totals, industry production lists, spoiled cargo and the `itemsLost` list, one fish chain read window by window (port, warehouse, truck line), the `itemsAtEdge` totals that show a queue, the same chain after trucks replaced carts (drained industry stocks, per-stop arrival lists on a two-stop line) |
 | [entity-stats.md](entity-stats.md) | Searches for stocks and yearly figures as plain numbers that failed, with what was tried |
