@@ -29,6 +29,10 @@ None of these scripts write a save. For editing, see [tf3-save-editor](https://g
 | `save_preview.py OUT_DIR SAVE.sav [...]` | Write each save's preview as a PNG, right way up |
 | `mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]` | Summarise many saves (or mod.io mod directories, including their editor `maps/`) into `OUT_DIR/<id>-<name>/tf3-save-summary.json` and `OUT_DIR/index.csv`: header (including the map seed), the cargo list and any cargo a mod adds, settings as `"3 (100%, default)"`, shown date, calendar and play speed, rank, counters, subsidies, town names (`towns`, null where they cannot be told, [docs/entity-names.md](../docs/entity-names.md#town-names-604)). Each summary names the commit of the `tools/` scripts that built it and is rebuilt when that changes. Facts only, no local paths |
 
+## Icons
+
+`icons/industries/` holds one SVG per industry key (all 32 of the base game, named like the key, for example `icons/industries/saw_mill.svg`) for map plots. Each is a 64 x 64 solid pictogram drawn in `currentColor`, so the caller sets the colour with `color` or `fill`. They are our own drawings of plain objects (a wheat ear for `farm`, a pumpjack for `oil_well`, a tin for `food_factory`), picked to echo what the game's cargo icons show for each industry's products; none is traced from or copied out of the game's artwork. Like the code here, they are licensed MIT OR Apache-2.0. `icons/sunrise.svg` and `icons/sunset.svg` are the compass markers of `industry_compass.py`.
+
 ## Editor setup
 
 VS Code shows an "untrusted schema" warning on the `$schema` line of the summaries. How to clear it: [docs/developer/vscode-schema.md](../docs/developer/vscode-schema.md).
