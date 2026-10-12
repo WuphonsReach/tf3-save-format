@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" fill="currentColor">
+<defs><clipPath id="sky"><path d="M0 0H64V48.5Q32 43.5 0 48.5Z"/></clipPath></defs>
+<g clip-path="url(#sky)">
+<circle cx="32" cy="46" r="9.0"/>
+<path d="M32.00 32.50L32.00 28.00M39.94 35.08L42.58 31.44M44.84 41.83L49.12 40.44M19.16 41.83L14.88 40.44M24.06 35.08L21.42 31.44" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+</g>
+<path d="M6 50Q32 45 58 50L58 53Q32 48 6 53Z"/>
+<path d="M7 44L11.6 38.4L8.2 38.4L8.2 28L5.8 28L5.8 38.4L2.4000000000000004 38.4Z"/>
+<path d="M57 44L61.6 38.4L58.2 38.4L58.2 28L55.8 28L55.8 38.4L52.4 38.4Z"/>
+</svg>

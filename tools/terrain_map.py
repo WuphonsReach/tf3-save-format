@@ -102,9 +102,10 @@ game's own palette.
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
 scale; the heightmap is one `vec<u16>` of 65 x 65 per tile, tile `ty * tiles_x + tx`. Grid point
 (c, r) of the stitched grid is at x = -width / 2 + 4c, y = -height / 2 + 4r. The picture is turned
-so that north is up and east is right: image up is +x and image right is -y, which is the grid
-turned a quarter turn anticlockwise (docs/terrain.md, "Which way is north"). So a grid row is a
-picture column, and the picture's width is the map's y extent.
+so that north is up and east is right, and `--north` says which way north is (docs/compass.md). `game` (the default) is the game's own: image up is +y and image right is +x,
+the grid as stored with its rows running up, as the compass words in the game's names have it (docs/compass.md).
+`sun` is the one the sun's path gives: image up is +x and image right is -y, the grid turned a quarter
+turn anticlockwise, so a grid row is a picture column and the picture's width is the map's y extent.
 
 The roads and rails are the street-edge table (docs/road-network.md, street_edges.py), straight
 chords between the end positions: roads dark grey, rails red. Bridges and tunnels
@@ -343,9 +344,37 @@ def upsample(rows, f):
     return out
 
 
+class Frame:
+    """Where the map's x and y fall in the picture. `kind` is `game` (image up is +y, image right is +x) or
+    `sun` (image up is +x, image right is -y). (`ax`, `ay`) is the map point at the picture's top-left corner:
+    for `game` the smallest x and the largest y, for `sun` the largest x and the largest y. Everything that
+    draws takes one of these, so only this class knows which way north is."""
+
+    def __init__(self, kind, ax, ay):
+        self.kind, self.ax, self.ay = kind, ax, ay
+
+    @classmethod
+    def from_bounds(cls, kind, x_min, x_max, y_max):
+        return cls(kind, x_max if kind == "sun" else x_min, y_max)
+
+    def pic(self, x, y):
+        """Picture (u, v) in metres from the top-left corner: u to the right, v down."""
+        return (self.ay - y, self.ax - x) if self.kind == "sun" else (x - self.ax, self.ay - y)
+
+    def vec(self, dx, dy):
+        """A map-space vector as a picture vector."""
+        return (-dy, -dx) if self.kind == "sun" else (dx, -dy)
+
+    def box(self, size, mpp):
+        """(x_min, x_max, y_min, y_max) of the map the picture shows."""
+        w, h = size[0] * mpp, size[1] * mpp
+        if self.kind == "sun":
+            return self.ax - h, self.ax, self.ay - w, self.ay
+        return self.ax, self.ax + w, self.ay - h, self.ay
+
+
 def crop_grid(rows, tx, ty, cx, cy, radius):
-    """The part of the grid within `radius` metres of (cx, cy), and the map coordinates (x_top,
-    y_left) of its top-left pixel in the north-up picture: the largest x and the largest y."""
+    """The part of the grid within `radius` metres of (cx, cy), and its map bounds (x_min, x_max, y_min, y_max)."""
     w, h = tx * 256, ty * 256
     c0 = max(0, int((cx - radius + w / 2) // GRID_STEP))
     c1 = min(64 * tx, int(-(-(cx + radius + w / 2) // GRID_STEP)))
@@ -353,12 +382,16 @@ def crop_grid(rows, tx, ty, cx, cy, radius):
     r1 = min(64 * ty, int(-(-(cy + radius + h / 2) // GRID_STEP)))
     if c1 - c0 < 2 or r1 - r0 < 2:
         raise ValueError("the crop lies outside the map")
-    return [r[c0:c1 + 1] for r in rows[r0:r1 + 1]], (-w / 2 + GRID_STEP * c1, -h / 2 + GRID_STEP * r1)
+    return ([r[c0:c1 + 1] for r in rows[r0:r1 + 1]],
+            (-w / 2 + GRID_STEP * c0, -w / 2 + GRID_STEP * c1, -h / 2 + GRID_STEP * r0, -h / 2 + GRID_STEP * r1))
 
 
-def to_picture(rows, step):
-    """The grid in the picture's order, every `step`th point: picture row j (top first, x falling)
+def to_picture(rows, step, kind="game"):
+    """The grid in the picture's order, every `step`th point. `game`: picture row j (top first, y falling)
+    is grid row `last - j * step`, along it x rises from the first column. `sun`: picture row j (x falling)
     is grid column `last - j * step`, and along it y falls from the grid's last row."""
+    if kind == "game":
+        return [array("H", r[::step]) for r in rows[::-1][::step]]
     width = len(rows[0])
     flat = array("H")
     for r in rows:
@@ -371,10 +404,10 @@ def to_picture(rows, step):
     return picture
 
 
-def render(rows, step, off_z, unit, water, spacing=None):
+def render(rows, step, off_z, unit, water, spacing=None, kind="game"):
     """RGB bytes (top row first) and (width, height) of the grid sampled every `step` points,
     turned north up and east right. Hill shading from the north-west, vertical scale doubled."""
-    picked = to_picture(rows, step)
+    picked = to_picture(rows, step, kind)
     w, h = len(picked[0]), len(picked)
     spacing = spacing or GRID_STEP * step
     water_v = (water - off_z) / unit
@@ -438,9 +471,9 @@ def _line(img, w, h, x0, y0, x1, y1, colour, width=1):
             y0 += sy
 
 
-def draw_network(img, size, x_top, y_left, mpp, edges, lanes):
-    """Draw roads, then rails over them. Returns (roads drawn, rails drawn). Picture x is
-    `y_left - y` and picture y is `x_top - x` (north up, east right)."""
+def draw_network(img, size, fr, mpp, edges, lanes):
+    """Draw roads, then rails over them. Returns (roads drawn, rails drawn). Picture position
+    from `fr.pic` (north up, east right)."""
     w, h = size
     n = {"street": 0, "track": 0}
     for fam, colour in (("street", ROAD), ("track", RAIL)):
@@ -448,8 +481,8 @@ def draw_network(img, size, x_top, y_left, mpp, edges, lanes):
             if e["family"] != fam and not (fam == "street" and e["family"] is None):
                 continue
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-            _line(img, w, h, (y_left - y0) / mpp, (x_top - x0) / mpp,
-                  (y_left - y1) / mpp, (x_top - x1) / mpp, colour,
+            (u0, v0), (u1, v1) = fr.pic(x0, y0), fr.pic(x1, y1)
+            _line(img, w, h, u0 / mpp, v0 / mpp, u1 / mpp, v1 / mpp, colour,
                   max(1, round(edge_width(e, lanes, max(3.0, 1.5 * mpp), mpp) / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
@@ -467,14 +500,14 @@ def safe_id(text):
     return re.sub(r"[^A-Za-z0-9_-]+", "_", str(text))
 
 
-def grid_layers(size, mpp, x_top, y_left, step):
+def grid_layers(size, mpp, fr, step):
     """The grid as two layers, `grid` (the lines) and `grid-labels` (the coordinates, at the top
     and left edges, meant to be drawn last so they sit over the network). A line at every
     multiple of `step` metres in map x and y: those at multiples of 1000 m are darker and
-    thicker, the others dotted and faint. The lines of constant y run up the picture (y falls
-    to the right) and are labelled along the top; those of constant x run across it (x falls
-    downwards) and are labelled along the left. Coordinates inside are metres from the image's
-    top-left corner, like the other layers."""
+    thicker, the others dotted and faint. The lines that run up the picture are labelled along the
+    top (`game`: constant x, x rising to the right; `sun`: constant y, y falling to the right) and
+    those that run across it along the left (`game`: constant y, falling downwards; `sun`: constant x,
+    falling downwards). Coordinates inside are metres from the image's top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
     size_t = max(min(7 * mpp, 0.03 * max(w, h)), step * 0.07)   # label size in metres, smaller on a close crop
     major = 'fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="%g"' % max(mpp, 1.0)
@@ -485,35 +518,45 @@ def grid_layers(size, mpp, x_top, y_left, step):
     scale = "scale(%g)" % (1.0 / mpp)
     lines = [layer("grid", "Grid %d m" % step, ' transform="%s" pointer-events="none"' % scale)]
     labels = [layer("grid-labels", "Grid labels", ' transform="%s" pointer-events="none"' % scale)]
-    y = (y_left // step) * step                          # the first multiple of step at or below y_left
-    while y >= y_left - w:
-        px = y_left - y
-        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if y % 1000 == 0 else minor))
-        labels.append('<text x="%g" y="%g" %s>y %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, y))
-        y -= step
-    x = (x_top // step) * step
-    while x >= x_top - h:
-        py = x_top - x
-        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if x % 1000 == 0 else minor))
-        labels.append('<text x="%g" y="%g" %s>x %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, x))
-        x -= step
+    x_min, x_max, y_min, y_max = fr.box(size, mpp)
+    if fr.kind == "sun":
+        up_axis, (lo, hi) = "y", (y_min, y_max)
+    else:
+        up_axis, (lo, hi) = "x", (x_min, x_max)
+    first = -((-int(math.floor(lo))) // step) * step         # the first multiple of step at or above lo
+    ups = list(range(first, int(math.floor(hi)) + 1, step))
+    if fr.kind == "sun":
+        ups.reverse()                                       # y falls to the right
+    for val in ups:
+        px = fr.pic(0, val)[0] if up_axis == "y" else fr.pic(val, 0)[0]
+        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if val % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, up_axis, val))
+    across_axis, (lo, hi) = ("x", (x_min, x_max)) if fr.kind == "sun" else ("y", (y_min, y_max))
+    for val in range(int(math.floor(hi) // step) * step, int(math.ceil(lo)) - 1, -step):
+        py = fr.pic(val, 0)[1] if across_axis == "x" else fr.pic(0, val)[1]
+        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if val % 1000 == 0 else minor))
+        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, across_axis, val))
     return lines + ["</g>"], labels + ["</g>"]
 
 
 META_NS = "urn:tf3-save-format:terrain-map:1"
 
 
-def svg_metadata(size, mpp, x_top, y_left, map_size, crop=None, grid=None, source=None):
+def svg_metadata(size, mpp, fr, map_size, crop=None, grid=None, source=None):
     """A `<metadata>` element recording where the picture sits on the map, so the SVG can be
     turned back into map coordinates (or redrawn) without the command line that made it. All
-    values are map metres: `x-top` and `y-left` are the map point at the picture's top-left
-    corner, and the picture spans x from `x-min` to `x-top` and y from `y-min` to `y-left`."""
-    w, h = size[0] * mpp, size[1] * mpp
+    values are map metres. `x-min`, `x-max`, `y-min` and `y-max` are the map the picture spans;
+    `orientation` says which way is up. For `sun` the old `x-top` and `y-left` (the map point at the
+    top-left corner) are kept as well."""
+    x_min, x_max, y_min, y_max = fr.box(size, mpp)
+    orient = ("north-up (game): image up is +y, image right is +x" if fr.kind == "game"
+              else "north-up (sun): image up is +x, image right is -y")
     attrs = [("source", source), ("map-width", map_size[0]), ("map-height", map_size[1]),
-             ("metres-per-pixel", mpp), ("orientation", "north-up: image up is +x, image right is -y"),
-             ("x-top", "%g" % x_top), ("x-min", "%g" % (x_top - h)),
-             ("y-left", "%g" % y_left), ("y-min", "%g" % (y_left - w)),
-             ("cropped", "true" if crop else "false")]
+             ("metres-per-pixel", mpp), ("orientation", orient), ("north", fr.kind),
+             ("x-min", "%g" % x_min), ("x-max", "%g" % x_max), ("y-min", "%g" % y_min), ("y-max", "%g" % y_max)]
+    if fr.kind == "sun":
+        attrs += [("x-top", "%g" % x_max), ("y-left", "%g" % y_max)]
+    attrs.append(("cropped", "true" if crop else "false"))
     if crop:
         attrs += [("crop-x", "%g" % crop[0]), ("crop-y", "%g" % crop[1]), ("crop-radius", "%g" % crop[2])]
     if grid:
@@ -552,7 +595,7 @@ def vehicle_class(model):
     return m.group(1) if m else "other"
 
 
-def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, names=None):
+def overlay_layers(size, mpp, fr, edges, vehicles, labels=False, names=None):
     """SVG text for the `labels` layer (edge node pairs and their end nodes) and the `vehicles` layer (a
     five-sided shape (the body with a pointed front) per vehicle instance, with a text only for a slot in `names`),
     in the same metre units as the other layers. `edges` and `vehicles` may be empty. Each vehicle is a
@@ -577,7 +620,7 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
         for e in picked:
             c = tint[frozenset((e["a"], e["b"]))]
             for (x, y, _), (xo, yo, _) in ((e["p0"], e["p1"]), (e["p1"], e["p0"])):
-                ends.setdefault((round(x, 1), round(y, 1)), []).append((c, (y - yo, xo - x), "%x>%x" % (e["a"], e["b"])))
+                ends.setdefault((round(x, 1), round(y, 1)), []).append((c, fr.vec(xo - x, yo - y), "%x>%x" % (e["a"], e["b"])))
         top.append(layer("edge-labels", "Edge labels"))
         for e in picked:
             key = frozenset((e["a"], e["b"]))
@@ -586,19 +629,20 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
             text = labels[key] or "%x>%x" % (e["a"], e["b"])
             if e.get("e"):
                 text += " e%x" % e["e"]
-            angle = math.degrees(math.atan2(x0 - x1, y0 - y1))     # the edge in picture axes
+            ex, ey = fr.vec(x1 - x0, y1 - y0)
+            angle = math.degrees(math.atan2(ey, ex))               # the edge in picture axes
             if angle > 90 or angle < -90:                           # keep the text upright
                 angle -= 180 if angle > 0 else -180
             top.append('<g class="edge-label" data-a="%x" data-b="%x"><text transform="translate(%.1f %.1f) rotate(%.1f)"'
                        ' y="%g" paint-order="stroke" stroke="%s" stroke-width="%g" stroke-linejoin="round">%s</text></g>'
-                       % (e["a"], e["b"], y_left - (y0 + y1) / 2, x_top - (x0 + x1) / 2, angle, lfs * 1.1,
-                          tint[key], fs / 4, escape(text)))
+                       % ((e["a"], e["b"]) + fr.pic((x0 + x1) / 2, (y0 + y1) / 2) + (angle, lfs * 1.1,
+                          tint[key], fs / 4, escape(text))))
         top.append("</g>")
         r = lfs * 0.3
         ring = 'stroke="#000" stroke-width="%g"' % (lfs * 0.08)
         top.append(layer("nodes", "Edge end nodes"))
         for (x, y), parts in ends.items():
-            cx, cy = y_left - y, x_top - x
+            cx, cy = fr.pic(x, y)
             top.append('<g class="node" data-x="%g" data-y="%g" data-edges="%s">' % (x, y, " ".join(p[2] for p in parts)))
             top.append('<circle cx="%.1f" cy="%.1f" r="%g" fill="%s" %s/>' % (cx, cy, r, parts[-1][0], ring))
             if len(parts) > 1:                                      # a join: the half toward the first edge in its colour
@@ -621,8 +665,9 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
             out.append(layer("vehicles-" + safe_id(layer_cls), "Vehicles: " + layer_cls))
             for cls, v in by_class[layer_cls]:
                 length, width = next((sz for pre, sz in VEHICLE_SIZE if v["model"].startswith(pre)), (6, 2.5))
-                px, py = y_left - v["y"], x_top - v["x"]
-                angle = math.degrees(math.atan2(-v["fx"], -v["fy"]))      # the facing in picture axes
+                px, py = fr.pic(v["x"], v["y"])
+                ux, uy = fr.vec(v["fx"], v["fy"])
+                angle = math.degrees(math.atan2(uy, ux))                  # the facing in picture axes
                 tip = min(width * 0.9, length / 2)                        # the point's length comes out of the body's
                 fill = next((c for pre, c in VEHICLE_FILL if v["model"].startswith(pre)), VEHICLE_GREY)
                 edge = RAIL_OUTLINE if v["model"].startswith(RAIL_BOUND) else "#fff"
@@ -642,7 +687,7 @@ def overlay_layers(size, mpp, x_top, y_left, edges, vehicles, labels=False, name
     return out + top, unmatched
 
 
-def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
+def depot_layers(mpp, fr, instances, specs, footprints, coverage):
     """SVG lines for the depot layers: (`under`, `over`). `under` is the `coverage` layer (one circle per building,
     a sublayer per kind) and `over` the `maintenance-buildings`, `road-depots` and `tram-depots` layers (the
     ground face placed from the instance's origin and facing, its origin, a line along the model's x axis).
@@ -664,7 +709,7 @@ def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
             for i in rows:
                 n = math.hypot(i["fx"], i["fy"]) or 1.0
                 fx, fy = i["fx"] / n, i["fy"] / n
-                local = lambda a, b: (y_left - (i["y"] + a * fy + b * fx), x_top - (i["x"] + a * fx - b * fy))
+                local = lambda a, b: fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
                 pts = " ".join("%.2f,%.2f" % local(a, b) for a, b in spec["face"])
                 o, tip = local(0, 0), local(10 * k, 0)
                 over.append("<g %s>" % attrs(i))
@@ -680,7 +725,7 @@ def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
         if coverage:
             cover.append(layer("coverage-" + lid, "Coverage: " + label))
             for i in rows:
-                cx, cy = y_left - i["y"], x_top - i["x"]
+                cx, cy = fr.pic(i["x"], i["y"])
                 cover.append('<g %s><circle cx="%.2f" cy="%.2f" r="%d" fill="%s" fill-opacity="0.06" stroke="%s"'
                              ' stroke-width="%g" stroke-dasharray="%g %g"/></g>'
                              % (attrs(i), cx, cy, spec["radius"], colour, colour, 1.5 * mpp, 10 * mpp, 6 * mpp))
@@ -692,21 +737,22 @@ def depot_layers(mpp, x_top, y_left, instances, specs, footprints, coverage):
     return under, over
 
 
-def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=()):
+def svg_document(png, size, mpp, fr, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=()):
     """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
     `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
     street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
-    right (picture x is `y_left - y`, picture y is `x_top - x`)."""
+    right (`fr.pic` gives the position)."""
     w, h = size[0] * mpp, size[1] * mpp
     unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
     groups = {"road": {}, "rail": {}}                    # family -> type -> one <path> per edge
     for e in edges:
         fam = "rail" if e["family"] == "track" else "road"
         (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
+        (u0, v0), (u1, v1) = fr.pic(x0, y0), fr.pic(x1, y1)
         groups[fam].setdefault(e["type"] or "unknown", []).append(
             '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="M%.1f %.1fL%.1f %.1f"/>'
             % (fam, safe_id(e["type"] or "unknown"), e["a"], e["b"], ' data-edge="%x"' % e["e"] if e.get("e") else "",
-               edge_width(e, lanes, unit, mpp), y_left - y0, x_top - x0, y_left - y1, x_top - x1))
+               edge_width(e, lanes, unit, mpp), u0, v0, u1, v1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0] * zoom, size[1] * zoom, size[0], size[1]),
@@ -720,7 +766,7 @@ def svg_document(png, size, mpp, x_top, y_left, edges, lanes, grid=None, metadat
              '</g>']
     grid_labels = []
     if grid:                                             # the lines above the terrain, under the network
-        grid_lines, grid_labels = grid_layers(size, mpp, x_top, y_left, grid)
+        grid_lines, grid_labels = grid_layers(size, mpp, fr, grid)
         parts += grid_lines
     parts += under                                       # coverage circles under the network
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
@@ -744,6 +790,9 @@ def main():
     ap.add_argument("out_dir")
     ap.add_argument("saves", nargs="+")
     ap.add_argument("--mpp", type=int, default=4)
+    ap.add_argument("--north", choices=("game", "sun"), default="game",
+                    help="which way north is drawn: game (default: up is +y, right is +x, as the game's name "
+                    "compass has it) or sun (up is +x, right is -y, from the sun's path); see docs/terrain.md")
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--grid", type=int, metavar="N", help="SVG only: a labelled line every N metres of map x and y")
@@ -819,26 +868,26 @@ def main():
                 print("REFUSED %s: --mpp %d needs --crop" % (os.path.basename(path), args.mpp))
                 continue
             rows = read_heightmap(data, tx, ty)
-            x_top, y_left = map_w / 2, map_h / 2
+            bounds = (-map_w / 2, map_w / 2, -map_h / 2, map_h / 2)
             if crop:
-                rows, (x_top, y_left) = crop_grid(rows, tx, ty, *crop)
+                rows, bounds = crop_grid(rows, tx, ty, *crop)
+            fr = Frame.from_bounds(args.north, bounds[0], bounds[1], bounds[3])
             if fine > 1:
                 rows = upsample(rows, fine)
-            img, size = render(rows, step, off_z, unit, water, args.mpp)
+            img, size = render(rows, step, off_z, unit, water, args.mpp, args.north)
+            x_lo, x_hi, y_lo, y_hi = fr.box(size, args.mpp)
             roads = rails = 0
             edges = [] if args.no_network else read_edges(data)
             if crop:                                  # only the edges that touch the picture
-                x_bot, y_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
                 edges = [e for e in edges
-                         if max(e["p0"][0], e["p1"][0]) >= x_bot and min(e["p0"][0], e["p1"][0]) <= x_top
-                         and max(e["p0"][1], e["p1"][1]) >= y_right and min(e["p0"][1], e["p1"][1]) <= y_left]
+                         if max(e["p0"][0], e["p1"][0]) >= x_lo and min(e["p0"][0], e["p1"][0]) <= x_hi
+                         and max(e["p0"][1], e["p1"][1]) >= y_lo and min(e["p0"][1], e["p1"][1]) <= y_hi]
             vehicles = []
             if args.vehicles and crop:
                 vehicles = [v for v in read_instances(data)
-                            if x_bot <= v["x"] <= x_top and y_right <= v["y"] <= y_left]
+                            if x_lo <= v["x"] <= x_hi and y_lo <= v["y"] <= y_hi]
             depot_rows = []
             if depot_specs:
-                px_bot, px_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
                 try:
                     found = read_instances(data, DEPOT_PREFIXES)
                 except ValueError as e:                   # an older save: no model table, so no instances
@@ -849,7 +898,7 @@ def main():
                     if not spec:
                         continue
                     r = spec["radius"] if args.coverage else 40       # the circle or the footprint may reach the picture
-                    if px_bot - r <= i["x"] <= x_top + r and px_right - r <= i["y"] <= y_left + r:
+                    if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                         depot_rows.append(i)
             if args.edge_ids and labels:
                 edge_ids(edges, read_strips(data))
@@ -857,7 +906,7 @@ def main():
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
             elif edges:
-                roads, rails = draw_network(img, size, x_top, y_left, args.mpp, edges, lanes)
+                roads, rails = draw_network(img, size, fr, args.mpp, edges, lanes)
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
@@ -868,13 +917,13 @@ def main():
         png = png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
-            meta = svg_metadata(size, args.mpp, x_top, y_left, (map_w, map_h), crop, args.grid,
+            meta = svg_metadata(size, args.mpp, fr, (map_w, map_h), crop, args.grid,
                                 os.path.basename(path))
-            overlay, unmatched = overlay_layers(size, args.mpp, x_top, y_left, edges, vehicles, labels, names)
+            overlay, unmatched = overlay_layers(size, args.mpp, fr, edges, vehicles, labels, names)
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
-            under, over = depot_layers(args.mpp, x_top, y_left, depot_rows, depot_specs, args.depots, args.coverage)
-            open(dest, "w").write(svg_document(png, size, args.mpp, x_top, y_left, edges, lanes, args.grid, meta,
+            under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
+            open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, lanes, args.grid, meta,
                                                overlay, args.zoom, under, over))
             for i in depot_rows:
                 print("depot slot %-6d %-22s x %8.1f y %8.1f facing %5.2f %5.2f"

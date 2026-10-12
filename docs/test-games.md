@@ -15,7 +15,13 @@ The game most notes use, played from a new game for the purpose of these tests.
 - A second chain carries stone from a quarry to a cement plant, and cement to a warehouse and on to Retford, on two road lines ([cement-chain.md](cement-chain.md)).
 - Saves are named `test-small-subartic-seriesA-1010-<time>`, some with a word for what changed. One is a crash save the game wrote after an assertion failure ([header.md](header.md#preview)).
 
-Notes that use it: [parcels.md](parcels.md), [finances.md](finances.md), [running-costs.md](running-costs.md), [subsidies.md](subsidies.md), [notifications.md](notifications.md), [entity-names.md](entity-names.md), [lines.md](lines.md), [vehicles.md](vehicles.md), [town-records.md](town-records.md), [town-buildings.md](town-buildings.md), [town-states.md](town-states.md), [statistics-lists.md](statistics-lists.md), [fish-chain.md](fish-chain.md), [cement-chain.md](cement-chain.md), [industries.md](industries.md), [spoilage.md](spoilage.md), [calendar.md](calendar.md), [header.md](header.md), [terrain.md](terrain.md), [mods.md](mods.md).
+Notes that use it: [compass.md](compass.md), [parcels.md](parcels.md), [finances.md](finances.md), [running-costs.md](running-costs.md), [subsidies.md](subsidies.md), [notifications.md](notifications.md), [entity-names.md](entity-names.md), [lines.md](lines.md), [vehicles.md](vehicles.md), [town-records.md](town-records.md), [town-buildings.md](town-buildings.md), [town-states.md](town-states.md), [statistics-lists.md](statistics-lists.md), [fish-chain.md](fish-chain.md), [cement-chain.md](cement-chain.md), [industries.md](industries.md), [spoilage.md](spoilage.md), [calendar.md](calendar.md), [header.md](header.md), [terrain.md](terrain.md), [mods.md](mods.md).
+
+## Large tropical game
+
+- Seed `mSKhWzIuLq`, tropical climate and economy, Large 1 : 2 (10240 x 20480 m), start year 1900, Hard difficulty, Asian names, Town Density Sparse and Industry Density Packed, Ocean Large, Islands Dense, Mountains Sparse (from the New Game screen and the header). 14 mods, among them Deluxe Upgrade, Boathouse and Industry Upgrades.
+- Eight towns and 29 industries, saved at once from the New Game screen (`test-large-trop-Caloocan-2610 <date>-<time>`); the screen's preview and the save agree on both counts.
+- Used for: the compass words in industry names ([compass.md](compass.md)).
 
 ## Tiny tropical game
 
