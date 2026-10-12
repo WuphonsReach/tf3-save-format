@@ -17,8 +17,19 @@ Each point is a result in its home note, not a new finding:
 - A new signal is thin: its id is in the edge record and in few other places, and one id occurs in about ten places in all ([signals.md](signals.md)).
 - No table of live entities was found ([town-leftovers.md](town-leftovers.md#no-other-table-holds-the-live-ids)). A dump of per-component tables would not need one.
 
+## A second table follows the parcel table (604, Observed, one game)
+
+Directly after the last parcel record there is another `u32` count, then records of a different shape. The parcel table was read in 111 saves of the [Small subarctic game](test-games.md#small-subarctic-game), from the first save to the last of the parcel tests:
+
+- **The count equals the parcel count** in 93 saves, while the parcel table grew from 2,543 to 5,522. In the last 14 saves, where the parcel table is 7,061 to 7,327, it is 62 higher (7,061 gives 7,123 and 7,327 gives 7,389), and the extra 62 does not change.
+- **The records are not parcel records.** They hold small integers, a float and, in some, one extra number in the range of the parcel ids (about 19,000 to 40,000 in the late saves). The layout is not worked out.
+- **No array of entity ids stands beside the parcel table.** The words just before its count are the tail of the name table and a few zeros; the count of the second table follows the last parcel record at once.
+- **Four saves between the two groups have no parcel table the parser accepts** (the four before the first 62-higher save). Why is not known.
+
+So the stream keeps per-parcel data in two tables of equal length, written one after the other. That fits one table per component, but a parcel's own entity id is in neither (see [parcels.md](parcels.md#parcel-ids-and-the-building-records)), so the tables are addressed by position. Whether position is the link between them is not tested.
+
 ## Open
 
 Whether the stream is, for the entity part, one table per component type written one after another, with the free list beside them, or a record per object. Id-keyed tables and free lists also occur in engines that are not entity-component systems, so none of the above decides it.
 
-Test: take a component the API names (`Parcel` is the nearest, its table is known) and check whether the table is a contiguous run of rows sorted or ordered by entity id with no per-row type tag. Then look for a second component with the same shape (signal objects, vehicles, nodes), and for the table order against the order of the API's records. Two components laid out alike would make the per-component reading likely; none would point to a record per object.
+Test, started with the section above: take a component the API names (`Parcel` is the nearest, its table is known) and check whether the table is a contiguous run of rows sorted or ordered by entity id with no per-row type tag. Then look for a second component with the same shape (signal objects, vehicles, nodes), and for the table order against the order of the API's records. Two components laid out alike would make the per-component reading likely; none would point to a record per object.
