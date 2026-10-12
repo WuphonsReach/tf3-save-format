@@ -15,7 +15,7 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `coverage` (`--coverage`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `coverage` (`--coverage`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
@@ -79,15 +79,15 @@ game's own palette.
              `AIR6`; any other text is written as given. The scan reads the whole stream (model_instances.py). Only the instances
              named get a text label; the run prints every instance drawn (slot, model, position,
              facing), so the caller can pick slots and run again.
---depots     (SVG only) add six layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
-             `road-depots`, `tram-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (the Boathouse
+--depots     (SVG only) add eight layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
+             `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (the Boathouse
              mod's `ingo_bootsschuppen`): each building's ground face as a rectangle or polygon, one colour per carrier
-             (road orange, tram purple, ship pink; provisional), with a black outline, its origin as a white dot and a red line along the
+             (road orange, tram purple, rail teal, ship pink; provisional), with a black outline, its origin as a white dot and a red line along the
              model's x axis, one `<g class="depot KIND" id="depot-SLOT" data-slot data-model data-x data-y data-pool
              data-radius data-modes>` each. The rectangle is the first `ground_face` of the building's script in the
              install (`base/content/depots/road.zip`), placed from the instance's origin and facing as in docs/models.md;
              nothing of it is copied into the tool, so without an install no building is drawn. A road depot's second
-             instance (`road_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
+             instance (`road_depot_sm`, likewise the rail depot's `rail_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
              usual mod.io places) and it has no ground face, so only its origin dot and facing line are drawn; the free
              decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
 --coverage   (SVG only) add a `coverage` layer under the roads, a sublayer per building kind
@@ -96,7 +96,7 @@ game's own palette.
              600 m, a depot 400 m: a default the script lets a caller change, which no save was checked for). The pool
              and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
              covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
-             maintenance building 1400 m, boathouse 600 m. Rail and aircraft maintenance are not drawn. Needs the install like `--depots`.
+             maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -193,6 +193,10 @@ DEPOT_KINDS = (
      "depots/road/road_depot/road_depot.mdl", "#f5a300"),
     ("tram-depots", "Tram depots", "road.zip", "road/tram_depot/tram_depot.script.lua",
      "depots/road/tram_depot/tram_depot.mdl", "#8e5ea2"),
+    ("rail-maintenance-buildings", "Rail maintenance buildings", "rail.zip", "rail/rail_maint_station.script.lua",
+     "depots/rail/rail_maint_station/rail_maint_station.mdl", "#2a9d8f"),
+    ("rail-depots", "Rail depots", "rail.zip", "rail/rail_depot.script.lua",
+     "depots/rail/rail_depot.mdl", "#2a9d8f"),
     ("ship-maintenance-buildings", "Ship maintenance buildings", "water.zip", "water/water_maint_station.script.lua",
      "depots/water/water_maint_station/water_maint_station.mdl", "#d6336c"),
     ("ship-depots", "Ship depots", "water.zip", "water/water_depot.script.lua",
@@ -835,7 +839,12 @@ def main():
             depot_rows = []
             if depot_specs:
                 px_bot, px_right = x_top - size[1] * args.mpp, y_left - size[0] * args.mpp
-                for i in read_instances(data, DEPOT_PREFIXES):
+                try:
+                    found = read_instances(data, DEPOT_PREFIXES)
+                except ValueError as e:                   # an older save: no model table, so no instances
+                    print("no depot layers: %s" % e)
+                    found = []
+                for i in found:
                     spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[4] == i["model"] and k[0] in depot_specs), None)
                     if not spec:
                         continue
