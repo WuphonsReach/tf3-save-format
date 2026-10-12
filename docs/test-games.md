@@ -49,6 +49,11 @@ Notes that use it: [compass.md](compass.md), [parcels.md](parcels.md), [finances
 - Saved paused from 6 February 2060 to 21 April 2061 at calendar speeds 4.00x, 2.00x and 0.50x: the rule that the date shown advances by the calendar speed times the clock ([calendar.md](calendar.md#the-game-clock)), script states read against the game's windows ([script-states.md](script-states.md)) and the year in the availability state ([notifications.md](notifications.md#the-availability-state)).
 - Saves are named `New Game 20261008-<time>`.
 
+## Tiny flat editor game
+
+- Seed `tgzZmeqUSM`, tropical climate, economy `tropic` and Asian names, Tiny 1 : 3 (2048 x 6144 m), start year 1900, a map editor save (`isMapEditor` true, money 0, no mods). The ground is flat: `terrain_map.py` drew no height lines or bands at 20 m steps.
+- Three files in `save_maps/`, named `tiny-flat-1x3` (the blank template), `tiny-flat-1x3 1937` (two towns, three industries and a country road drawn) and `tiny-flat-1x3 1938` (four bypasses added to the road); the numbers are part of the names the player gave. What they show is in [editor-saves.md](editor-saves.md#a-blank-template-and-a-road-test).
+
 ## Giant temperate editor game
 
 - Seed `87gEXXsiaA`, temperate climate and economy, European names, Giant (20480 x 40960 m, header `map.size` 8), start year 1900, a map editor save (`isMapEditor` true, money 0). Twelve mods, among them Deluxe Upgrade, the Early Road Vehicles, Trams, Wagons and Locomotives sets, Boathouse, Overpass Builder and Industry Upgrades. 5,034 animals, 1,678 of them with flock offsets ([animals.md](animals.md)).
