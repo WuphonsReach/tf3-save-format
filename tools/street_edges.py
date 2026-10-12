@@ -31,6 +31,7 @@ A record can outlast its road by one save: a deleted road was still listed in th
 the player, so the output needs no masking.
 """
 import argparse
+from array import array
 import json
 import math
 import os
@@ -120,6 +121,42 @@ def read_strips(data):
         if abs(x) < MAX_X and abs(y) < MAX_Y:
             out.setdefault(eid, []).append((m.group(2)[0], x, y))
     return out
+
+
+TAIL = 1_000_000              # the free-id list sits in the last megabyte of the stream
+FREE_MIN_RUN = 1000           # shortest ascending run taken for the list's sorted part
+FREE_MAX_ID = 1_000_000       # an id is below this; the words after the list are not
+
+
+def read_free_ids(data):
+    """The free-id list (docs/town-leftovers.md) as a set, or None if it is not found. It is a
+    vec<u32> near the end of the stream: a head of small ascending groups and then one long
+    ascending run. The run is the longest ascending stretch of small values in the last megabyte
+    (at any 4-byte alignment); the count word is the one before the list that reaches the run's end.
+    A node or edge id in it belongs to an entity the game no longer has."""
+    tail = data[-TAIL:]
+    for al in range(4):
+        words = array("I")
+        words.frombytes(tail[al:len(tail) - (len(tail) - al) % 4])
+        if sys.byteorder == "big":
+            words.byteswap()
+        best = None                                   # (length, start) of the longest ascending run
+        start = 0
+        for i in range(1, len(words) + 1):
+            if i == len(words) or words[i] <= words[i - 1] or words[i] >= FREE_MAX_ID:
+                if i - start >= FREE_MIN_RUN and words[start] < FREE_MAX_ID and (best is None or i - start > best[0]):
+                    best = (i - start, start)
+                start = i
+        if best is None:
+            continue
+        s = best[1]
+        end = s
+        while end < len(words) and words[end] < FREE_MAX_ID and (end == s or words[end] > words[end - 1]):
+            end += 1
+        for i in range(max(0, s - 100_000), s):       # the count word: i + 1 + count is the run's end
+            if abs(i + 1 + words[i] - end) <= 3 and words[i] > best[0]:
+                return set(words[i + 1:i + 1 + words[i]])
+    return None
 
 
 def _along(p, a, b):

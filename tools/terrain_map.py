@@ -3,7 +3,7 @@
 
 Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png | --raster]
        [--contour M] [--index N] [--no-bands] [--tolerance M]
-       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--depots] [--coverage] [--industries] [--industry-size M] [--stream]
+       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--keep-dead] [--depots] [--coverage] [--industries] [--industry-size M] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as vector shapes (coloured
@@ -80,6 +80,10 @@ game's own palette.
 --min-width M (SVG only) draw no road or rail narrower than M metres (default 0, the real widths). A picture of the
              whole map shows a 4 m track as a hairline; `--min-width 12` keeps it visible there.
 --no-network leave the roads and rails out.
+--keep-dead  draw the edges of deleted towns and roads too. By default an edge with an end node in the save's free-id
+             list is left out (docs/town-leftovers.md): the table keeps a deleted town's roads, and the list catches most
+             of them (not a town whose ids a later road took). The script prints how many it dropped; if the list is not
+             found it says so and draws every edge.
 --label A>B[=TEXT]
              (SVG only, repeatable) add the edge with end nodes A and B (hex entity ids, in either
              order, the notation of docs/signals.md: `2a619>342aa`) to a `labels` layer: its name
@@ -164,7 +168,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
 from model_instances import read_instances, read_model_table, short_model  # noqa: E402
 from industry_compass import main_models  # noqa: E402
-from street_edges import edge_ids, read_edges, read_strips  # noqa: E402
+from street_edges import edge_ids, read_edges, read_free_ids, read_strips  # noqa: E402
 from terrain_vector import level_rings, path_data, simplify, split_at_border  # noqa: E402
 from tf3save import decompress  # noqa: E402
 
@@ -1024,6 +1028,7 @@ def main():
     ap.add_argument("--rose-size", type=float, metavar="M", help="SVG only: the rose circle's diameter in metres "
                     "(default 250, at most an eighth of the picture's short side)")
     ap.add_argument("--no-network", action="store_true")
+    ap.add_argument("--keep-dead", action="store_true", help="draw edges whose end node is in the free-id list too")
     ap.add_argument("--label", action="append", default=[], metavar="A>B[=TEXT]",
                     help="SVG only: label the edge with end nodes A and B (hex ids); repeatable")
     ap.add_argument("--edge-ids", action="store_true", help="with --label, add edge entity ids where known")
@@ -1135,6 +1140,15 @@ def main():
             x_lo, x_hi, y_lo, y_hi = fr.box(size, args.mpp)
             roads = rails = 0
             edges = [] if args.no_network else read_edges(data)
+            if edges and not args.keep_dead:
+                free = read_free_ids(data)
+                if free is None:
+                    print("free-id list not found: every edge is drawn")
+                else:
+                    live = [e for e in edges if e["a"] not in free and e["b"] not in free]
+                    print("%d of %d edges have an end node in the free-id list and are left out (--keep-dead draws them)"
+                          % (len(edges) - len(live), len(edges)))
+                    edges = live
             if crop:                                  # only the edges that touch the picture
                 edges = [e for e in edges
                          if max(e["p0"][0], e["p1"][0]) >= x_lo and min(e["p0"][0], e["p1"][0]) <= x_hi
