@@ -2,12 +2,13 @@
 """Test the compass words in industry names against where the industries stand, and plot them.
 
 Usage:
-  industry_compass.py SAVE.sav OUT.svg [--all-names] [--stream]
+  industry_compass.py SAVE.sav OUT.svg [--top N] [--across N] [--down N] [--no-sun] [--stream]
 
 The game names a second industry of a kind near a town `<Town> <Kind> North` (or South, East, West)
 when it lies in that direction from the town (docs/compass.md). This reads a save's town names, the
 street edges (the town centres), the industry model instances and the entity names, finds the
-industries with a compass word, and draws each one against its town's centre, x to the right and y
+industries with a compass word, and draws one picture per town: the industries its compass names point at (dark blue, named, with
+their distance) and the other same-kind ones near it (hollow), against the town's centre, x to the right and y
 up (the game's own frame). It prints, for every compass name, how many same-kind industries near
 the town lie in the sector the word names under the game frame (x east, y north) and under the sun
 frame (north is +x, east is -y), so the two can be compared (docs/compass.md).
@@ -181,37 +182,40 @@ def icon_symbols():
     return out
 
 
-def svg(panels, title, sun=True):
-    far = max([math.hypot(i["dx"], i["dy"]) for p in panels for i in p["cands"]] + [1000.0])
+def svg(panels, title, sun=True, across=2):
+    """One panel per town. A panel has `town`, `centre`, `edges`, `names` (one dict per compass name:
+    name, kind, word, `cands`) and `pts` (every same-kind industry of those names near the town:
+    dx, dy, and `label` for the ones inside the quarter their name gives, else None)."""
+    far = max([math.hypot(i["dx"], i["dy"]) for p in panels for i in p["pts"]] + [1000.0])
     rng = math.ceil(far * 1.03 / 1000.0) * 1000.0
-    cols = 2 if len(panels) <= 4 else 3 if len(panels) <= 9 else 4
-    w = 470 if cols < 4 else 430
-    rows = -(-len(panels) // cols)
+    w = 470
     s = (w / 2 - 34) / rng
-    head, strip = 78, 36
+    head = 78
+    cols = min(across, len(panels))
+    rows = -(-len(panels) // cols)
+    strips = [22 + 14 * max(len(p["names"]) for p in panels[r * cols:(r + 1) * cols]) for r in range(rows)]
+    tops = [head + sum(w + st for st in strips[:r]) for r in range(rows)]
     out = ['<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" font-family="sans-serif" font-size="12">'
-           % (w * cols, head + (w + strip) * rows), '<rect width="100%" height="100%" fill="#fff"/>',
+           % (w * cols, head + sum(w + st for st in strips)), '<rect width="100%" height="100%" fill="#fff"/>',
            '<text x="12" y="22" font-size="15" font-weight="bold">%s</text>' % title.partition(" (")[0],
            '<text x="12" y="38" fill="#555">%s</text>' % title.partition(" (")[2].rstrip(")"),
-           '<text x="12" y="54" fill="#555">x right, y up (the game\'s frame); rings every 1 km; shaded = the quarter the compass word names; '
-           'dark blue = of that kind, near the town, inside it; hollow = outside</text>']
+           '<text x="12" y="54" fill="#555">x right, y up (the game\'s frame); rings every 1 km; blue = what a compass name points at (light blue: no room for its label); '
+           'hollow = other industries of those kinds</text>']
     if sun:
         out.append('<text x="12" y="70" fill="#555">orange = where the Morning (sunrise) and Evening (sunset) sun stand on the screen (docs/compass.md)</text>')
     symbols = icon_symbols() if sun else {}
     if symbols:
         out.append("<defs>%s</defs>" % "".join(symbols.values()))
     for k, p in enumerate(panels):
-        cell_y = head + (k // cols) * (w + strip)
+        cell_y, strip = tops[k // cols], strips[k // cols]
         ox, oy = (k % cols) * w + w / 2, cell_y + strip + w / 2
-        inside = [i for i in p["cands"] if i["sec"] == p["word"]]
         d = rng * s * 0.97
-        g = ['<g>', '<text x="%.0f" y="%.0f" font-weight="bold" fill="#0f2a6b">%s</text>' % (ox - w / 2 + 8, cell_y + 18, p["name"]),
-             '<text x="%.0f" y="%.0f" font-size="11" fill="#555">%d of %d %s near %s lie in the %s quarter</text>'
-             % (ox - w / 2 + 8, cell_y + 32, len(inside), len(p["cands"]), p["kind"], p["town"], p["word"]),
-             '<rect x="%.0f" y="%.0f" width="%d" height="%d" fill="#fafafa" stroke="#bbb"/>' % (ox - w / 2 + 6, oy - w / 2 + 6, w - 12, w - 12)]
-        wedge = {"N": (-d, -d, d, -d), "S": (-d, d, d, d), "E": (d, -d, d, d), "W": (-d, -d, -d, d)}[p["word"]]
-        g.append('<polygon points="%.1f,%.1f %.1f,%.1f %.1f,%.1f" fill="#17398f" fill-opacity="0.08"/>'
-                 % (ox, oy, ox + wedge[0], oy + wedge[1], ox + wedge[2], oy + wedge[3]))
+        g = ['<g>', '<text x="%.0f" y="%.0f" font-weight="bold" fill="#0f2a6b">%s</text>' % (ox - w / 2 + 8, cell_y + 18, p["town"])]
+        for n, nm in enumerate(p["names"]):
+            inside = [i for i in nm["cands"] if i["sec"] == nm["word"]]
+            g.append('<text x="%.0f" y="%.0f" font-size="11" fill="#555">%s: %d of %d %s lie in the %s quarter</text>'
+                     % (ox - w / 2 + 8, cell_y + 33 + 14 * n, nm["label"], len(inside), len(nm["cands"]), nm["kind"], nm["word"]))
+        g.append('<rect x="%.0f" y="%.0f" width="%d" height="%d" fill="#fafafa" stroke="#bbb"/>' % (ox - w / 2 + 6, oy - w / 2 + 6, w - 12, w - 12))
         for r in range(1000, int(rng) + 1, 1000):
             g.append('<circle cx="%.1f" cy="%.1f" r="%.1f" fill="none" stroke="#ddd"/>' % (ox, oy, r * s))
             g.append('<text x="%.1f" y="%.1f" fill="#aaa" font-size="10" text-anchor="end">%d km</text>' % (ox - 3, oy - r * s - 2, r // 1000))
@@ -233,17 +237,39 @@ def svg(panels, title, sun=True):
             g.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#888" stroke-width="1.2"/>'
                      % (ox + (x0 - cx) * s, oy - (y0 - cy) * s, ox + (x1 - cx) * s, oy - (y1 - cy) * s))
         g.append('<path d="M%.1f %.1fH%.1fM%.1f %.1fV%.1f" stroke="#000" stroke-width="2"/>' % (ox - 7, oy, ox + 7, ox, oy - 7, oy + 7))
-        g.append('<text x="%.1f" y="%.1f" font-weight="bold">%s</text>' % (ox + 9, oy + 18, p["town"]))
-        for i in p["cands"]:
-            hit = i["sec"] == p["word"]
-            g.append('<circle cx="%.1f" cy="%.1f" r="%d" fill="%s" stroke="%s" stroke-width="2"/>'
-                     % (ox + i["dx"] * s, oy - i["dy"] * s, 7 if hit else 6, "#17398f" if hit else "#fff", "#fff" if hit else "#555"))
-            if len(p["cands"]) <= 3:                      # few enough to label without crowding
-                x_off = i["dx"] * s
-                anchor = "end" if x_off > w / 2 - 90 else "start" if x_off < -w / 2 + 90 else "middle"
-                g.append('<text x="%.1f" y="%.1f" text-anchor="%s" fill="%s">%.1f km %s</text>'
-                         % (ox + x_off + {"end": -9, "start": 9, "middle": 0}[anchor], oy - i["dy"] * s - 11, anchor,
-                            "#0f2a6b" if hit else "#555", math.hypot(i["dx"], i["dy"]) / 1000, i["sec"]))
+        pts = sorted(p["pts"], key=lambda i: i["label"] is not None)      # the blue dots last, on top
+        taken = []                                                    # boxes a label must keep clear of: the dots, then labels
+        for i in pts:
+            r = 9 if i["label"] else 5
+            taken.append((ox + i["dx"] * s - r, oy - i["dy"] * s - r, ox + i["dx"] * s + r, oy - i["dy"] * s + r))
+        # labels: the dots a name settles first, nearest the town first; each goes where it overlaps nothing placed
+        # so far, or is left off (the line under the town's name still counts it)
+        for i in sorted((i for i in pts if i["label"]), key=lambda i: (i["amb"], math.hypot(i["dx"], i["dy"]))):
+            px, py = ox + i["dx"] * s, oy - i["dy"] * s
+            text = "%s, %.1f km" % (i["label"], math.hypot(i["dx"], i["dy"]) / 1000)
+            tw_, th = 5.7 * len(text), 12
+            spots = [(px + 11, py + 4, "start"), (px - 11, py + 4, "end"), (px, py - 12, "middle"), (px, py + 20, "middle"),
+                     (px + 9, py - 10, "start"), (px - 9, py - 10, "end"), (px + 9, py + 18, "start"), (px - 9, py + 18, "end")]
+            for tx, ty, anchor in spots:
+                x0 = tx - (tw_ if anchor == "end" else tw_ / 2 if anchor == "middle" else 0)
+                box = (x0, ty - th + 2, x0 + tw_, ty + 3)
+                if box[0] < ox - w / 2 + 8 or box[2] > ox + w / 2 - 8 or box[1] < oy - w / 2 + 8 or box[3] > oy + w / 2 - 8:
+                    continue
+                if any(box[0] < q[2] and q[0] < box[2] and box[1] < q[3] and q[1] < box[3] for q in taken
+                       if q != (px - 9, py - 9, px + 9, py + 9)):
+                    continue
+                taken.append(box)
+                i["shown"] = True
+                g.append('<text x="%.1f" y="%.1f" text-anchor="%s" font-size="10.5" fill="#0f2a6b">%s</text>' % (tx, ty, anchor, text))
+                break
+        for i in pts:
+            px, py = ox + i["dx"] * s, oy - i["dy"] * s
+            if i["label"] is None:
+                g.append('<circle cx="%.1f" cy="%.1f" r="4" fill="#fff" stroke="#555" stroke-width="1.5"/>' % (px, py))
+            elif i.get("shown"):                                      # a labelled dot is twice the area of the others
+                g.append('<circle cx="%.1f" cy="%.1f" r="8" fill="#17398f" stroke="#fff" stroke-width="2"/>' % (px, py))
+            else:                                                     # a blue dot too crowded for its label is a lighter blue
+                g.append('<circle cx="%.1f" cy="%.1f" r="4" fill="#a9b8e3" stroke="#17398f" stroke-width="1.5"/>' % (px, py))
         g.append('</g>')
         out += g
     out.append('</svg>')
@@ -255,9 +281,12 @@ def main():
     ap.add_argument("save")
     ap.add_argument("out")
     ap.add_argument("--stream", action="store_true", help="the file is a decompressed stream")
-    ap.add_argument("--max-panels", type=int, default=6, help="draw at most this many panels, the most telling first "
-                    "(default 6): exactly one same-kind candidate in the named quarter, then more candidates near the "
-                    "town, then a clearer margin")
+    ap.add_argument("--across", type=int, default=2, help="towns per row (default 2)")
+    ap.add_argument("--down", type=int, default=3, help="rows (default 3: with 2 across, a portrait page of six towns, "
+                    "the towns with the surest names first)")
+    ap.add_argument("--top", type=int, default=4, help="draw the N surest compass names of each town (default 4): "
+                    "exactly one same-kind candidate in the named quarter first, then fewer there, then more rivals "
+                    "outside it, then a clearer margin")
     ap.add_argument("--no-sun", action="store_true", help="leave the sunrise and sunset icons off the panels")
     args = ap.parse_args()
     data, names, towns, inds, clusters = read(args.save, args.stream)
@@ -269,7 +298,7 @@ def main():
         c = clusters[town_cl[tw]]["c"] if tw in town_cl else None
         print("  %-14s group %s centre %s" % (tw, town_cl.get(tw), "%.0f, %.0f" % c if c else "-"))
     kinds = {i["kind"] for i in inds}
-    panels, tally = [], collections.Counter()
+    by_town, tally = collections.OrderedDict(), collections.Counter()
     for name, tw, lab, word in compass_names(towns, names):
         if tw not in town_cl or lab not in kinds:
             print("%-34s skipped (town or kind not matched)" % name)
@@ -288,19 +317,36 @@ def main():
               % (name, len(cands), word, res["game"], res["sun"]))
         for i in cands:
             i["sec"] = sector(i["dx"], i["dy"], "game")
-        panels.append({"name": name, "town": tw, "kind": lab, "word": word, "centre": c["c"], "edges": c["edges"], "cands": cands})
-    print("compass names: %d. Names with a candidate in the sector the word names, and with exactly one, per frame:" % len(panels))
+        inside = [i for i in cands if i["sec"] == word]
+        margin = max([max(abs(i["dx"]), abs(i["dy"])) / (min(abs(i["dx"]), abs(i["dy"])) or 1.0) for i in inside] or [0])
+        # how sure the name is: exactly one candidate in its quarter, then fewer there, then more rivals of the kind
+        # outside it, then a clearer margin (the larger offset over the smaller one)
+        rank = (len(inside) != 1, not inside, len(inside), -len(cands), -margin)
+        p = by_town.setdefault(tw, {"town": tw, "centre": c["c"], "edges": c["edges"], "names": []})
+        p["names"].append({"name": name, "label": name[len(tw) + 1:], "kind": lab, "word": word, "cands": cands, "rank": rank})
+    panels = list(by_town.values())
+    n_names = sum(len(p["names"]) for p in panels)
+    for p in panels:                                                  # the --top surest names of each town are drawn
+        p["names"].sort(key=lambda nm: nm["rank"])
+        del p["names"][args.top:]
+        p["rank"] = p["names"][0]["rank"]
+        pts = {}
+        for nm in p["names"]:
+            for i in nm["cands"]:                                     # one point per instance; blue if a name points at it
+                pt = pts.setdefault(id(i), {"dx": i["dx"], "dy": i["dy"], "label": None})
+                if i["sec"] == nm["word"]:
+                    pt["label"] = nm["label"]
+                    pt["amb"] = sum(j["sec"] == nm["word"] for j in nm["cands"]) > 1   # the name fits more than one instance
+        p["pts"] = list(pts.values())
+    print("compass names: %d in %d towns. Names with a candidate in the sector the word names, and with exactly one, per frame:"
+          % (n_names, len(panels)))
     for frame in sorted(FRAMES, key=lambda f: -tally[(f, "some")]):
         print("  %-28s %2d  %2d%s" % (frame, tally[(frame, "some")], tally[(frame, "one")],
                                       "  (game: x east, y north)" if frame == "game" else "  (sun: north +x, east -y)" if frame == "sun" else ""))
-    for p in panels:
-        inside = [i for i in p["cands"] if i["sec"] == p["word"]]
-        margin = max([max(abs(i["dx"]), abs(i["dy"])) / (min(abs(i["dx"]), abs(i["dy"])) or 1.0) for i in inside] or [0])
-        p["rank"] = (len(inside) != 1, len(inside), -len(p["cands"]), -margin)
     panels.sort(key=lambda p: p["rank"])
-    if len(panels) > args.max_panels:
-        print("drawing the %d most telling of %d panels (--max-panels)" % (args.max_panels, len(panels)))
-        panels = panels[:args.max_panels]
+    if len(panels) > args.across * args.down:
+        print("drawing the %d most telling of %d towns (--across, --down)" % (args.across * args.down, len(panels)))
+        panels = panels[:args.across * args.down]
     if panels:
         hd = read_header(args.save) if not args.stream else {}
         where = ""
@@ -308,7 +354,7 @@ def main():
             clim = re.search(r"climates/(\w+)/", dict(hd["resources"]).get("climate", "") if not isinstance(hd["resources"], dict) else hd["resources"].get("climate", ""))
             where = " (seed %s, %s, %d x %d m, start year %s)" % (hd["map_seed"], clim.group(1) if clim else "?", hd["map_w_m"], hd["map_h_m"], hd["start_year"])
         open(args.out, "w").write(svg(panels, "Compass-named industries and buildings against their town's centre" + where,
-                                           sun=not args.no_sun))
+                                           sun=not args.no_sun, across=args.across))
         print("wrote", args.out)
     else:
         print("no compass-named industry found")

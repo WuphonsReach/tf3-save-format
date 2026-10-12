@@ -28,13 +28,13 @@ Other notes written before that date may give a direction with the sun's axes; w
 
 The remaining four frames scored 6 to 8 in the second game and 0 to 2 in the first. The mirrors that keep one axis fit about two thirds of the names, because a candidate often sits where both frames agree. Only the game's frame fits all of them. **Observed**: the compass words are taken with x east and y north.
 
-![Four industries named with a compass word, each against its town's centre](images/compass-mSKhWzIuLq-tropical-large-1to2-towns-sparse-industry-packed-hard.png)
+![Four industries named with a compass word, one picture per town](images/compass-mSKhWzIuLq-tropical-large-1to2-towns-sparse-industry-packed-hard.png)
 
-The first game's four names, each in the shaded quarter its word names. Orange icons mark where the sun stands at Morning and Evening on the screen (below).
+The first game's four names, one picture per town: blue dots are the industries the names point at, hollow ones the other same-kind industries near the town. Orange icons mark where the sun stands at Morning and Evening on the screen (below).
 
-![The six most telling compass names of a played game](images/compass-XNGDTtYKhe-subarctic-small-1to3-towns-sparse-industry-medium-1920-04.png)
+![The surest compass names of each town of a played game](images/compass-XNGDTtYKhe-subarctic-small-1to3-towns-sparse-industry-medium-1920-04.png)
 
-The six most telling of the second game's 24 (exactly one same-kind candidate in the quarter, then more candidates nearby). In a played game the centre drifts as the town grows, and a name was fixed when its thing was placed, so the fit there is looser than in a new game.
+The second game, the four surest names of each of its three towns (of 24 names; exactly one same-kind candidate in the quarter first, then fewer there, then more rivals outside it). A light blue dot had no room for its label. In a played game the centre drifts as the town grows, and a name was fixed when its thing was placed, so the fit there is looser than in a new game.
 
 What the words do not settle:
 
