@@ -1,24 +1,23 @@
 #!/usr/bin/env python3
-"""Turn a heightmap grid into vector shapes: the water as filled rings and the land's height lines.
+"""Turn a heightmap grid into vector shapes: the water and the land's height bands as closed rings, and the height lines.
 
 Library for `terrain_map.py --vector` (standard library only). Read only; it writes nothing.
 
-`water_rings` and `height_lines` take the grid in picture order (the list of `array('H')` rows that
-`terrain_map.to_picture` returns) and give polylines in metres from the picture's top-left corner,
-point (i, j) of the grid being at (i * spacing, j * spacing), the same frame the road layers use.
-Both use marching squares: a cell whose four corners fall on both sides of a level is cut by a line,
-the line's end on a cell edge sits where the height reaches the level (linear between the two
-corners), and the pieces of the cells are chained into whole lines through the edges they share.
-A saddle (two opposite corners high) is settled by the cell's mean. A corner counts as high when its
-height is at or above the level.
+`level_rings` takes the grid in picture order (the list of `array('H')` rows that `terrain_map.to_picture`
+returns) and gives, for the water level and for every multiple of a step above it, the closed rings round
+the ground below that level, in metres from the picture's top-left corner, point (i, j) of the grid being at
+(i * spacing, j * spacing), the same frame the road layers use. Level 0 is the water level, so its rings
+are the lakes, the sea and the rivers (the game carves rivers below the water level, docs/terrain.md);
+fill them with the even-odd rule, an island being a ring inside a ring. The ground at or above level k is the
+whole picture minus level k's rings, which is how a band is filled. `split_at_border` turns a ring back into
+the open height lines by dropping the pieces that run along the picture's edge, which the padding put there.
 
-`water_rings` cuts the grid at the water level. The grid is padded by one ring of land first, so a
-lake or sea that reaches the map's edge still closes (the padding's points are clamped onto the edge),
-and the rings fill with the even-odd rule: an island is a ring inside a ring. A river is part of the
-same shape, since the game carves rivers below the water level (docs/terrain.md).
-
-`height_lines` cuts the land at every multiple of a step above the water level (levels at or below the
-water level are the shore, which `water_rings` has). Its lines end at the picture's edge.
+It is marching squares: a cell whose four corners fall on both sides of a level is cut by a line, the line's
+end on a cell edge sits where the height reaches the level (linear between the two corners), and the pieces
+of the cells are chained into whole lines through the edges they share. A saddle (two opposite corners high)
+is settled by the cell's mean. A corner counts as high when its height is at or above the level. The grid is
+padded by one ring of its own highest value, so every ring closes at the edge (an edge from a real point to a
+padding point is cut at the padding point, which is then clamped onto the picture's edge).
 
 `simplify` thins a polyline with Douglas-Peucker to a tolerance in metres.
 """
@@ -27,11 +26,12 @@ import math
 PAD = 1                # cells of land padded round the grid for the water fill
 
 
-def _cut(rows, buckets, level_of, spacing, offset, kmin):
+def _cut(rows, buckets, level_of, spacing, offset, kmin, padded=False):
     """({level index: {edge key: [neighbour keys]}}, {edge key: (u, v)}) for a grid of height rows (lists of
     ints). `buckets[v]` is the level band of height v: the cut for level k lies between bands k - 1 and k, and
     `level_of(k)` is its height. Only levels from `kmin` up are cut. `offset` is the grid index of the
-    picture's origin (1 when the grid is padded). An edge key is the grid index of its first corner times 2,
+    picture's origin (1 when the grid is padded; `padded` says the outer ring of points is padding, and a cut
+    on an edge that ends in one lies at that padding point). An edge key is the grid index of its first corner times 2,
     plus 1 for a vertical edge, so two cells that share an edge agree on it."""
     h, w = len(rows), len(rows[0])
     band_rows = [[buckets[v] for v in r] for r in rows]
@@ -50,6 +50,11 @@ def _cut(rows, buckets, level_of, spacing, offset, kmin):
             key, a, b, u, v, du, dv = (j * w + i + 1) * 2 + 1, z[1], z[2], i + 1, j, 0, 1
         if key not in pos:
             t = (level - a) / (b - a)
+            if padded:                                       # an edge from a real point to a padding point
+                pad_a = u in (0, w - 1) or v in (0, h - 1)
+                pad_b = u + du in (0, w - 1) or v + dv in (0, h - 1)
+                if pad_a != pad_b:
+                    t = 0.0 if pad_a else 1.0
             pos[key] = ((u + du * t - offset) * spacing, (v + dv * t - offset) * spacing)
         return key
 
@@ -121,32 +126,57 @@ def _chain(lines, pos):
     return out
 
 
-def water_rings(rows, spacing, water_v, min_perimeter=0.0):
-    """Closed rings round the water (everything below `water_v`, in height units) for even-odd filling,
-    as lists of (u, v) in metres. Rings shorter than `min_perimeter` metres are left out."""
-    pad = int(math.ceil(water_v))
-    padded = [[pad] * (len(rows[0]) + 2)] + [[pad] + list(r) + [pad] for r in rows] + [[pad] * (len(rows[0]) + 2)]
-    table = [0 if v < water_v else 1 for v in range(65536)]
-    adj, pos = _cut(padded, table, lambda k: water_v, spacing, PAD, 1)
-    right, bottom = len(rows[0]) * spacing, len(rows) * spacing      # the padding's own column and row
-    rings = []
-    for pts, _closed in _chain(adj.get(1, {}), pos):
-        pts = [(min(max(u, 0.0), right), min(max(v, 0.0), bottom)) for u, v in pts]
-        if _length(pts) >= min_perimeter:
-            rings.append(pts)
-    return rings
-
-
-def height_lines(rows, spacing, water_v, step_v, min_length=0.0):
-    """{k: [polylines]} for the land lines at water level + k * `step_v` (k from 1), each a list of (u, v)
-    in metres with a flag for a closed ring: [(points, closed)]. Lines shorter than `min_length` are left out."""
-    table = [max(0, int(math.floor((v - water_v) / step_v))) for v in range(65536)]
-    adj, pos = _cut([list(r) for r in rows], table, lambda k: water_v + k * step_v, spacing, 0, 1)
+def level_rings(rows, spacing, water_v, step_v, min_perimeter=0.0):
+    """{k: [rings]} for the water level (k = 0) and the land levels water + k * `step_v` (k from 1, up to the
+    highest point): each ring a list of (u, v) in metres, closed by the picture's edge where the ground
+    below the level reaches it. Rings shorter than `min_perimeter` metres are left out."""
+    w, h = len(rows[0]), len(rows)
+    top = max(max(r) for r in rows)
+    padded = [[top] * (w + 2)] + [[top] + list(r) + [top] for r in rows] + [[top] * (w + 2)]
+    # band 0 is the ground below the water, band m (m >= 1) starts at water + (m - 1) * step, and the cut that
+    # `_cut` calls m is the one between bands m - 1 and m, so ring set k of the result is cut m = k + 1
+    table = [0 if v < water_v else 1 + int(math.floor((v - water_v) / step_v)) for v in range(65536)]
+    adj, pos = _cut(padded, table, lambda m: water_v + (m - 1) * step_v, spacing, PAD, 1, padded=True)
+    right, bottom = w * spacing, h * spacing                        # the padding's own column and row
     out = {}
-    for k, lines in sorted(adj.items()):
-        kept = [(pts, closed) for pts, closed in _chain(lines, pos) if _length(pts) >= min_length]
-        if kept:
-            out[k] = kept
+    for m, lines in sorted(adj.items()):
+        rings = []
+        for pts, _closed in _chain(lines, pos):
+            pts = [(min(max(u, 0.0), right), min(max(v, 0.0), bottom)) for u, v in pts]
+            if _length(pts) >= min_perimeter:
+                rings.append(pts)
+        if rings:
+            out[m - 1] = rings
+    return out, (right, bottom)
+
+
+def split_at_border(ring, extent):
+    """A ring (list of points, closed implicitly) as the open polylines left when the pieces that run along the
+    picture's edge (`extent` = (right, bottom)) are dropped: [(points, closed)]. A ring that never touches the
+    edge is returned whole and closed."""
+    right, bottom = extent
+    n = len(ring)
+
+    def on_edge(a, b):
+        return (a[0] == b[0] and a[0] in (0.0, right)) or (a[1] == b[1] and a[1] in (0.0, bottom))
+
+    border = [on_edge(ring[i], ring[(i + 1) % n]) for i in range(n)]
+    if not any(border):
+        return [(ring, True)]
+    first = border.index(True)
+    out, run = [], []
+    for t in range(1, n + 1):
+        i = (first + t) % n
+        if border[i]:
+            if len(run) > 1:
+                out.append((run, False))
+            run = []
+        else:
+            if not run:
+                run = [ring[i]]
+            run.append(ring[(i + 1) % n])
+    if len(run) > 1:
+        out.append((run, False))
     return out
 
 

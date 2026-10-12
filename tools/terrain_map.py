@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Draw a save's terrain as an SVG, with its roads and rails on top.
 
-Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png]
-       [--vector [--contour M] [--index N] [--tolerance M]] [--game DIR] [--no-network] [--depots] [--coverage] [--stream]
+Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png | --raster]
+       [--contour M] [--index N] [--no-bands] [--tolerance M]
+       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--depots] [--coverage] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
-prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as an
-embedded PNG and the roads and rails as vector paths on top. Every layer is a group with
+prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as vector shapes (coloured
+height bands, water, height lines) and the roads and rails as vector paths on top; `--raster` draws the terrain as a
+shaded embedded PNG instead. Every layer is a group with
 `class="layer"`, its id repeated in `data-layer` and Inkscape's layer attributes, so a page script can list
 them with `g.layer` and toggle `display`. Layers, bottom to top: `terrain`, `grid`, `roads` and `rails` (each a
 parent with one sublayer per street or track type, `road-TYPE` / `rail-TYPE`, holding one `<path>` per edge with
@@ -19,48 +21,64 @@ end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintena
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
-the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (1.5 terrain pixels, at least
-3 m), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
+the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (the template's real
+width, `--game`), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
 (`vector-effect: non-scaling-stroke`) turned short edges into blobs in VS Code's preview.
 A `<metadata>` element
 (namespace `urn:tf3-save-format:terrain-map:1`, one `view` element with attributes) records the
 save's file name, the map size, the metres per pixel, the map point at the picture's top-left
-corner and the x and y range the picture covers, the crop (X, Y, R) if any and the grid step.
+corner and the x and y range the picture covers, which way north is drawn (`north`: `game` or `sun`, and a sentence
+saying which way is up, since a compass word such as "north building" points differently in the two), the crop (X, Y, R) if any and the grid step.
 The terrain colours are a plain
-height ramp with hill shading (water below the save's `waterLevel` in blue); they are not the
+height ramp (water below the save's `waterLevel` in blue; hill shading in the raster picture only); they are not the
 game's own palette.
 
---mpp M      metres per pixel of the terrain image: 1 or 2, or a multiple of 4 (default 4, the
-             heightmap's own spacing). Larger values keep every (M / 4)th grid point. 1 and 2
-             interpolate the terrain between grid points (no new height detail) and need --crop.
-             A picture over 64 million pixels (a 4 m map of 32 x 32 km, or the 20 x 41 km
+--mpp M      metres per pixel of the picture: 1 or 2, or a multiple of 4 (default 8 for the vector terrain, 4 on a
+             crop and with --raster or --png; 4 is the heightmap's own spacing). Larger values keep every (M / 4)th
+             grid point. 1 and 2 need --crop; they only scale the picture and the line widths for the vector terrain,
+             which is cut from the 4 m grid (a vector terrain over 16 million grid points is refused unless --mpp is raised or
+             --force-size is given), and interpolate the raster terrain between grid points (no new height detail).
+             A raster picture over 64 million pixels (a 4 m map of 32 x 32 km, or the 20 x 41 km
              Giant map at 4 m, 52 million) is refused unless --mpp is raised or --force-size is
              given. A 52 million pixel map took 42 s and 1.3 GB, and its SVG was 81 MB.
 --crop X,Y,R draw only the square of half-width R metres around map point (X, Y), for a close
              look at a station or a junction. X and Y are the map's own coordinates, not the
              picture's.
---vector     (SVG only) draw the terrain as vector shapes instead of the embedded PNG (terrain_vector.py): the `terrain`
-             layer holds sublayers `land` (a plain rectangle), `water` (one even-odd path of rings, the shore stroked: lakes,
-             sea and rivers are one shape, since the game carves them below the water level) and `contours` (`contours-minor`
-             and `contours-index`, one `<path class="contour" data-height>` per level, the height in metres above the water).
-             No hill shading and no height colours, so the file is a few hundred kilobytes where the PNG one is megabytes
-             (an 81 MB raster SVG of the 20 x 41 km Giant map is 0.6 MB). The output name ends `-vector.svg`, the metadata
-             gains `terrain="vector"`, `contour-step`, `index-every` and `tolerance`. `--mpp` defaults to 8 here (the grid the
-             lines are cut from); `--contour M` is the metres between lines (default 20), `--index N` makes every Nth heavier
-             (default 5), `--tolerance M` thins the lines (default 0.4 x `--mpp`). Line widths are in metres, as the roads'.
+(default) the terrain is vector (terrain_vector.py): the `terrain` layer holds sublayers `land` (a plain
+             rectangle in the lowest band's colour), `bands` (one `<path class="band" data-height>` for each `--contour` metres of
+             height above the water, filled with the height ramp's colour and covering all ground from there up, so the
+             higher bands paint over the lower), `water` (one even-odd path of rings, the shore stroked: lakes, sea and
+             rivers are one shape, since the game carves them below the water level) and `contours` (`contours-minor` and
+             `contours-index`, one `<path class="contour" data-height>` per level, the height in metres above the water).
+             No hill shading, so the file is hundreds of kilobytes where the raster one is megabytes (the 20 x 41 km
+             Giant map: 0.6 MB without roads, 81 MB raster). The metadata gains `terrain="vector"`, `contour-step`,
+             `index-every`, `tolerance` and `bands`. `--contour M` is the metres between lines and bands (default 20),
+             `--index N` makes every Nth line heavier (default 5), `--no-bands` leaves the fills out, `--tolerance M`
+             thins the lines (default 0.4 x `--mpp`). The height lines are half `--mpp` wide, in metres.
+--raster     (SVG only) draw the terrain as the shaded embedded PNG instead (height ramp, hill shading, water), as before
+             the vector terrain existed; the output name ends `-terrain-raster.svg` and the metadata says `terrain="raster"`.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
-             wide (at least one pixel).
+             wide (at least one pixel). The PNG carries the SVG's view record (below) as an `iTXt` chunk `tf3map:view`, a UTF-8
+             JSON object with the same names, so a picture says which way north is drawn (`north=game` or `sun`) without its command line.
 --grid N     (SVG only) add a `grid` layer: a line at every multiple of N metres of map x and y,
              labelled `y 4500` along the top (the lines that run up the picture) and `x -3000`
              along the left (the lines that run across it), so a place seen in the
              picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
              Lines at multiples of 1000 are darker and thicker, the others dotted and faint; the
              lines are one layer under the roads and the labels another over everything.
---game DIR   the game's install folder. A road is drawn with a stroke in proportion to its vehicle
-             lane count over two (two lanes keep the base width, a track has one lane), read from
-             the install's street and track templates when the script runs (nothing is copied
-             into the tool or the picture). Without an install, or for a type the install lacks
-             (a mod's), the width is the two-lane one. Default: the usual Steam folders.
+--game DIR   the game's install folder. A road or track is drawn as wide as its template's profile (the sum of
+             its lanes' `width`, footpaths and shoulders included: a small town street 16 m, a medium one 24 m, a
+             track 4 m), read from the install's street and track templates when the script runs (nothing is copied
+             into the tool or the picture). Without an install, or for a type the install lacks (a mod's), a road is
+             16 m and a track 4 m. Default: the usual Steam folders.
+--rose WHERE (SVG only) a `compass` layer, the top one: a white circle with a black outline and a black compass rose (the
+             shape of tools/icons/compass_rose.svg: north an arrow, E, S and W on shorter arms, the letters upright). The arms point
+             where north and east lie in the picture, so under `--north sun` north is left. WHERE is `lower-left` (the default),
+             `lower-right`, `upper-left`, `upper-right`, `off`, or `X,Y` in map metres for the circle's centre.
+--rose-size M the rose circle's diameter in metres (default 250, but at most an eighth of the picture's short side, so a
+             close crop is not covered).
+--min-width M (SVG only) draw no road or rail narrower than M metres (default 0, the real widths). A picture of the
+             whole map shows a 4 m track as a hairline; `--min-width 12` keeps it visible there.
 --no-network leave the roads and rails out.
 --label A>B[=TEXT]
              (SVG only, repeatable) add the edge with end nodes A and B (hex entity ids, in either
@@ -123,12 +141,14 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 import argparse
 import base64
 import glob
+import json
 import math
 import os
 import re
 import struct
 import sys
 import zipfile
+import zlib
 from array import array
 from xml.sax.saxutils import escape, quoteattr
 
@@ -136,13 +156,14 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
 from model_instances import read_instances, short_model  # noqa: E402
 from street_edges import edge_ids, read_edges, read_strips  # noqa: E402
-from terrain_vector import height_lines, path_data, simplify, water_rings  # noqa: E402
+from terrain_vector import level_rings, path_data, simplify, split_at_border  # noqa: E402
 from tf3save import decompress  # noqa: E402
 
 RESOLUTION = bytes.fromhex("0000804000008040cdcc4c3d")      # 4.0, 4.0, 0.05
 TILE_POINTS = 65 * 65
 GRID_STEP = 4.0                                              # metres per grid step
 MAX_PIXELS = 64_000_000
+MAX_VECTOR_POINTS = 16_000_000                               # the vector terrain holds the grid as Python lists
 
 ROAD = (50, 50, 50)
 RAIL = (205, 30, 30)
@@ -157,9 +178,9 @@ SHALLOW, DEEP = (120, 175, 220), (30, 75, 125)
 
 GAME_DIRS = ("~/.steam/steam", "~/.local/share/Steam", "~/snap/steam/common/.local/share/Steam",
              "~/.var/app/com.valvesoftware.Steam/.local/share/Steam")
-VEHICLE_MODES = re.compile(r'"(?:CAR|BUS|TRUCK|TRAM|ELECTRIC_TRAM|TRAIN|ELECTRIC_TRAIN)"')   # whole names: "CARGO" is not "CAR"
 _LANES = re.compile(r"laneConfigs\s*=\s*\{(.*?)\n\t\t\},", re.S)
-_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
+_WIDTH = re.compile(r"\bwidth\s*=\s*([\d.]+)")
+DEFAULT_WIDTH = {"street": 16.0, "track": 4.0}      # a template the install lacks (a mod's, or no install): a small town street, a track
 
 
 def find_content(game_dir=None):
@@ -174,11 +195,12 @@ def find_content(game_dir=None):
     return None
 
 
-def read_lane_counts(content):
-    """{template: vehicle lane count} for every street and track template in the install's
-    `infrastructure/street.zip` and `track.zip`, read when the script runs (nothing is stored).
-    A template's `laneConfigs` list has one entry per lane; lanes that only take people and cargo
-    (the footpaths) and lanes with no mode do not count."""
+def read_profile_widths(content):
+    """{template: width in metres} for every street and track template in the install's
+    `infrastructure/street.zip` and `track.zip`, read when the script runs (nothing is stored). The width is
+    the sum of the `width` of every entry of the template's `laneConfigs` list: carriageway lanes, footpaths and the
+    lanes with no mode (a highway's shoulders and median), the strip the game builds the road on. A small town street
+    is 16 m (5 + 5 and a 3 m footpath each side), a track 4 m."""
     out = {}
     for name in ("street", "track"):
         try:
@@ -189,8 +211,9 @@ def read_lane_counts(content):
             if not member.endswith(".street_template.lua"):
                 continue
             m = _LANES.search(zf.read(member).decode("utf-8", "replace"))
-            lanes = _MODES.findall(m.group(1)) if m else []
-            out[member[:-len(".street_template.lua")]] = sum(1 for modes in lanes if VEHICLE_MODES.search(modes))
+            widths = [float(w) for w in _WIDTH.findall(m.group(1))] if m else []
+            if widths:
+                out[member[:-len(".street_template.lua")]] = sum(widths)
     return out
 
 
@@ -273,12 +296,11 @@ def read_depot_specs(content, mods_dir=None):
     return out
 
 
-def edge_width(edge, lanes, unit, mpp):
-    """Stroke width in metres: `unit` for two vehicle lanes, in proportion to the lane count over
-    two (a track has one lane, so half), never under one terrain pixel. A type with no lane count
-    (a mod's, or no install) counts as two lanes."""
-    n = lanes.get(edge["template"]) or 2
-    return max(unit * n / 2.0, mpp)
+def edge_width(edge, widths, floor=0.0):
+    """Stroke width in metres: the template's profile width (`read_profile_widths`), at least `floor`. A template
+    with no entry gets `DEFAULT_WIDTH` for its family."""
+    w = widths.get(edge["template"]) or DEFAULT_WIDTH["track" if edge["family"] == "track" else "street"]
+    return max(w, floor)
 
 
 def read_terrain(data):
@@ -481,7 +503,7 @@ def _line(img, w, h, x0, y0, x1, y1, colour, width=1):
             y0 += sy
 
 
-def draw_network(img, size, fr, mpp, edges, lanes):
+def draw_network(img, size, fr, mpp, edges, widths):
     """Draw roads, then rails over them. Returns (roads drawn, rails drawn). Picture position
     from `fr.pic` (north up, east right)."""
     w, h = size
@@ -493,7 +515,7 @@ def draw_network(img, size, fr, mpp, edges, lanes):
             (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
             (u0, v0), (u1, v1) = fr.pic(x0, y0), fr.pic(x1, y1)
             _line(img, w, h, u0 / mpp, v0 / mpp, u1 / mpp, v1 / mpp, colour,
-                  max(1, round(edge_width(e, lanes, max(3.0, 1.5 * mpp), mpp) / mpp)))
+                  max(1, round(edge_width(e, widths) / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
 
@@ -552,12 +574,12 @@ def grid_layers(size, mpp, fr, step):
 META_NS = "urn:tf3-save-format:terrain-map:1"
 
 
-def svg_metadata(size, mpp, fr, map_size, crop=None, grid=None, source=None, extra=()):
-    """A `<metadata>` element recording where the picture sits on the map, so the SVG can be
-    turned back into map coordinates (or redrawn) without the command line that made it. All
-    values are map metres. `x-min`, `x-max`, `y-min` and `y-max` are the map the picture spans;
-    `orientation` says which way is up. For `sun` the old `x-top` and `y-left` (the map point at the
-    top-left corner) are kept as well."""
+def view_attrs(size, mpp, fr, map_size, crop=None, grid=None, source=None, extra=()):
+    """[(name, value)] recording where the picture sits on the map, so it can be turned back into map
+    coordinates (or redrawn) without the command line that made it. All values are map metres. `x-min`,
+    `x-max`, `y-min` and `y-max` are the map the picture spans; `north` (`game` or `sun`) and `orientation` say
+    which way is up, and so which way a compass word such as "north building" points in the picture. For `sun`
+    the old `x-top` and `y-left` (the map point at the top-left corner) are kept as well."""
     x_min, x_max, y_min, y_max = fr.box(size, mpp)
     orient = ("north-up (game): image up is +y, image right is +x" if fr.kind == "game"
               else "north-up (sun): image up is +x, image right is -y")
@@ -572,8 +594,33 @@ def svg_metadata(size, mpp, fr, map_size, crop=None, grid=None, source=None, ext
     if grid:
         attrs.append(("grid-step", grid))
     attrs += list(extra)
+    return [(k, v) for k, v in attrs if v is not None]
+
+
+def svg_metadata(*args, **kw):
+    """The `view_attrs` as a `<metadata>` element holding one `tf3map:view`."""
     return ('<metadata><tf3map:view xmlns:tf3map="%s" %s/></metadata>'
-            % (META_NS, " ".join("%s=%s" % (k, quoteattr(str(v))) for k, v in attrs if v is not None)))
+            % (META_NS, " ".join("%s=%s" % (k, quoteattr(str(v))) for k, v in view_attrs(*args, **kw))))
+
+
+def png_with_view(png, attrs):
+    """`png` with an `iTXt` chunk `tf3map:view` before its pixel data: the view record as one UTF-8 JSON object with the
+    SVG `<metadata>`'s attribute names, numbers and `true` / `false` as JSON values. The PNG's counterpart of the SVG's
+    `<metadata>`."""
+    def typed(v):
+        if isinstance(v, str):
+            if v in ("true", "false"):
+                return v == "true"
+            try:
+                return int(v) if re.fullmatch(r"-?\d+", v) else float(v) if re.fullmatch(r"-?\d+\.\d*(e-?\d+)?", v) else v
+            except ValueError:
+                return v
+        return v
+    text = json.dumps({k: typed(v) for k, v in attrs}, ensure_ascii=False).encode("utf-8")
+    body = b"tf3map:view\x00\x00\x00\x00\x00" + text           # keyword, no compression, method 0, no language tag, no translation
+    chunk = struct.pack(">I", len(body)) + b"iTXt" + body + struct.pack(">I", zlib.crc32(b"iTXt" + body) & 0xFFFFFFFF)
+    cut = png.index(b"IDAT") - 4
+    return png[:cut] + chunk + png[cut:]
 
 
 VEHICLE_SIZE = (("vehicle/train/", (20, 3)), ("vehicle/waggon/", (14, 3)), ("vehicle/tram/", (14, 3)),
@@ -753,49 +800,103 @@ LAND_FILL = "#ece9d2"
 CONTOUR_MINOR, CONTOUR_INDEX = "#b8996a", "#7a5230"
 
 
-def vector_terrain(picked, mpp, off_z, unit, water, step_m, every, tol):
-    """The terrain as vector layers in place of the PNG: (the layer lines of `terrain` in metres from the picture's
-    top-left corner, counts). `picked` is the grid in picture order (`to_picture`); a point is `mpp` metres apart.
-    Sublayers: `land` (a plain rectangle), `water` (one even-odd path of rings, with the shore stroked) and
-    `contours` (`contours-minor`, `contours-index` every `every`th level: one `<path data-height>` per level, the
-    height in metres above the water). Lines are thinned to `tol` metres."""
-    w, h = len(picked[0]), len(picked)
-    water_v = (water - off_z) / unit
-    step_v = step_m / unit
-    rings = water_rings(picked, mpp, water_v, min_perimeter=4 * mpp)
-    water_d = path_data([simplify(r, tol, True) for r in rings], closed=True)
-    lines = height_lines(picked, mpp, water_v, step_v, min_length=6 * mpp)
-    thin = max(2.0, 0.5 * mpp)
+def hex_colour(c):
+    return "#%02x%02x%02x" % tuple(int(round(v)) for v in c)
+
+
+def vector_terrain(picked, spacing, size, mpp, off_z, unit, water, step_m, every, tol, bands=True):
+    """The terrain as vector layers (the default, in place of the raster PNG): (the layer lines of `terrain` in metres from the picture's
+    top-left corner, (water rings, height lines, bands)). `picked` is the grid in picture order (`to_picture`); a
+    point is `spacing` metres apart; `size` is the picture in pixels of `mpp` metres. Sublayers, bottom to top: `land` (a plain rectangle), `bands` (with `bands`: a path
+    for each height step, filled with the colour of the height ramp and covering all ground from there up, so
+    the higher ones paint over the lower), `water` (the even-odd path of rings, the shore stroked) and `contours`
+    (`contours-minor`, `contours-index` every `every`th level: one `<path data-height>` per level, the height in
+    metres above the water). Lines are thinned to `tol` metres."""
+    w, h = size
+    rings, extent = level_rings(picked, spacing, (water - off_z) / unit, step_m / unit, min_perimeter=4 * spacing)
+    rings = {k: [simplify(r, tol, True) for r in rs] for k, rs in rings.items()}
+    rect = "M0 0H%gV%gH0Z" % (w * mpp, h * mpp)
+    thin = 0.5 * mpp                                     # metres, so a line stays thinner than a road on a close crop
+    land = hex_colour(_land_colour(step_m / 2)) if bands else LAND_FILL
     out = [layer("terrain", "Terrain", ' transform="scale(%g)"' % (1.0 / mpp)),
-           layer("land", "Land", ""),
-           '<rect width="%g" height="%g" fill="%s"/>' % (w * mpp, h * mpp, LAND_FILL), "</g>",
-           layer("water", "Water", ""),
-           '<path class="water" fill="%s" fill-rule="evenodd" stroke="%s" stroke-width="%g" stroke-linejoin="round" d="%s"/>'
-           % (WATER_FILL, SHORE_LINE, thin, water_d), "</g>",
-           layer("contours", "Height lines", "")]
+           layer("land", "Land", ""), '<rect width="%g" height="%g" fill="%s"/>' % (w * mpp, h * mpp, land), "</g>"]
+    n_bands = 0
+    if bands:
+        out.append(layer("bands", "Height bands", ' stroke="none"'))
+        for k, rs in sorted(rings.items()):
+            if k:
+                out.append('<path class="band" data-height="%g" fill="%s" fill-rule="evenodd" d="%s%s"/>'
+                           % (k * step_m, hex_colour(_land_colour((k + 0.5) * step_m)), rect,
+                              path_data(rs, closed=True)))
+                n_bands += 1
+        out.append("</g>")
+    out += [layer("water", "Water", ""),
+            '<path class="water" fill="%s" fill-rule="evenodd" stroke="%s" stroke-width="%g" stroke-linejoin="round" d="%s"/>'
+            % (WATER_FILL, SHORE_LINE, thin, path_data(rings.get(0, []), closed=True)), "</g>",
+            layer("contours", "Height lines", "")]
     n_lines = 0
     for sub, label, colour, width, pick in (("contours-minor", "Height lines", CONTOUR_MINOR, thin, lambda k: k % every),
                                             ("contours-index", "Index height lines", CONTOUR_INDEX, 2 * thin, lambda k: not k % every)):
         out.append(layer(sub, label, ' fill="none" stroke="%s" stroke-width="%g" stroke-linejoin="round" stroke-linecap="round"'
                          % (colour, width)))
-        for k, polylines in lines.items():
-            if pick(k):
-                d = path_data([simplify(p, tol, c) for p, c in polylines])
+        for k, rs in sorted(rings.items()):
+            if k and pick(k):
+                polylines = [pc for r in rs for pc in split_at_border(r, extent)]
+                d = path_data([p for p, c in polylines if c], closed=True) + path_data([p for p, c in polylines if not c])
                 if d:
                     out.append('<path class="contour" data-height="%g" d="%s"/>' % (k * step_m, d))
                     n_lines += len(polylines)
         out.append("</g>")
     out += ["</g>", "</g>"]
-    return out, (len(rings), n_lines)
+    return out, (len(rings.get(0, [])), n_lines, n_bands)
 
 
-def svg_document(png, size, mpp, fr, edges, lanes, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None):
+ROSE_CORNERS = ("lower-left", "lower-right", "upper-left", "upper-right")
+ROSE_SIZE = 250.0                                            # metres across the circle, at most an eighth of the picture's short side
+
+
+def rose_layer(size, mpp, fr, where="lower-left", diameter=None):
+    """The `compass` layer: a white circle with a black outline and a black compass rose in it, in map metres from the picture's
+    top-left corner. `where` is a corner of the picture (`ROSE_CORNERS`) or `X,Y` in map metres for the centre, `diameter` the circle's
+    width in metres (default `ROSE_SIZE`, at most an eighth of the picture's short side). The rose is the shape of tools/icons/
+    compass_rose.svg: north an arrow, the other three arms half as long with E, S and W at their ends. The arms point where north
+    and east lie in the picture (`fr.vec`), so under `--north sun` north is left; the letters stay upright. Returns lines of SVG."""
+    w, h = size[0] * mpp, size[1] * mpp
+    d = diameter or min(ROSE_SIZE, min(w, h) / 8)
+    r = d / 2.0
+    if where in ROSE_CORNERS:
+        gap = 0.15 * r
+        cx = gap + r if where.endswith("left") else w - gap - r
+        cy = gap + r if where.startswith("upper") else h - gap - r
+    else:
+        cx, cy = fr.pic(*where)
+    k = 0.0495 * r                                           # the icon's unit: its arrow is 15 k long
+    out = [layer("compass", "Compass rose", ' transform="scale(%g)"' % (1.0 / mpp)),
+           '<circle cx="%.1f" cy="%.1f" r="%.1f" fill="#ffffff" stroke="#000000" stroke-width="%.2f"/>' % (cx, cy, r, 0.03 * r)]
+    north, east = fr.vec(0, 1), fr.vec(1, 0)
+    south, west = (-north[0], -north[1]), (-east[0], -east[1])
+
+    def at(vec, dist):
+        return "%.1f %.1f" % (cx + vec[0] * dist, cy + vec[1] * dist)
+    arms = "".join("M%.1f %.1fL%s" % (cx, cy, at(v, n * k)) for v, n in ((north, 15), (south, 7.5), (east, 7.5), (west, 7.5)))
+    out.append('<path d="%s" stroke="#000000" stroke-width="%.2f" fill="none"/>' % (arms, 2.34 / 1.8 * k))
+    perp = (-north[1], north[0])
+    out.append('<path d="M%sL%sL%sz" fill="#000000"/>' % (at(north, 18 * k), "%.1f %.1f" % (
+        cx + north[0] * 11 * k + perp[0] * 3 * k, cy + north[1] * 11 * k + perp[1] * 3 * k), "%.1f %.1f" % (
+        cx + north[0] * 11 * k - perp[0] * 3 * k, cy + north[1] * 11 * k - perp[1] * 3 * k)))
+    for label, vec in (("E", east), ("S", south), ("W", west)):
+        out.append('<text x="%.1f" y="%.1f" text-anchor="middle" font-family="sans-serif" font-size="%.1f" font-weight="bold" '
+                   'fill="#000000">%s</text>' % (cx + vec[0] * 12.6 * k, cy + vec[1] * 12.6 * k + 0.35 * 8.5 * k, 8.5 * k, label))
+    out.append("</g>")
+    return out
+
+
+def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None, min_width=0.0, rose=()):
     """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
     `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
     street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
     right (`fr.pic` gives the position)."""
     w, h = size[0] * mpp, size[1] * mpp
-    unit = max(3.0, 1.5 * mpp)       # metres: two vehicle lanes wide, 1.5 terrain pixels and at least 3 m
     groups = {"road": {}, "rail": {}}                    # family -> type -> one <path> per edge
     for e in edges:
         fam = "rail" if e["family"] == "track" else "road"
@@ -804,7 +905,7 @@ def svg_document(png, size, mpp, fr, edges, lanes, grid=None, metadata=None, ove
         groups[fam].setdefault(e["type"] or "unknown", []).append(
             '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="M%.1f %.1fL%.1f %.1f"/>'
             % (fam, safe_id(e["type"] or "unknown"), e["a"], e["b"], ' data-edge="%x"' % e["e"] if e.get("e") else "",
-               edge_width(e, lanes, unit, mpp), u0, v0, u1, v1))
+               edge_width(e, widths, min_width), u0, v0, u1, v1))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0] * zoom, size[1] * zoom, size[0], size[1]),
@@ -834,6 +935,7 @@ def svg_document(png, size, mpp, fr, edges, lanes, grid=None, metadata=None, ove
     parts += over                                        # depot footprints over the network
     parts += overlay                                     # edge labels and vehicles over the network
     parts += grid_labels                                 # the coordinates over everything
+    parts += rose                                        # the compass rose over the lot
     parts.append("</svg>")
     return "\n".join(parts)
 
@@ -842,23 +944,33 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("out_dir")
     ap.add_argument("saves", nargs="+")
-    ap.add_argument("--mpp", type=int, default=None, help="metres per pixel (default 4; 8 with --vector)")
-    ap.add_argument("--vector", action="store_true", help="SVG only: draw the terrain as vector shapes (water, "
-                    "height lines) instead of the embedded PNG")
+    ap.add_argument("--mpp", type=int, default=None, help="metres per pixel (default 8 for the vector terrain, 4 "
+                    "on a crop; 4 with --raster or --png)")
+    ap.add_argument("--raster", action="store_true", help="SVG only: draw the terrain as the shaded embedded PNG "
+                    "instead of vector bands, water and height lines")
     ap.add_argument("--contour", type=float, default=20.0, metavar="M",
-                    help="with --vector: metres between height lines (default 20)")
+                    help="vector terrain: metres between height lines and bands (default 20)")
     ap.add_argument("--index", type=int, default=5, metavar="N",
-                    help="with --vector: every Nth height line is drawn heavier (default 5)")
+                    help="vector terrain: every Nth height line is drawn heavier (default 5)")
+    ap.add_argument("--no-bands", action="store_true",
+                    help="vector terrain: leave out the coloured height bands (a plain land colour)")
     ap.add_argument("--tolerance", type=float, metavar="M",
-                    help="with --vector: thin lines to this many metres (default 0.4 x metres per pixel)")
+                    help="vector terrain: thin lines to this many metres (default 0.4 x metres per pixel)")
     ap.add_argument("--north", choices=("game", "sun"), default="game",
                     help="which way north is drawn: game (default: up is +y, right is +x, as the game's name "
                     "compass has it) or sun (up is +x, right is -y, from the sun's path); see docs/terrain.md")
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--grid", type=int, metavar="N", help="SVG only: a labelled line every N metres of map x and y")
-    ap.add_argument("--game", help="the game's install folder, for the lane counts "
+    ap.add_argument("--game", help="the game's install folder, for the street and track widths "
                     "(default: the usual Steam places)")
+    ap.add_argument("--min-width", type=float, default=0.0, metavar="M", help="SVG only: draw no road or rail "
+                    "narrower than M metres, so a whole-map picture keeps them visible (default 0: real widths)")
+    ap.add_argument("--rose", default="lower-left", metavar="WHERE",
+                    help="SVG only: where the compass rose goes: lower-left (default), lower-right, upper-left, "
+                    "upper-right, off, or X,Y (map metres) for its centre")
+    ap.add_argument("--rose-size", type=float, metavar="M", help="SVG only: the rose circle's diameter in metres "
+                    "(default 250, at most an eighth of the picture's short side)")
     ap.add_argument("--no-network", action="store_true")
     ap.add_argument("--label", action="append", default=[], metavar="A>B[=TEXT]",
                     help="SVG only: label the edge with end nodes A and B (hex ids); repeatable")
@@ -875,12 +987,22 @@ def main():
     ap.add_argument("--stream", action="store_true")
     ap.add_argument("--force-size", action="store_true")
     args = ap.parse_args()
-    if args.vector and args.png:
-        ap.error("--vector only works with the SVG")
-    if args.vector and (args.contour <= 0 or args.index < 1):
+    if args.raster and args.png:
+        ap.error("--raster and --png are two ways to draw the terrain as pixels: pick one")
+    vector = not (args.raster or args.png)
+    rose_at = args.rose
+    if rose_at not in ROSE_CORNERS + ("off",):
+        try:
+            rose_at = tuple(float(v) for v in args.rose.split(","))
+            assert len(rose_at) == 2
+        except (ValueError, AssertionError):
+            ap.error("--rose wants off, a corner (%s) or X,Y in metres" % ", ".join(ROSE_CORNERS))
+    if args.rose_size is not None and args.rose_size <= 0:
+        ap.error("--rose-size wants a diameter above 0")
+    if args.contour <= 0 or args.index < 1:
         ap.error("--contour wants a step above 0 and --index 1 or more")
     if args.mpp is None:
-        args.mpp = 8 if args.vector else 4
+        args.mpp = 8 if vector and not args.crop else 4
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
     if (args.label or args.vehicles or args.depots or args.coverage) and args.png:
@@ -910,26 +1032,30 @@ def main():
             ap.error("--crop wants X,Y,R in metres")
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
-    lanes = read_lane_counts(content) if content else {}
+    widths = read_profile_widths(content) if content else {}
     depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
-    print("lane counts: %s" % (("%d templates read from the install" % len(lanes)) if lanes else
-                               "no install found (--game DIR), every road drawn at two-lane width"))
-    step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 else 1)
+    print("widths: %s" % (("%d templates read from the install" % len(widths)) if widths else
+                          "no install found (--game DIR), roads drawn 16 m wide and tracks 4 m"))
+    step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 and not vector else 1)
+    spacing = GRID_STEP * step                            # metres between the points the vector terrain is cut from
     for path in args.saves:
         try:
             raw = open(path, "rb").read()
             data = raw if args.stream else decompress(raw)
             tx, ty, off_z, unit, water = read_terrain(data)
             map_w, map_h = tx * 256, ty * 256
+            res = spacing if vector else args.mpp                 # metres per grid point or pixel
             if crop:
-                pixels = (2 * crop[2] // args.mpp + 1) ** 2
+                pixels = (2 * crop[2] // res + 1) ** 2
             else:
-                pixels = (map_w // args.mpp + 1) * (map_h // args.mpp + 1)
-            if pixels > MAX_PIXELS and not args.force_size:
-                print("REFUSED %s: %d x %d m at %d m/px is %d million pixels; raise --mpp"
-                      % (os.path.basename(path), map_w, map_h, args.mpp, pixels // 1000000))
+                pixels = (map_w // res + 1) * (map_h // res + 1)
+            limit = MAX_VECTOR_POINTS if vector else MAX_PIXELS
+            if pixels > limit and not args.force_size:
+                print("REFUSED %s: %d x %d m at %d m per %s is %d million %s; raise --mpp"
+                      % (os.path.basename(path), map_w, map_h, res, "point" if vector else "pixel",
+                         pixels // 1000000, "points" if vector else "pixels"))
                 continue
             if args.mpp < 4 and not crop:
                 print("REFUSED %s: --mpp %d needs --crop" % (os.path.basename(path), args.mpp))
@@ -941,9 +1067,10 @@ def main():
             fr = Frame.from_bounds(args.north, bounds[0], bounds[1], bounds[3])
             if fine > 1:
                 rows = upsample(rows, fine)
-            if args.vector:
+            if vector:
                 picked = to_picture(rows, step, args.north)
-                size = (len(picked[0]), len(picked))
+                size = (int(math.ceil((len(picked[0]) - 1) * spacing / args.mpp)) + 1,
+                        int(math.ceil((len(picked) - 1) * spacing / args.mpp)) + 1)
                 img = b""
             else:
                 img, size = render(rows, step, off_z, unit, water, args.mpp, args.north)
@@ -978,7 +1105,7 @@ def main():
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
             elif edges:
-                roads, rails = draw_network(img, size, fr, args.mpp, edges, lanes)
+                roads, rails = draw_network(img, size, fr, args.mpp, edges, widths)
         except Exception as e:  # report and carry on with the next save
             print(f"FAILED {os.path.basename(path)}: {e}")
             continue
@@ -986,26 +1113,29 @@ def main():
         dest = os.path.join(args.out_dir, name
                             + ("-crop%d_%d_%d" % crop if crop else "")
                             + ("-grid%d" % args.grid if args.grid else "") + "-terrain.png")
-        png = None if args.vector else png_bytes(size[0], size[1], bytes(img))
+        png = None if vector else png_bytes(size[0], size[1], bytes(img))
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
             terrain, extra = None, ()
-            if args.vector:
+            if vector:
                 tol = args.tolerance if args.tolerance is not None else 0.4 * args.mpp
-                terrain, (n_rings, n_lines) = vector_terrain(picked, args.mpp, off_z, unit, water, args.contour,
-                                                             args.index, tol)
+                terrain, (n_rings, n_lines, n_bands) = vector_terrain(picked, spacing, size, args.mpp, off_z, unit, water,
+                                                                      args.contour, args.index, tol, not args.no_bands)
                 extra = (("terrain", "vector"), ("contour-step", "%g" % args.contour), ("index-every", args.index),
-                         ("tolerance", "%g" % tol))
-                dest = dest[:-len("-terrain.svg")] + "-vector.svg"
-                print("vector terrain: %d water rings, %d height lines" % (n_rings, n_lines))
+                         ("tolerance", "%g" % tol), ("bands", "false" if args.no_bands else "true"))
+                print("vector terrain: %d water rings, %d height lines, %d height bands" % (n_rings, n_lines, n_bands))
+            else:
+                extra = (("terrain", "raster"),)
+                dest = dest[:-len("-terrain.svg")] + "-terrain-raster.svg"
             meta = svg_metadata(size, args.mpp, fr, (map_w, map_h), crop, args.grid,
                                 os.path.basename(path), extra)
             overlay, unmatched = overlay_layers(size, args.mpp, fr, edges, vehicles, labels, names)
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
-            open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, lanes, args.grid, meta,
-                                               overlay, args.zoom, under, over, terrain))
+            open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, args.grid, meta,
+                                               overlay, args.zoom, under, over, terrain, args.min_width,
+                                               [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size)))
             for i in depot_rows:
                 print("depot slot %-6d %-22s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (i["slot"], short_model(i["model"]), i["x"], i["y"], i["fx"], i["fy"]))
@@ -1013,7 +1143,8 @@ def main():
                 print("vehicle slot %-6d %-28s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (v["slot"], short_model(v["model"]), v["x"], v["y"], v["fx"], v["fy"]))
         else:
-            open(dest, "wb").write(png)
+            open(dest, "wb").write(png_with_view(png, view_attrs(size, args.mpp, fr, (map_w, map_h), crop, None,
+                                                                 os.path.basename(path), (("terrain", "raster"),))))
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges%s"
               % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails,
                  ", %d vehicles" % len(vehicles) if args.vehicles else ""))
