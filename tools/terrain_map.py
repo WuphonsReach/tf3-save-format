@@ -3,7 +3,7 @@
 
 Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png | --raster]
        [--contour M] [--index N] [--no-bands] [--tolerance M]
-       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--depots] [--coverage] [--industries] [--stream]
+       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--depots] [--coverage] [--industries] [--industry-size M] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as vector shapes (coloured
@@ -125,12 +125,13 @@ game's own palette.
              covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
              maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
 --industries (SVG only) add an `industries` layer, a sublayer per industry key (`industry-KEY`), each industry a badge: a white
-             disc 64 m across with a grey border and the key's icon from tools/icons/industries/ in dark grey, centred on the
-             origin of the industry's main model (the one `industry_compass.py` uses). 64 m is the most a badge may be so
-             that it lands inside the industry's ground; the industry's real footprint was not read, and the origin is not
-             known to be its centre. On a whole-map picture a badge is a few pixels, so zoom in. Each is a
-             `<g class="industry" data-slot data-key data-model data-x data-y>`; the icons are `<symbol>`s in the layer's `<defs>`.
-             Drawn upright whatever `--north` says. Reads the whole stream; no `--crop` needed.
+             disc with a grey border and the key's icon from tools/icons/industries/ in dark grey, centred on the origin of the
+             industry's main model (the one `industry_compass.py` uses). The disc is 96 m across by default, `--industry-size M`
+             sets another diameter; the icon, the border and the margin scale with it. The industry's real footprint was not
+             read and the origin is not known to be its centre, so a badge may overhang a small industry: lower `--industry-size`
+             to keep inside, raise it to read the picture from far away. On a whole-map picture a badge is a few pixels, so zoom
+             in. Each is a `<g class="industry" data-slot data-key data-model data-x data-y>`; the icons are `<symbol>`s in the
+             layer's `<defs>`. Drawn upright whatever `--north` says. Reads the whole stream; no `--crop` needed.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -804,18 +805,18 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
 
 
 ICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "industries")
-INDUSTRY_DIAMETER = 64.0                                 # metres: the badge has to land inside the industry's ground
+INDUSTRY_DIAMETER = 96.0                                 # metres, the default badge size (`--industry-size`)
 INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
 
 
-def industry_layers(mpp, fr, rows):
-    """SVG lines for the `industries` layer: a badge per industry, a white disc `INDUSTRY_DIAMETER` metres across with a grey border and
+def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER):
+    """SVG lines for the `industries` layer: a badge per industry, a white disc `diameter` metres across with a grey border and
     the industry's icon (tools/icons/industries/KEY.svg, 64 x 64, in `currentColor`) in dark grey, centred on the origin of its main
     model. `rows` are `read_instances` rows with a `key` added. One sublayer per key, one `<symbol>` per key used; a key without an icon
     gets the disc only. The badge is upright whatever the north. Units are metres like the other layers."""
     if not rows:
         return []
-    r = INDUSTRY_DIAMETER / 2.0
+    r = diameter / 2.0
     out = [layer("industries", "Industries", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)), "<defs>"]
     have = set()
     for key in sorted({i["key"] for i in rows}):
@@ -828,14 +829,15 @@ def industry_layers(mpp, fr, rows):
             have.add(key)
             out.append('<symbol id="industry-icon-%s" viewBox="0 0 64 64">%s</symbol>' % (safe_id(key), body.group(1)))
     out.append("</defs>")
-    side = 0.72 * INDUSTRY_DIAMETER                      # the icon sits inside the disc with a margin
+    border = diameter / 32.0                             # 2 m on a 64 m badge
+    side = 0.72 * diameter                      # the icon sits inside the disc with a margin
     for key in sorted({i["key"] for i in rows}):
         out.append(layer("industry-" + safe_id(key), "Industries: " + key, ' data-key="%s"' % key))
         for i in (i for i in rows if i["key"] == key):
             cx, cy = fr.pic(i["x"], i["y"])
             out.append('<g class="industry" data-slot="%d" data-key="%s" data-model=%s data-x="%.1f" data-y="%.1f">'
                        '<circle cx="%.2f" cy="%.2f" r="%.2f" fill="#ffffff" stroke="%s" stroke-width="%g"/>'
-                       % (i["slot"], key, quoteattr(i["model"]), i["x"], i["y"], cx, cy, r - 1.0, INDUSTRY_BORDER, 2.0))
+                       % (i["slot"], key, quoteattr(i["model"]), i["x"], i["y"], cx, cy, r - border / 2, INDUSTRY_BORDER, border))
             if key in have:
                 out.append('<use xlink:href="#industry-icon-%s" x="%.2f" y="%.2f" width="%g" height="%g" color="%s"/>'
                            % (safe_id(key), cx - side / 2, cy - side / 2, side, side, INDUSTRY_INK))
@@ -1033,7 +1035,9 @@ def main():
     ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
                     "and tram depots (ground faces from the install)")
     ap.add_argument("--industries", action="store_true", help="SVG only: stamp each industry's icon on a white disc with a grey "
-                    "border, 64 m across, at its origin (see the icon files in tools/icons/industries)")
+                    "border, 96 m across by default, at its origin (see the icon files in tools/icons/industries)")
+    ap.add_argument("--industry-size", type=float, default=INDUSTRY_DIAMETER, metavar="M",
+                    help="with --industries: the badge's diameter in metres (default %g)" % INDUSTRY_DIAMETER)
     ap.add_argument("--mods", help="the mod.io game's mods folder, for a mod's depots (default: the usual places)")
     ap.add_argument("--coverage", action="store_true", help="SVG only: draw their maintenance coverage circles")
     ap.add_argument("--stream", action="store_true")
@@ -1082,6 +1086,8 @@ def main():
             assert len(crop) == 3 and crop[2] > 0
         except (ValueError, AssertionError):
             ap.error("--crop wants X,Y,R in metres")
+    if args.industry_size <= 0:
+        ap.error("--industry-size wants a diameter above 0")
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
     widths = read_profile_widths(content) if content else {}
@@ -1156,7 +1162,7 @@ def main():
                 try:
                     table = read_model_table(data)
                     mains = main_models(table[0])
-                    r = INDUSTRY_DIAMETER / 2
+                    r = args.industry_size / 2
                     for i in read_instances(data, ("industries/",), table):
                         if i["model"] in mains and x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                             industry_rows.append(dict(i, key=mains[i["model"]]))
@@ -1196,7 +1202,7 @@ def main():
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
-            over += industry_layers(args.mpp, fr, industry_rows)
+            over += industry_layers(args.mpp, fr, industry_rows, args.industry_size)
             open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, args.grid, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
                                                [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size)))
