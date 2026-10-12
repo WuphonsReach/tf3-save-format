@@ -182,15 +182,28 @@ def icon_symbols():
     return out
 
 
+def rose(rx, ry, k=1.0):
+    """The compass rose centred on (rx, ry), as SVG elements in `currentColor`-free grey (#666): north is the
+    arrow (15 * k long), the other three arms are half as long with their letter at the end. k = 1.8 fills
+    a 64 x 64 box centred on (32, 32.4), as in tools/icons/compass_rose.svg."""
+    ln = 15 * k
+    return ('<path d="M%.1f %.1fV%.1fM%.1f %.1fV%.1fM%.1f %.1fH%.1fM%.1f %.1fH%.1f" stroke="#666" stroke-width="%.2f" fill="none"/>'
+            '<path d="M%.1f %.1fL%.1f %.1fL%.1f %.1fz" fill="#666"/>'
+            % (rx, ry, ry - ln, rx, ry, ry + ln / 2, rx, ry, rx + ln / 2, rx, ry, rx - ln / 2, 1.3 * k,
+               rx, ry - ln - 3 * k, rx - 3 * k, ry - ln + 4 * k, rx + 3 * k, ry - ln + 4 * k)
+            + "".join('<text x="%.1f" y="%.1f" text-anchor="%s" font-size="%.1f" font-weight="bold" fill="#666">%s</text>'
+                      % (lx, ly, anchor, 8.5 * k, lab)
+                      for lab, lx, ly, anchor in (("E", rx + ln / 2 + 0.8 * k, ry + 3 * k, "start"),
+                                                  ("S", rx, ry + ln / 2 + 7.5 * k, "middle"),
+                                                  ("W", rx - ln / 2 - 0.8 * k, ry + 3 * k, "end"))))
+
+
 def svg(panels, title, sun=True, across=2):
     """One panel per town. A panel has `town`, `centre`, `edges`, `names` (one dict per compass name:
     name, kind, word, `cands`) and `pts` (every same-kind industry of those names near the town:
     dx, dy, and `label` for the ones inside the quarter their name gives, else None)."""
-    far = max([math.hypot(i["dx"], i["dy"]) for p in panels for i in p["pts"]] + [1000.0])
-    rng = math.ceil(far * 1.03 / 1000.0) * 1000.0
     w = 470
-    s = (w / 2 - 34) / rng
-    head = 78
+    head = 64
     cols = min(across, len(panels))
     rows = -(-len(panels) // cols)
     strips = [22 + 14 * max(len(p["names"]) for p in panels[r * cols:(r + 1) * cols]) for r in range(rows)]
@@ -199,16 +212,20 @@ def svg(panels, title, sun=True, across=2):
            % (w * cols, head + sum(w + st for st in strips)), '<rect width="100%" height="100%" fill="#fff"/>',
            '<text x="12" y="22" font-size="15" font-weight="bold">%s</text>' % title.partition(" (")[0],
            '<text x="12" y="38" fill="#555">%s</text>' % title.partition(" (")[2].rstrip(")"),
-           '<text x="12" y="54" fill="#555">x right, y up (the game\'s frame); rings every 1 km; blue = what a compass name points at (light blue: no room for its label); '
-           'hollow = other industries of those kinds</text>']
-    if sun:
-        out.append('<text x="12" y="70" fill="#555">orange = where the Morning (sunrise) and Evening (sunset) sun stand on the screen (docs/compass.md)</text>')
+           '<text x="12" y="54" fill="#555">blue = named by a compass name '
+           '(light: no room for its label); hollow = others of those kinds</text>']
     symbols = icon_symbols() if sun else {}
     if symbols:
         out.append("<defs>%s</defs>" % "".join(symbols.values()))
     for k, p in enumerate(panels):
         cell_y, strip = tops[k // cols], strips[k // cols]
         ox, oy = (k % cols) * w + w / 2, cell_y + strip + w / 2
+        # each panel is scaled to its farthest blue dot (whole kilometres, at least 2); hollow dots beyond the
+        # compass square it ends up with are left off
+        far = max([math.hypot(i["dx"], i["dy"]) for i in p["pts"] if i["label"]] + [0.0])
+        rng = max(2000.0, math.ceil(far * 1.03 / 1000.0) * 1000.0)
+        pts_here = [i for i in p["pts"] if max(abs(i["dx"]), abs(i["dy"])) <= rng * 0.97]
+        s = (w / 2 - 34) / rng
         d = rng * s * 0.97
         g = ['<g>', '<text x="%.0f" y="%.0f" font-weight="bold" fill="#0f2a6b">%s</text>' % (ox - w / 2 + 8, cell_y + 18, p["town"])]
         for n, nm in enumerate(p["names"]):
@@ -218,11 +235,11 @@ def svg(panels, title, sun=True, across=2):
         g.append('<rect x="%.0f" y="%.0f" width="%d" height="%d" fill="#fafafa" stroke="#bbb"/>' % (ox - w / 2 + 6, oy - w / 2 + 6, w - 12, w - 12))
         for r in range(1000, int(rng) + 1, 1000):
             g.append('<circle cx="%.1f" cy="%.1f" r="%.1f" fill="none" stroke="#ddd"/>' % (ox, oy, r * s))
-            g.append('<text x="%.1f" y="%.1f" fill="#aaa" font-size="10" text-anchor="end">%d km</text>' % (ox - 3, oy - r * s - 2, r // 1000))
+            g.append('<text x="%.1f" y="%.1f" fill="#aaa" font-size="10" text-anchor="end">%d km</text>' % (ox - 10, oy - r * s - 2, r // 1000))
         g.append('<path d="M%.1f %.1fL%.1f %.1fM%.1f %.1fL%.1f %.1f" stroke="#ccc" stroke-dasharray="4 4"/>'
                  % (ox - d, oy - d, ox + d, oy + d, ox - d, oy + d, ox + d, oy - d))
         g.append('<path d="M%.1f %.1fH%.1fM%.1f %.1fV%.1f" stroke="#bbb"/>' % (ox - d, oy, ox + d, ox, oy - d, oy + d))
-        for lab, lx, ly in (("N", ox, oy - d - 4), ("S", ox, oy + d + 14), ("E", ox + d + 8, oy + 4), ("W", ox - d - 8, oy + 4)):
+        for lab, lx, ly in (("+y", ox, oy - d - 4), ("-y", ox, oy + d + 14), ("+x", ox + d + 10, oy + 4), ("-x", ox - d - 10, oy + 4)):
             g.append('<text x="%.1f" y="%.1f" text-anchor="middle" font-weight="bold" fill="#666">%s</text>' % (lx, ly, lab))
         # the sun's path on the screen (docs/compass.md): Morning towards -y, Evening towards +y
         for nm, (ix, iy), tip in (("sunrise", (ox + 26, oy + d - 8), "Morning sun: -y"),
@@ -232,12 +249,13 @@ def svg(panels, title, sun=True, across=2):
                          % (nm, ix - 17, iy - 17, tip))
                 g.append('<text x="%.1f" y="%.1f" text-anchor="middle" font-size="11" fill="#b35900">%s</text>'
                          % (ix, iy + 22.5, "rise" if nm == "sunrise" else "set"))
+        g.append(rose(ox + w / 2 - 36, oy - w / 2 + 38))              # upper right
         cx, cy = p["centre"]
         for x0, y0, x1, y1 in p["edges"]:
             g.append('<line x1="%.1f" y1="%.1f" x2="%.1f" y2="%.1f" stroke="#888" stroke-width="1.2"/>'
                      % (ox + (x0 - cx) * s, oy - (y0 - cy) * s, ox + (x1 - cx) * s, oy - (y1 - cy) * s))
         g.append('<path d="M%.1f %.1fH%.1fM%.1f %.1fV%.1f" stroke="#000" stroke-width="2"/>' % (ox - 7, oy, ox + 7, ox, oy - 7, oy + 7))
-        pts = sorted(p["pts"], key=lambda i: i["label"] is not None)      # the blue dots last, on top
+        pts = sorted(pts_here, key=lambda i: i["label"] is not None)      # the blue dots last, on top
         taken = []                                                    # boxes a label must keep clear of: the dots, then labels
         for i in pts:
             r = 9 if i["label"] else 5

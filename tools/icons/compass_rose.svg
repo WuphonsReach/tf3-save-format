@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" font-family="sans-serif">
+
+<path d="M32.0 32.4V5.4M32.0 32.4V45.9M32.0 32.4H45.5M32.0 32.4H18.5" stroke="currentColor" stroke-width="2.34" fill="none"/>
+<path d="M32.0 -0.0L26.6 12.6L37.4 12.6z" fill="currentColor"/>
+<text x="46.9" y="37.8" text-anchor="start" font-size="15.3" font-weight="bold" fill="currentColor">E</text>
+<text x="32.0" y="59.4" text-anchor="middle" font-size="15.3" font-weight="bold" fill="currentColor">S</text>
+<text x="17.1" y="37.8" text-anchor="end" font-size="15.3" font-weight="bold" fill="currentColor">W</text>
+</svg>

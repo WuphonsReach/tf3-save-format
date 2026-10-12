@@ -17,7 +17,7 @@ Other notes written before that date may give a direction with the sun's axes; w
 
 ## The compass words in names
 
-**Rule (Observed, two games).** An industry placed near a town is named `<Town> <Kind>`. A second one of the same kind near that town is named `<Town> <Kind> #1` or `<Town> <Kind> North` (South, East, West). The player's own maintenance buildings, ship depots and boathouses follow the same pattern. The word is the direction in which the new thing lies from the town's centre, judged by the larger of the two offsets.
+**Rule (Observed, three games).** An industry placed near a town is named `<Town> <Kind>`. A second one of the same kind near that town is named `<Town> <Kind> #1` or `<Town> <Kind> North` (South, East, West). The player's own maintenance buildings, ship depots and boathouses follow the same pattern. The word is the direction in which the new thing lies from the town's centre, judged by the larger of the two offsets.
 
 **Test.** [industry_compass.py](../tools/industry_compass.py) lists every name with a compass word, finds the same-kind industries or buildings nearest that town, and counts how many lie in the quarter the word names. It does that for the eight ways of laying east and north on x and y (four turns, each mirrored or not). The save keeps no town position (an [open gap](gaps/towns-and-buildings.md)), so a town's centre is the mean of the end points of its `town_*` street edges, one connected group per town. Which group is which town comes from the industries' names. An industry's position is the origin of its main model ([models.md](models.md)). The name table does not say which instance carries a name, so the test asks whether a candidate lies in the quarter, not which one it is.
 
@@ -25,8 +25,9 @@ Other notes written before that date may give a direction with the sun's axes; w
 |---|---|---|---|---|
 | Large tropical, seed `mSKhWzIuLq`, new game, 8 towns, 29 industries ([part of the test games](test-games.md#large-tropical-game)) | 4 | 4 have a candidate in the quarter, all four exactly one | 3 (x east, y south, and x west, y north) | 1 |
 | Small subarctic, seed `XNGDTtYKhe`, played to 1 April 1920, 3 towns, 86 industries and 16 depots and boathouses ([the Small subarctic game](test-games.md#small-subarctic-game)) | 24 | 24, eight with exactly one | 16 (x east, y south, and x west, y north) | 7 |
+| Temperate, 1:2, towns Scattered, industry Packed, seed `8sTfdrefpL`, catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) re-saved at 18 February 1937, 15 towns, 234 industries and depots ([catalog games we re-saved](test-games.md#catalog-games-we-re-saved)) | 31 | 31, sixteen with exactly one | 20 (x east, y south, and x west, y north) | 13 |
 
-The remaining four frames scored 6 to 8 in the second game and 0 to 2 in the first. The mirrors that keep one axis fit about two thirds of the names, because a candidate often sits where both frames agree. Only the game's frame fits all of them. **Observed**: the compass words are taken with x east and y north.
+The remaining four frames scored 6 to 8 in the second game, 0 to 2 in the first and 9 to 13 in the third. The mirrors that keep one axis fit about two thirds of the names, because a candidate often sits where both frames agree. Only the game's frame fits all of them (in the third game 31 of 31, against 20 for the next best). **Observed**: the compass words are taken with x east and y north.
 
 ![Four industries named with a compass word, one picture per town](images/compass-mSKhWzIuLq-tropical-large-1to2-towns-sparse-industry-packed-hard.png)
 
@@ -35,6 +36,10 @@ The first game's four names, one picture per town: blue dots are the industries 
 ![The surest compass names of each town of a played game](images/compass-XNGDTtYKhe-subarctic-small-1to3-towns-sparse-industry-medium-1920-04.png)
 
 The second game, the four surest names of each of its three towns (of 24 names; exactly one same-kind candidate in the quarter first, then fewer there, then more rivals outside it). A light blue dot had no room for its label. In a played game the centre drifts as the town grows, and a name was fixed when its thing was placed, so the fit there is looser than in a new game.
+
+![The surest compass names of six towns of a third game](images/compass-8sTfdrefpL-temperate-11264x22528-1to2-towns-scattered-industry-packed-easy-1937-02.png)
+
+The third game, six of its 11 towns with a compass name, the four surest names of each (31 names in all; 14 more end in a word but name a station, port or train depot, kinds the script does not list). Every one of the 31 has a candidate in its quarter. This game's depots and maintenance buildings stand close to their towns, so their labels crowd the street map.
 
 What the words do not settle:
 
