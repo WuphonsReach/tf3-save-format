@@ -1606,6 +1606,337 @@
 <circle cx="1911.70" cy="2664.64" r="3.6" fill="#fff" stroke="#000" stroke-width="1.2"/>
 </g>
 </g>
+<g id="industries" class="layer" data-layer="industries" inkscape:groupmode="layer" inkscape:label="Industries" transform="scale(0.125)" pointer-events="none">
+<defs>
+<symbol id="industry-icon-cement_plant" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M12 6Q32 11 52 6L53 16Q50 21 54 27V55Q32 62 10 55V27Q14 21 11 16Z M20 30H44V45H20Z"/><path d="M27 34H37V41H27Z" opacity="0"/></symbol>
+<symbol id="industry-icon-chemical_plant" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M24 5H40M27 5V24L11 52Q8 58 14 58H50Q56 58 53 52L37 24V5"/></g><path d="M18 42H46L51 51Q52 54 49 54H15Q12 54 13 51Z"/><circle cx="31" cy="33" r="2.6"/><circle cx="36" cy="27" r="2"/></symbol>
+<symbol id="industry-icon-coal_mine" viewBox="0 0 64 64"><path d="M6 24H58L52 46H12Z"/><path d="M14 24Q16 10 24 12Q28 6 34 10Q42 6 46 14Q54 14 50 24Z"/><circle cx="18" cy="54" r="5"/><circle cx="46" cy="54" r="5"/></symbol>
+<symbol id="industry-icon-farm" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M32 58V20"/><path d="M32 52Q22 52 16 44M32 52Q42 52 48 44"/></g><ellipse cx="32" cy="11" rx="3.4" ry="7" transform="rotate(0 32 11)"/><ellipse cx="25.5" cy="20" rx="3.4" ry="7" transform="rotate(-30 25.5 20)"/><ellipse cx="38.5" cy="20" rx="3.4" ry="7" transform="rotate(30 38.5 20)"/><ellipse cx="25.5" cy="31" rx="3.4" ry="7" transform="rotate(-30 25.5 31)"/><ellipse cx="38.5" cy="31" rx="3.4" ry="7" transform="rotate(30 38.5 31)"/><ellipse cx="25.5" cy="42" rx="3.4" ry="7" transform="rotate(-30 25.5 42)"/><ellipse cx="38.5" cy="42" rx="3.4" ry="7" transform="rotate(30 38.5 42)"/></symbol>
+<symbol id="industry-icon-fishing_grounds" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M4 30Q20 10 40 20L46 24L58 12Q56 24 56 28Q56 32 58 44L46 34L40 38Q20 48 4 30ZM14.4 27a2.6 2.6 0 1 0 5.2 0a2.6 2.6 0 1 0 -5.2 0Z"/><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 54Q8 50 14 54T26 54T38 54T50 54T62 54"/><path d="M8 62Q14 58 20 62T32 62T44 62T56 62" opacity="1"/></g></symbol>
+<symbol id="industry-icon-food_factory" viewBox="0 0 64 64"><ellipse cx="32" cy="12" rx="19" ry="6"/><path d="M13 21H51V26H13Z"/><path fill-rule="evenodd" d="M13 29H51V50Q51 58 32 58Q13 58 13 50Z M17 33H47V50Q47 54 32 54Q17 54 17 50Z"/><ellipse cx="29" cy="43" rx="8" ry="4.6"/><path d="M35 43L43 37V49Z"/></symbol>
+<symbol id="industry-icon-forest" viewBox="0 0 64 64"><path d="M42 4L56 24H49L60 42H47V58H37V42H24L35 24H28Z"/><path d="M14 22L23 36H18L25 48H18V58H10V48H3L10 36H5Z"/></symbol>
+<symbol id="industry-icon-furniture_factory" viewBox="0 0 64 64"><path d="M17 6H47Q49 6 49 8V32H15V8Q15 6 17 6Z"/><rect x="6" y="22" width="9" height="24" rx="3"/><rect x="49" y="22" width="9" height="24" rx="3"/><rect x="17" y="35" width="30" height="11" rx="2"/><rect x="10" y="49" width="6" height="10" rx="1.5"/><rect x="48" y="49" width="6" height="10" rx="1.5"/></symbol>
+<symbol id="industry-icon-glass_works" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M27 8H37V22Q37 29 46 34V54Q46 58 42 58H22Q18 58 18 54V34Q27 29 27 22Z M22.5 39V52H25.5V39Z"/><rect x="24.5" y="3" width="15" height="5" rx="2"/></symbol>
+<symbol id="industry-icon-iron_ore_mine" viewBox="0 0 64 64"><g transform="rotate(-38 32 36)"><path d="M3 22Q32 -4 61 22Q32 9 3 22Z"/><rect x="29" y="13" width="6" height="48" rx="2.5"/></g><g transform="rotate(38 32 36)"><path d="M3 22Q32 -4 61 22Q32 9 3 22Z"/><rect x="29" y="13" width="6" height="48" rx="2.5"/></g></symbol>
+<symbol id="industry-icon-livestock_farm" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M6 58V30L14 18L32 6L50 18L58 30V58Z M20 58V38H44V58Z M28 18H36V25H28Z"/><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M23 41L41 56M41 41L23 56"/></g></symbol>
+<symbol id="industry-icon-machine_factory" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M52.63 28.06L59.84 29.01L59.84 34.99L52.63 35.94A21 21 0 0 1 51 40.94L51 40.94L56.28 45.95L52.77 50.78L46.38 47.31A21 21 0 0 1 42.12 50.4L42.12 50.4L43.44 57.56L37.76 59.4L34.63 52.83A21 21 0 0 1 29.37 52.83L29.37 52.83L26.24 59.4L20.56 57.56L21.88 50.4A21 21 0 0 1 17.62 47.31L17.62 47.31L11.23 50.78L7.72 45.95L13 40.94A21 21 0 0 1 11.37 35.94L11.37 35.94L4.16 34.99L4.16 29.01L11.37 28.06A21 21 0 0 1 13 23.06L13 23.06L7.72 18.05L11.23 13.22L17.62 16.69A21 21 0 0 1 21.88 13.6L21.88 13.6L20.56 6.44L26.24 4.6L29.37 11.17A21 21 0 0 1 34.63 11.17L34.63 11.17L37.76 4.6L43.44 6.44L42.12 13.6A21 21 0 0 1 46.38 16.69L46.38 16.69L52.77 13.22L56.28 18.05L51 23.06A21 21 0 0 1 52.63 28.06ZM24 32a8 8 0 1 0 16 0a8 8 0 1 0 -16 0Z"/></symbol>
+<symbol id="industry-icon-oil_platform" viewBox="0 0 64 64"><rect x="8" y="30" width="48" height="6" rx="1"/><g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 36L12 56M26 36L26 56M38 36L38 56M50 36L52 56M14 40L26 52M26 40L14 52"/></g><g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M24 30L32 6L40 30M27 22H37M25 27H39"/></g><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 60Q8 56 14 60T26 60T38 60T50 60T62 60"/></g><rect x="44" y="22" width="12" height="6"/><rect x="45" y="18" width="3" height="4"/><path d="M8 30V20L4 14"  fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"/><path d="M4 14Q1 10 4 6Q9 9 4 14Z"/></symbol>
+<symbol id="industry-icon-oil_refinery" viewBox="0 0 64 64"><path d="M5 24Q5 18 12 18Q19 18 19 24V28H5Z"/><rect x="5" y="43" width="14" height="15"/><rect x="5" y="28" width="14" height="12.5"/><path d="M25 14Q25 6 32 6Q39 6 39 14V18H25Z"/><rect x="25" y="46" width="14" height="12"/><rect x="25" y="31.5" width="14" height="12.0"/><rect x="25" y="18" width="14" height="11.0"/><rect x="47" y="30" width="6" height="28"/><path d="M50 2Q60 12 57 20Q56 26 50 26Q44 26 43 20Q43 14 47 10Q47 14 50 15Q52 9 50 2Z"/></symbol>
+<symbol id="industry-icon-oil_well" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M22 56L32 28L42 56M26.5 46H37.5"/></g><path d="M2 58H62" stroke="currentColor" stroke-width="4" stroke-linecap="round"/><path d="M4 20A18 18 0 0 1 20 10L22 18L18 34L6 30Z" transform="translate(0 2)"/><g transform="rotate(8 32 28)"><rect x="14" y="25" width="38" height="6" rx="3"/></g><rect x="44" y="22" width="12" height="16" rx="2"/><circle cx="32" cy="28" r="4.5"/><g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M10 34V56"/></g></symbol>
+<symbol id="industry-icon-paper_mill" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M12 4H34V22H52V60H12Z M20 31H44V34.5H20Z M20 39H44V42.5H20Z M20 47H36V50.5H20Z"/><path d="M38 4L52 18H38Z"/></symbol>
+<symbol id="industry-icon-printing_press" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M30.5 16Q19 8 3 12V50Q19 46 30.5 55Z M9 20Q19 18 25 22V24Q19 21 9 23Z M9 28Q19 26 25 30V32Q19 29 9 31Z"/><path fill-rule="evenodd" d="M33.5 16Q45 8 61 12V50Q45 46 33.5 55Z M55 20Q45 18 39 22V24Q45 21 55 23Z M55 28Q45 26 39 30V32Q45 29 55 31Z"/></symbol>
+<symbol id="industry-icon-quarry" viewBox="0 0 64 64"><path d="M4 58L10 38L24 28L34 40L32 58Z"/><path d="M36 58L36 44L44 34L58 38L60 58Z"/><path d="M14 24L24 8L38 12L42 28L30 24Z"/></symbol>
+<symbol id="industry-icon-saw_mill" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M53 32L59.85 40.09L51.4 40.04L54.63 50.13L46.85 46.85L45.97 57.41L40.04 51.4L35.18 60.82L32 53L23.91 59.85L23.96 51.4L13.87 54.63L17.15 46.85L6.59 45.97L12.6 40.04L3.18 35.18L11 32L4.15 23.91L12.6 23.96L9.37 13.87L17.15 17.15L18.03 6.59L23.96 12.6L28.82 3.18L32 11L40.09 4.15L40.04 12.6L50.13 9.37L46.85 17.15L57.41 18.03L51.4 23.96L60.82 28.82ZM26 32a6 6 0 1 0 12 0a6 6 0 1 0 -12 0Z"/></symbol>
+<symbol id="industry-icon-steel_mill" viewBox="0 0 64 64"><path d="M8 8H56V18H38V46H56V56H8V46H26V18H8Z"/></symbol>
+<symbol id="industry-icon-textile_factory" viewBox="0 0 64 64"><path d="M22 6Q32 16 42 6L60 16L54 29L46 25V58H18V25L10 29L4 16Z"/></symbol>
+<symbol id="industry-icon-vehicle_factory" viewBox="0 0 64 64"><path fill-rule="evenodd" d="M3 42V33Q3 29 7 28L15 26L23 13H42L50 26L57 28Q61 30 61 34V42H55.5A7.5 7.5 0 0 0 40.5 42H23.5A7.5 7.5 0 0 0 8.5 42Z M25 17L19.5 26H31V17Z M35 17V26H46.5L41 17Z"/><path fill-rule="evenodd" d="M9.5 44a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0ZM13.7 44a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0Z"/><path fill-rule="evenodd" d="M41.5 44a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0ZM45.7 44a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0Z"/></symbol>
+<symbol id="industry-icon-weaving_mill" viewBox="0 0 64 64"><rect x="5.0" y="5.0" width="16" height="4" rx="1.4"/><rect x="5.0" y="11.2" width="16" height="4" rx="1.4"/><rect x="5.0" y="17.4" width="16" height="4" rx="1.4"/><rect x="23.5" y="5.0" width="4" height="16" rx="1.4"/><rect x="29.7" y="5.0" width="4" height="16" rx="1.4"/><rect x="35.9" y="5.0" width="4" height="16" rx="1.4"/><rect x="42.0" y="5.0" width="16" height="4" rx="1.4"/><rect x="42.0" y="11.2" width="16" height="4" rx="1.4"/><rect x="42.0" y="17.4" width="16" height="4" rx="1.4"/><rect x="5.0" y="23.5" width="4" height="16" rx="1.4"/><rect x="11.2" y="23.5" width="4" height="16" rx="1.4"/><rect x="17.4" y="23.5" width="4" height="16" rx="1.4"/><rect x="23.5" y="23.5" width="16" height="4" rx="1.4"/><rect x="23.5" y="29.7" width="16" height="4" rx="1.4"/><rect x="23.5" y="35.9" width="16" height="4" rx="1.4"/><rect x="42.0" y="23.5" width="4" height="16" rx="1.4"/><rect x="48.2" y="23.5" width="4" height="16" rx="1.4"/><rect x="54.4" y="23.5" width="4" height="16" rx="1.4"/><rect x="5.0" y="42.0" width="16" height="4" rx="1.4"/><rect x="5.0" y="48.2" width="16" height="4" rx="1.4"/><rect x="5.0" y="54.4" width="16" height="4" rx="1.4"/><rect x="23.5" y="42.0" width="4" height="16" rx="1.4"/><rect x="29.7" y="42.0" width="4" height="16" rx="1.4"/><rect x="35.9" y="42.0" width="4" height="16" rx="1.4"/><rect x="42.0" y="42.0" width="16" height="4" rx="1.4"/><rect x="42.0" y="48.2" width="16" height="4" rx="1.4"/><rect x="42.0" y="54.4" width="16" height="4" rx="1.4"/></symbol>
+</defs>
+<g id="industry-cement_plant" class="layer" data-layer="industry-cement_plant" inkscape:groupmode="layer" inkscape:label="Industries: cement_plant" data-key="cement_plant">
+<g class="industry" data-slot="167" data-key="cement_plant" data-model="industries/cement_plant/cement_plant_sm.mdl" data-x="1372.0" data-y="-128.0"><circle cx="3676.00" cy="7040.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-cement_plant" x="3641.44" y="7005.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="803" data-key="cement_plant" data-model="industries/cement_plant/cement_plant_sm.mdl" data-x="-1896.0" data-y="-6428.0"><circle cx="408.00" cy="13340.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-cement_plant" x="373.44" y="13305.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4452" data-key="cement_plant" data-model="industries/cement_plant/cement_plant_sm.mdl" data-x="-1884.0" data-y="-5968.0"><circle cx="420.00" cy="12880.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-cement_plant" x="385.44" y="12845.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-chemical_plant" class="layer" data-layer="industry-chemical_plant" inkscape:groupmode="layer" inkscape:label="Industries: chemical_plant" data-key="chemical_plant">
+<g class="industry" data-slot="858" data-key="chemical_plant" data-model="industries/chemical_plant/chemical_plant_sm.mdl" data-x="-1904.0" data-y="-2596.0"><circle cx="400.00" cy="9508.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-chemical_plant" x="365.44" y="9473.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="5157" data-key="chemical_plant" data-model="industries/chemical_plant/chemical_plant_sm.mdl" data-x="-924.0" data-y="-4256.0"><circle cx="1380.00" cy="11168.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-chemical_plant" x="1345.44" y="11133.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-coal_mine" class="layer" data-layer="industry-coal_mine" inkscape:groupmode="layer" inkscape:label="Industries: coal_mine" data-key="coal_mine">
+<g class="industry" data-slot="207" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-608.0" data-y="-4876.0"><circle cx="1696.00" cy="11788.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="1661.44" y="11753.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2123" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-1128.0" data-y="436.0"><circle cx="1176.00" cy="6476.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="1141.44" y="6441.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2603" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-804.0" data-y="108.0"><circle cx="1500.00" cy="6804.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="1465.44" y="6769.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2700" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-1440.0" data-y="4088.0"><circle cx="864.00" cy="2824.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="829.44" y="2789.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2781" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="564.0" data-y="-4376.0"><circle cx="2868.00" cy="11288.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="2833.44" y="11253.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2896" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-1304.0" data-y="-1564.0"><circle cx="1000.00" cy="8476.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="965.44" y="8441.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2987" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="1308.0" data-y="-1772.0"><circle cx="3612.00" cy="8684.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="3577.44" y="8649.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="5031" data-key="coal_mine" data-model="industries/coal_mine/coal_mine_sm.mdl" data-x="-1708.0" data-y="-3268.0"><circle cx="596.00" cy="10180.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-coal_mine" x="561.44" y="10145.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-farm" class="layer" data-layer="industry-farm" inkscape:groupmode="layer" inkscape:label="Industries: farm" data-key="farm">
+<g class="industry" data-slot="43" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1876.0" data-y="2000.0"><circle cx="4180.00" cy="4912.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="4145.44" y="4877.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="88" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="-336.0" data-y="3628.0"><circle cx="1968.00" cy="3284.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="1933.44" y="3249.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="559" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1000.0" data-y="2688.0"><circle cx="3304.00" cy="4224.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="3269.44" y="4189.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="793" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="896.0" data-y="3616.0"><circle cx="3200.00" cy="3296.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="3165.44" y="3261.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1183" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="696.0" data-y="1548.0"><circle cx="3000.00" cy="5364.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="2965.44" y="5329.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1232" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1804.0" data-y="-5788.0"><circle cx="4108.00" cy="12700.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="4073.44" y="12665.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1410" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1784.0" data-y="1516.0"><circle cx="4088.00" cy="5396.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="4053.44" y="5361.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1611" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1868.0" data-y="-4296.0"><circle cx="4172.00" cy="11208.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="4137.44" y="11173.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1656" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1884.0" data-y="2632.0"><circle cx="4188.00" cy="4280.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="4153.44" y="4245.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4379" data-key="farm" data-model="industries/farm/farm_sm.mdl" data-x="1368.0" data-y="2300.0"><circle cx="3672.00" cy="4612.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-farm" x="3637.44" y="4577.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-fishing_grounds" class="layer" data-layer="industry-fishing_grounds" inkscape:groupmode="layer" inkscape:label="Industries: fishing_grounds" data-key="fishing_grounds">
+<g class="industry" data-slot="97" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="28.0" data-y="4340.0"><circle cx="2332.00" cy="2572.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="2297.44" y="2537.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="277" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1780.0" data-y="5204.0"><circle cx="4084.00" cy="1708.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="4049.44" y="1673.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2715" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1336.0" data-y="4124.0"><circle cx="3640.00" cy="2788.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="3605.44" y="2753.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2800" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="772.0" data-y="5236.0"><circle cx="3076.00" cy="1676.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="3041.44" y="1641.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3222" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="-1596.0" data-y="6424.0"><circle cx="708.00" cy="488.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="673.44" y="453.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3941" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="-564.0" data-y="4884.0"><circle cx="1740.00" cy="2028.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="1705.44" y="1993.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4460" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="-1304.0" data-y="6036.0"><circle cx="1000.00" cy="876.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="965.44" y="841.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4622" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1148.0" data-y="6184.0"><circle cx="3452.00" cy="728.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="3417.44" y="693.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4709" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1388.0" data-y="4720.0"><circle cx="3692.00" cy="2192.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="3657.44" y="2157.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4803" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="-36.0" data-y="4704.0"><circle cx="2268.00" cy="2208.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="2233.44" y="2173.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4843" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="0.0" data-y="4000.0"><circle cx="2304.00" cy="2912.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="2269.44" y="2877.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4877" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="-416.0" data-y="4560.0"><circle cx="1888.00" cy="2352.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="1853.44" y="2317.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4917" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1592.0" data-y="4424.0"><circle cx="3896.00" cy="2488.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="3861.44" y="2453.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="5111" data-key="fishing_grounds" data-model="industries/fishing_grounds/fg_particles.mdl" data-x="1852.0" data-y="4824.0"><circle cx="4156.00" cy="2088.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-fishing_grounds" x="4121.44" y="2053.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-food_factory" class="layer" data-layer="industry-food_factory" inkscape:groupmode="layer" inkscape:label="Industries: food_factory" data-key="food_factory">
+<g class="industry" data-slot="1869" data-key="food_factory" data-model="industries/food_factory/food_factory_sm.mdl" data-x="1840.0" data-y="-4936.0"><circle cx="4144.00" cy="11848.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-food_factory" x="4109.44" y="11813.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2511" data-key="food_factory" data-model="industries/food_factory/food_factory_sm.mdl" data-x="-588.0" data-y="2052.0"><circle cx="1716.00" cy="4860.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-food_factory" x="1681.44" y="4825.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-forest" class="layer" data-layer="industry-forest" inkscape:groupmode="layer" inkscape:label="Industries: forest" data-key="forest">
+<g class="industry" data-slot="811" data-key="forest" data-model="industries/forest/forest_sm.mdl" data-x="-1824.0" data-y="-4316.0"><circle cx="480.00" cy="11228.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-forest" x="445.44" y="11193.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2048" data-key="forest" data-model="industries/forest/forest_sm.mdl" data-x="144.0" data-y="6460.0"><circle cx="2448.00" cy="452.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-forest" x="2413.44" y="417.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2851" data-key="forest" data-model="industries/forest/forest_sm.mdl" data-x="92.0" data-y="-5760.0"><circle cx="2396.00" cy="12672.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-forest" x="2361.44" y="12637.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3421" data-key="forest" data-model="industries/forest/forest_sm.mdl" data-x="1812.0" data-y="-396.0"><circle cx="4116.00" cy="7308.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-forest" x="4081.44" y="7273.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3907" data-key="forest" data-model="industries/forest/forest_sm.mdl" data-x="1796.0" data-y="396.0"><circle cx="4100.00" cy="6516.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-forest" x="4065.44" y="6481.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-furniture_factory" class="layer" data-layer="industry-furniture_factory" inkscape:groupmode="layer" inkscape:label="Industries: furniture_factory" data-key="furniture_factory">
+<g class="industry" data-slot="384" data-key="furniture_factory" data-model="industries/furniture_factory/furniture_factory_sm.mdl" data-x="1560.0" data-y="-4616.0"><circle cx="3864.00" cy="11528.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-furniture_factory" x="3829.44" y="11493.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2390" data-key="furniture_factory" data-model="industries/furniture_factory/furniture_factory_sm.mdl" data-x="-1000.0" data-y="1104.0"><circle cx="1304.00" cy="5808.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-furniture_factory" x="1269.44" y="5773.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-glass_works" class="layer" data-layer="industry-glass_works" inkscape:groupmode="layer" inkscape:label="Industries: glass_works" data-key="glass_works">
+<g class="industry" data-slot="3288" data-key="glass_works" data-model="industries/glass_works/glass_works_sm.mdl" data-x="300.0" data-y="-1384.0"><circle cx="2604.00" cy="8296.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-glass_works" x="2569.44" y="8261.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-iron_ore_mine" class="layer" data-layer="industry-iron_ore_mine" inkscape:groupmode="layer" inkscape:label="Industries: iron_ore_mine" data-key="iron_ore_mine">
+<g class="industry" data-slot="2147" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="448.0" data-y="-568.0"><circle cx="2752.00" cy="7480.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="2717.44" y="7445.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2570" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="-1356.0" data-y="5268.0"><circle cx="948.00" cy="1644.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="913.44" y="1609.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2635" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="-1172.0" data-y="-800.0"><circle cx="1132.00" cy="7712.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="1097.44" y="7677.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2672" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="-148.0" data-y="-3280.0"><circle cx="2156.00" cy="10192.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="2121.44" y="10157.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2755" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="1372.0" data-y="-3148.0"><circle cx="3676.00" cy="10060.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="3641.44" y="10025.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3047" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="-316.0" data-y="-796.0"><circle cx="1988.00" cy="7708.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="1953.44" y="7673.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3152" data-key="iron_ore_mine" data-model="industries/iron_ore_mine/iron_ore_mine_sm.mdl" data-x="748.0" data-y="-3200.0"><circle cx="3052.00" cy="10112.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-iron_ore_mine" x="3017.44" y="10077.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-livestock_farm" class="layer" data-layer="industry-livestock_farm" inkscape:groupmode="layer" inkscape:label="Industries: livestock_farm" data-key="livestock_farm">
+<g class="industry" data-slot="659" data-key="livestock_farm" data-model="industries/livestock_farm/livestock_farm_sm.mdl" data-x="-348.0" data-y="2740.0"><circle cx="1956.00" cy="4172.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-livestock_farm" x="1921.44" y="4137.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2029" data-key="livestock_farm" data-model="industries/livestock_farm/livestock_farm_sm.mdl" data-x="1612.0" data-y="6228.0"><circle cx="3916.00" cy="684.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-livestock_farm" x="3881.44" y="649.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4167" data-key="livestock_farm" data-model="industries/livestock_farm/livestock_farm_sm.mdl" data-x="-368.0" data-y="1668.0"><circle cx="1936.00" cy="5244.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-livestock_farm" x="1901.44" y="5209.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4690" data-key="livestock_farm" data-model="industries/livestock_farm/livestock_farm_sm.mdl" data-x="-1636.0" data-y="816.0"><circle cx="668.00" cy="6096.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-livestock_farm" x="633.44" y="6061.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-machine_factory" class="layer" data-layer="industry-machine_factory" inkscape:groupmode="layer" inkscape:label="Industries: machine_factory" data-key="machine_factory">
+<g class="industry" data-slot="1529" data-key="machine_factory" data-model="industries/machine_factory/machine_factory_sm.mdl" data-x="32.0" data-y="-6368.0"><circle cx="2336.00" cy="13280.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-machine_factory" x="2301.44" y="13245.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-oil_platform" class="layer" data-layer="industry-oil_platform" inkscape:groupmode="layer" inkscape:label="Industries: oil_platform" data-key="oil_platform">
+<g class="industry" data-slot="4187" data-key="oil_platform" data-model="industries/oil_platform/oil_platform_sm.mdl" data-x="1224.0" data-y="5168.0"><circle cx="3528.00" cy="1744.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_platform" x="3493.44" y="1709.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4739" data-key="oil_platform" data-model="industries/oil_platform/oil_platform_sm.mdl" data-x="1884.0" data-y="4112.0"><circle cx="4188.00" cy="2800.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_platform" x="4153.44" y="2765.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="5046" data-key="oil_platform" data-model="industries/oil_platform/oil_platform_sm.mdl" data-x="-1852.0" data-y="6188.0"><circle cx="452.00" cy="724.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_platform" x="417.44" y="689.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-oil_refinery" class="layer" data-layer="industry-oil_refinery" inkscape:groupmode="layer" inkscape:label="Industries: oil_refinery" data-key="oil_refinery">
+<g class="industry" data-slot="125" data-key="oil_refinery" data-model="industries/oil_refinery/oil_refinery_sm.mdl" data-x="1492.0" data-y="2928.0"><circle cx="3796.00" cy="3984.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_refinery" x="3761.44" y="3949.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="228" data-key="oil_refinery" data-model="industries/oil_refinery/oil_refinery_sm.mdl" data-x="680.0" data-y="-4884.0"><circle cx="2984.00" cy="11796.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_refinery" x="2949.44" y="11761.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-oil_well" class="layer" data-layer="industry-oil_well" inkscape:groupmode="layer" inkscape:label="Industries: oil_well" data-key="oil_well">
+<g class="industry" data-slot="611" data-key="oil_well" data-model="industries/oil_well/oil_well_sm.mdl" data-x="1336.0" data-y="-6484.0"><circle cx="3640.00" cy="13396.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_well" x="3605.44" y="13361.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1357" data-key="oil_well" data-model="industries/oil_well/oil_well_sm.mdl" data-x="680.0" data-y="3304.0"><circle cx="2984.00" cy="3608.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_well" x="2949.44" y="3573.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3015" data-key="oil_well" data-model="industries/oil_well/oil_well_sm.mdl" data-x="644.0" data-y="2892.0"><circle cx="2948.00" cy="4020.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-oil_well" x="2913.44" y="3985.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-paper_mill" class="layer" data-layer="industry-paper_mill" inkscape:groupmode="layer" inkscape:label="Industries: paper_mill" data-key="paper_mill">
+<g class="industry" data-slot="5080" data-key="paper_mill" data-model="industries/paper_mill/paper_mill_sm.mdl" data-x="-1412.0" data-y="2324.0"><circle cx="892.00" cy="4588.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-paper_mill" x="857.44" y="4553.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-printing_press" class="layer" data-layer="industry-printing_press" inkscape:groupmode="layer" inkscape:label="Industries: printing_press" data-key="printing_press">
+<g class="industry" data-slot="1244" data-key="printing_press" data-model="industries/printing_press/printing_press_sm.mdl" data-x="-1404.0" data-y="1084.0"><circle cx="900.00" cy="5828.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-printing_press" x="865.44" y="5793.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-quarry" class="layer" data-layer="industry-quarry" inkscape:groupmode="layer" inkscape:label="Industries: quarry" data-key="quarry">
+<g class="industry" data-slot="504" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-296.0" data-y="-5396.0"><circle cx="2008.00" cy="12308.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="1973.44" y="12273.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="576" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-768.0" data-y="-5440.0"><circle cx="1536.00" cy="12352.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="1501.44" y="12317.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1023" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-440.0" data-y="-6512.0"><circle cx="1864.00" cy="13424.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="1829.44" y="13389.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1048" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-1264.0" data-y="-6512.0"><circle cx="1040.00" cy="13424.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="1005.44" y="13389.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2088" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="1836.0" data-y="-2932.0"><circle cx="4140.00" cy="9844.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="4105.44" y="9809.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="2832" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-1276.0" data-y="-5628.0"><circle cx="1028.00" cy="12540.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="993.44" y="12505.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3261" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-1804.0" data-y="-5492.0"><circle cx="500.00" cy="12404.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="465.44" y="12369.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4769" data-key="quarry" data-model="industries/quarry/quarry_sm.mdl" data-x="-1720.0" data-y="-5004.0"><circle cx="584.00" cy="11916.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-quarry" x="549.44" y="11881.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-saw_mill" class="layer" data-layer="industry-saw_mill" inkscape:groupmode="layer" inkscape:label="Industries: saw_mill" data-key="saw_mill">
+<g class="industry" data-slot="430" data-key="saw_mill" data-model="industries/saw_mill/saw_mill_sm.mdl" data-x="-1856.0" data-y="536.0"><circle cx="448.00" cy="6376.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-saw_mill" x="413.44" y="6341.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="1078" data-key="saw_mill" data-model="industries/saw_mill/saw_mill_sm.mdl" data-x="-1848.0" data-y="2116.0"><circle cx="456.00" cy="4796.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-saw_mill" x="421.44" y="4761.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-steel_mill" class="layer" data-layer="industry-steel_mill" inkscape:groupmode="layer" inkscape:label="Industries: steel_mill" data-key="steel_mill">
+<g class="industry" data-slot="2918" data-key="steel_mill" data-model="industries/steel_mill/steel_mill_sm.mdl" data-x="748.0" data-y="-6480.0"><circle cx="3052.00" cy="13392.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-steel_mill" x="3017.44" y="13357.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="4396" data-key="steel_mill" data-model="industries/steel_mill/steel_mill_sm.mdl" data-x="-28.0" data-y="-1844.0"><circle cx="2276.00" cy="8756.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-steel_mill" x="2241.44" y="8721.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-textile_factory" class="layer" data-layer="industry-textile_factory" inkscape:groupmode="layer" inkscape:label="Industries: textile_factory" data-key="textile_factory">
+<g class="industry" data-slot="1824" data-key="textile_factory" data-model="industries/textile_factory/textile_factory_sm.mdl" data-x="1552.0" data-y="-6052.0"><circle cx="3856.00" cy="12964.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-textile_factory" x="3821.44" y="12929.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3181" data-key="textile_factory" data-model="industries/textile_factory/textile_factory_sm.mdl" data-x="-292.0" data-y="-4260.0"><circle cx="2012.00" cy="11172.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-textile_factory" x="1977.44" y="11137.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-vehicle_factory" class="layer" data-layer="industry-vehicle_factory" inkscape:groupmode="layer" inkscape:label="Industries: vehicle_factory" data-key="vehicle_factory">
+<g class="industry" data-slot="4211" data-key="vehicle_factory" data-model="industries/vehicle_factory/vehicle_factory_sm.mdl" data-x="1764.0" data-y="-1980.0"><circle cx="4068.00" cy="8892.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-vehicle_factory" x="4033.44" y="8857.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+<g id="industry-weaving_mill" class="layer" data-layer="industry-weaving_mill" inkscape:groupmode="layer" inkscape:label="Industries: weaving_mill" data-key="weaving_mill">
+<g class="industry" data-slot="175" data-key="weaving_mill" data-model="industries/weaving_mill/weaving_mill_sm.mdl" data-x="-8.0" data-y="-4784.0"><circle cx="2296.00" cy="11696.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-weaving_mill" x="2261.44" y="11661.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+<g class="industry" data-slot="3644" data-key="weaving_mill" data-model="industries/weaving_mill/weaving_mill_sm.mdl" data-x="-1272.0" data-y="-3856.0"><circle cx="1032.00" cy="10768.00" r="46.50" fill="#ffffff" stroke="#8c8c8c" stroke-width="3"/>
+<use xlink:href="#industry-icon-weaving_mill" x="997.44" y="10733.44" width="69.12" height="69.12" color="#3a3a3a"/>
+</g>
+</g>
+</g>
 <g id="compass" class="layer" data-layer="compass" inkscape:groupmode="layer" inkscape:label="Compass rose" transform="scale(0.125)">
 <circle cx="143.8" cy="13688.2" r="125.0" fill="#ffffff" stroke="#000000" stroke-width="3.75"/>
 <path d="M143.8 13688.2L143.8 13595.4M143.8 13688.2L143.8 13734.7M143.8 13688.2L190.2 13688.2M143.8 13688.2L97.3 13688.2" stroke="#000000" stroke-width="8.04" fill="none"/>
