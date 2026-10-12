@@ -48,7 +48,7 @@ from tf3save import decompress  # noqa: E402
 # A lookahead, so a match does not use up the bytes of the next record's own `.street`.
 _START = re.compile(rb"\.street(?=(....)(....)(.{12})(.{12})(.{12})(.{12}))", re.S)
 _TEMPLATE = re.compile(rb"([\x20-\x80])\x00\x00\x00(infrastructure/(?:street|track)/[A-Za-z0-9_/]+)\.street_template")
-SEARCH_LIMIT = 16 << 20       # the table sits in the first few MB of the stream
+CLUSTER_GAP = 1 << 20         # records less than this far apart belong to one table
 TEMPLATE_WINDOW = 800         # the type string follows the lane data within this many bytes
 MAX_ID = 1 << 24
 MAX_X, MAX_Y = 40000.0, 60000.0
@@ -85,8 +85,7 @@ def read_edges(data):
     `street/town/town_old_small`; None with the type) and `offset` (of the record's first node id
     in the stream)."""
     out = []
-    end = min(len(data), SEARCH_LIMIT)
-    for m in _START.finditer(data, 0, end):
+    for m in _START.finditer(data):
         a, b = struct.unpack("<II", m.group(1) + m.group(2))
         p0, p1, t0, t1 = (_vec3(m.group(i)) for i in range(3, 7))
         if not _plausible(a, b, p0, p1, t0, t1):
@@ -101,7 +100,21 @@ def read_edges(data):
                 break
         out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t, "family": family, "template": template,
                     "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
-    return out
+    return _largest_cluster(out)
+
+
+def _largest_cluster(edges):
+    """The table is one run of records; a stray match far from it (another structure that happens to
+    look like a record) is dropped by keeping only the biggest group of records whose neighbours lie
+    less than CLUSTER_GAP apart."""
+    best = cur = []
+    for e in edges:
+        if cur and e["offset"] - cur[-1]["offset"] >= CLUSTER_GAP:
+            cur = []
+        cur.append(e)
+        if len(cur) > len(best):
+            best = cur
+    return best
 
 
 _STRIP = re.compile(rb"\x41(....)([\x00\x01])....\x04\x00\x00\x00\x04\x00\x00\x00(.{8})", re.S)
@@ -123,7 +136,7 @@ def read_strips(data):
     return out
 
 
-TAIL = 1_000_000              # the free-id list sits in the last megabyte of the stream
+TAIL = 4_000_000              # the free-id list sits within the last few megabytes (1 to 1.5 MB from the end in a 900 MB stream)
 FREE_MIN_RUN = 1000           # shortest ascending run taken for the list's sorted part
 FREE_MAX_ID = 1_000_000       # an id is below this; the words after the list are not
 
@@ -131,7 +144,7 @@ FREE_MAX_ID = 1_000_000       # an id is below this; the words after the list ar
 def read_free_ids(data):
     """The free-id list (docs/town-leftovers.md) as a set, or None if it is not found. It is a
     vec<u32> near the end of the stream: a head of small ascending groups and then one long
-    ascending run. The run is the longest ascending stretch of small values in the last megabyte
+    ascending run. The run is the longest ascending stretch of small values in the stream's last TAIL bytes
     (at any 4-byte alignment); the count word is the one before the list that reaches the run's end.
     A node or edge id in it belongs to an entity the game no longer has."""
     tail = data[-TAIL:]

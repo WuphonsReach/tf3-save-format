@@ -4,7 +4,7 @@ The street-edge table (one record per road segment, with its two end nodes, thei
 
 ## The street-edge table
 
-**Observed, 604, eleven saves of one map.** About 1.6 MB into the stream (0.9 MB after the header), after the model and resource name tables, there is a run of records, one per road edge. Each ends with the edge's street type as text, so the run shows up as a repeated string `infrastructure/street/<folder>/<type>.street_template`. A record, all little-endian:
+**Observed, 604, eleven saves of one map.** About 1.6 MB into the stream (0.9 MB after the header), after the model and resource name tables, there is a run of records, one per road edge. Each ends with the edge's street type as text, so the run shows up as a repeated string `infrastructure/street/<folder>/<type>.street_template`. **Observed, 604:** its offset grows with the save (14.4 to 19.3 MB, 21,154 records, in a 946 MB stream). A record, all little-endian:
 
 | Part | Content |
 |---|---|
