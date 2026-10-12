@@ -145,7 +145,7 @@ def read_free_ids(data):
     """The free-id list (docs/town-leftovers.md) as a set, or None if it is not found. It is a
     vec<u32> near the end of the stream: a head of small ascending groups and then one long
     ascending run. The run is the longest ascending stretch of small values in the stream's last TAIL bytes
-    (at any 4-byte alignment); the count word is the one before the list that reaches the run's end.
+    (at any 4-byte alignment); the count word is the one before the list that reaches the run's end, and a candidate with an id twice is not taken.
     A node or edge id in it belongs to an entity the game no longer has."""
     tail = data[-TAIL:]
     for al in range(4):
@@ -168,7 +168,9 @@ def read_free_ids(data):
             end += 1
         for i in range(max(0, s - 100_000), s):       # the count word: i + 1 + count is the run's end
             if abs(i + 1 + words[i] - end) <= 3 and words[i] > best[0]:
-                return set(words[i + 1:i + 1 + words[i]])
+                ids = set(words[i + 1:i + 1 + words[i]])
+                if len(ids) == words[i]:                  # a free-id list has no id twice
+                    return ids
     return None
 
 
