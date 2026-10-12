@@ -4,7 +4,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 
 | File | Covers |
 |---|---|
-| [container.md](container.md) | zstd framing, writing a save back |
+| [container.md](container.md) | zstd framing, the test for a second compressed layer (none found) with the older games' LZ4-twice forum claims, writing a save back |
 | [header.md](header.md) | Header fields in order, preview image (and a crash save's empty one), the vehicle, ship, station and line counts the load dialog shows, settings |
 | [tf3-save-editor.md](tf3-save-editor.md) | Where these notes read a field differently from tf3-save-editor's FORMAT.md or its reader, and why |
 | [mods.md](mods.md) | What a save records about a mod: the mod list entry, options, switching mods on and off when loading, script states |
@@ -33,6 +33,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [cargo-ids.md](cargo-ids.md) | Cargo type ids: the save's own cargo list (id = position, cargo mods shift the ids), the base-game id table, tiers and weights, starting cargo, the town levels at which the game adds a cargo slot and how it picks the cargo |
 | [town-records.md](town-records.md) | The 78-byte town record: capacities, starting cargo, how to find the records, the floats that follow population, a town gaining a cargo, the Towns tab's population, car and demand columns against the record |
 | [town-buildings.md](town-buildings.md) | The town building record: level, parcels, height, build time, owning town and the Historic Preservation flag; finding and listing the records, what a tick changes, buildings replaced or changing level in play, the town boundary; the `timeBuilt` values (a clock value, 0, all ones) and how they change |
+| [building-construction-paths.md](building-construction-paths.md) | The construction path string kept for each town building: how to find it, how its id ties to the building record, the zone (`res`, `com`, `ind`) and footprint it gives, and where its level disagrees with the record's |
 | [parcels.md](parcels.md) | The parcel table (strips of 8 m cells along town streets: record layout, how to find it, the flag word on each cell and overlaps between edges), what bulldozing a building clears in it (house, commercial building, 1 by 1 plot, with the cells' sizes and which face is the street side), why a building's parcel ids cannot yet be placed in the table, what is not a lot |
 | [building-stocks.md](building-stocks.md) | The stock records of town buildings: the pattern that finds them, cargo id and capacity inside, a constant block between them, a record patch that leaves existing buildings on their old cargo, one town changed in the Editor tab compared stream to stream |
 | [warehouses.md](warehouses.md) | Warehouse construction records: modules, cargo per module, running cost, a full goods space blocking a cargo, the player's slot filter saved as a tag |

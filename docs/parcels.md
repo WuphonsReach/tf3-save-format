@@ -68,7 +68,7 @@ The `parcels` list of a building record ([town-buildings.md](town-buildings.md#t
 ## Open
 
 - **Which table position a parcel id is,** for all runs. A direct test is a deletion on a normal 22-parcel run beside a building whose record can be named, or a game where the town developer builds a single building between two saves.
-- **Zone type per parcel** (residential, commercial, industrial): nothing stores it with a parcel, and the polygon names can not be paired with a record yet.
+- **Zone type per parcel** (residential, commercial, industrial): nothing stores it with a parcel. A building's zone is in its construction path ([town-buildings.md](building-construction-paths.md#the-zone-and-footprint-from-the-construction-path-604)), and a record names its parcels, so a built parcel's zone follows from that; an unbuilt parcel has none. The polygon names can still not be paired with a record.
 - **What the second flag bit (`Parcel`) clears with,** and whether overlapped cells ever clear together.
 - **What `tail` is** (8 or 7) and what chooses it, and whether `left` 1 is the left side of the edge as the API says. One edge was checked.
 - **Whether a deleted road removes parcels,** and what a town does with parcels of a deleted building (the building record staying listed means the developer's own bookkeeping was not tested).
