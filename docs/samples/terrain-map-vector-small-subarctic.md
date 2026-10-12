@@ -5,3 +5,5 @@
 The dashed circles are each building's maintenance catchment: the radius is the one in the building's script in the game install, not a value read from the save; two trucks 319 m and 504 m from one building were listed under it as the 600 m circle says, and the edge itself is untested ([models.md](../models.md#road-maintenance-buildings-and-depots-origin-facing-footprint-and-coverage)).
 
 Made with `terrain_map.py OUT_DIR SAVE.sav --depots --coverage` and no other options, at commit `dfcbbb3`. What each option and layer does is in [tools/README.md](../../tools/README.md) and the script's docstring; how the terrain and heightmap are read is in [terrain.md](../terrain.md#drawing-the-map), and the compass rose and `--north` in [compass.md](../compass.md).
+
+![The Small subarctic map: height bands, water, roads and rails, depots with coverage circles and a compass rose](terrain-map-vector-small-subarctic.svg)
