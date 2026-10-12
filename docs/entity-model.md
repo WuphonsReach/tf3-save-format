@@ -17,16 +17,20 @@ Each point is a result in its home note, not a new finding:
 - A new signal is thin: its id is in the edge record and in few other places, and one id occurs in about ten places in all ([signals.md](signals.md)).
 - No table of live entities was found ([town-leftovers.md](town-leftovers.md#no-other-table-holds-the-live-ids)). A dump of per-component tables would not need one.
 
-## A second table follows the parcel table (604, Observed, one game)
+## A count and a per-building run follow the parcel table (604, Observed, one game)
 
-Directly after the last parcel record there is another `u32` count, then records of a different shape. The parcel table was read in 111 saves of the [Small subarctic game](test-games.md#small-subarctic-game), from the first save to the last of the parcel tests:
+Directly after the last parcel record there is a `u32` that equals the parcel count, then a run of 8-word units, one for each town building. The parcel table was read in 111 saves of the [Small subarctic game](test-games.md#small-subarctic-game), from the first save to the last of the parcel tests:
 
 - **The count equals the parcel count** in 93 saves, while the parcel table grew from 2,543 to 5,522. In the last 14 saves, where the parcel table is 7,061 to 7,327, it is 62 higher (7,061 gives 7,123 and 7,327 gives 7,389), and the extra 62 does not change.
-- **The records are not parcel records.** They hold small integers, a float and, in some, one extra number in the range of the parcel ids (about 19,000 to 40,000 in the late saves). The layout is not worked out.
-- **No array of entity ids stands beside the parcel table.** The words just before its count are the tail of the name table and a few zeros; the count of the second table follows the last parcel record at once.
+- **The run is not that long.** In four saves the run was 422, 501, 1,023 and 1,418 units against 2,543, 3,128, 5,522 and 7,327 parcels, so it follows the number of buildings, not the count in front of it. What the count counts is **Open**.
+- **A unit is 8 `u32` words** and ends in the float 1.0 (`3f 80 00 00`): `w0 w1 size 1 id w5 0 1.0f`. The `id` is the first id (`a`) of a building record ([town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)) for 1,329 of the 1,330 such units in the late save, and the units run in the order of the records (1,049 of 1,329 steps go to the next record; the rest are small moves). So the units are per-building data kept apart from the building records.
+- **Fields.** `w0` is 0 or 1 (78 ones), `w1` is 0, 1 or 2, `size` takes 15 values from 1 to 64 (3 and 1 the most common), the word before the id is always 1, `w5` is 2 (14 times 3) and the word before the float always 0. `w0` and `w1` are not the record's flag byte or its town. `size` is not the record's depth or its parcel count. `w5` is not the record's level (3 occurs only on level 2 records). `w1` with its three values may be the zone (0, 1, 2 against the API's `LandUseType` 1 to 3, which would make 1 commercial): the one commercial building looked up (the Historic Preservation test building of [town-buildings.md](town-buildings.md)) reads `w1` = 1, and nothing else was checked, so **Open**.
+- **Other units.** 88 units in the late save are a different shape, `2 20 0 0 2.0f 2 0 1`, with no id and no pattern in which building they stand beside (**Open**). One unit with the same shape as the building units carries an id (40,918) no building record has.
+- **After the run** a different structure starts, with a short list of small numbers and a long run of one repeated town entity id.
+- **No array of entity ids stands beside the parcel table.** The words just before its count are the tail of the name table and a few zeros.
 - **Four saves between the two groups have no parcel table the parser accepts** (the four before the first 62-higher save). Why is not known.
 
-So the stream keeps per-parcel data in two tables of equal length, written one after the other. That fits one table per component, but a parcel's own entity id is in neither (see [parcels.md](parcels.md#parcel-ids-and-the-building-records)), so the tables are addressed by position. Whether position is the link between them is not tested.
+This does not show a table of equal length per parcel, which an earlier reading of the equal counts suggested. The stream does keep a per-building list apart from the building records, linked by the building's first id, which is not how a record-per-object layout would look but fits data split by component. A parcel's own entity id is in neither table (see [parcels.md](parcels.md#parcel-ids-and-the-building-records)).
 
 ## Open
 
