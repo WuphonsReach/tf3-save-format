@@ -8,6 +8,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [header.md](header.md) | Header fields in order, preview image (and a crash save's empty one), the vehicle, ship, station and line counts the load dialog shows, settings |
 | [tf3-save-editor.md](tf3-save-editor.md) | Where these notes read a field differently from tf3-save-editor's FORMAT.md or its reader, and why |
 | [mods.md](mods.md) | What a save records about a mod: the mod list entry, options, switching mods on and off when loading, script states |
+| [map-sizes.md](map-sizes.md) | Map Size and Map Format against the real width and height: each size is a set area and the format only changes its shape (table of all sizes seen), the Tiny minimum, catalog saves whose stored settings disagree with their size, how file size follows the area class |
 | [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log |
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
 | [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |
