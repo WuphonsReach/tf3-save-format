@@ -3,9 +3,14 @@
 
 Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
 
-Reads only. For every save it writes OUT_DIR/<id>-<name>/tf3-save-summary.json
+Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
-OUT_DIR/index.csv from every summary there. A summary.json left by an older
+OUT_DIR/index.csv from every summary there. <seed> is the map seed from the header and <c>
+its first character, so OUT_DIR holds few folders and the saves of one game (and the editor
+maps made from the same seed) sit together. A save without a seed (truncated, or a format
+that has none) goes to OUT_DIR/_noseed/<id>-<name>. A summary found in another place (an
+older flat layout, or after a changed seed) is moved, not read again; a run with no save
+arguments moves every summary and rewrites index.csv. A summary.json left by an older
 version in the same folder is removed. A SAVE_OR_MODDIR can be a
 .sav or a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/
 folder holds one. A map-editor map (maps/) is written to <id>-<name>-map, so a
@@ -49,6 +54,7 @@ import csv
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 
@@ -216,7 +222,7 @@ FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", 
           "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
-INDEX_COLS = ["mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
+INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
               "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "tools_commit"]
 
@@ -279,10 +285,10 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
 def index_row(sm):
     tr = sm.get("town_records") or {}
     if sm.get("error"):
-        return ([sm["mod_id"], sm["name"], sm["author"]] + [""] * 11 + ["error", sm.get("kind", "savegame")]
-                + [""] * 4 + [sm.get("tools_commit")])
+        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 11
+                + ["error", sm.get("kind", "savegame")] + [""] * 4 + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
-    return [sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
+    return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
             sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
             len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
@@ -309,6 +315,52 @@ def up_to_date(d, path, commit):
         return False
 
 
+def seed_parts(seed):
+    """Folders under OUT_DIR for a map seed: (first character, seed), or ("_noseed",) without one."""
+    seed = re.sub(r"[^A-Za-z0-9]", "_", seed or "")
+    return (seed[0], seed) if seed else ("_noseed",)
+
+
+def summary_dirs(out_dir):
+    """Folders under out_dir that hold a summary, by leaf name, in any layout this script has written."""
+    found = {}
+    for top in os.listdir(out_dir):
+        t = os.path.join(out_dir, top)
+        if not os.path.isdir(t):
+            continue
+        if os.path.isfile(os.path.join(t, SUMMARY_FILE)):  # flat layout
+            found[top] = t
+            continue
+        for mid in os.listdir(t):
+            m = os.path.join(t, mid)
+            if os.path.isfile(os.path.join(m, SUMMARY_FILE)):  # _noseed/<leaf>
+                found[mid] = m
+            elif os.path.isdir(m):
+                for leaf in os.listdir(m):
+                    if os.path.isfile(os.path.join(m, leaf, SUMMARY_FILE)):
+                        found[leaf] = os.path.join(m, leaf)
+    return found
+
+
+def place(out_dir, leaf, seed):
+    return os.path.join(out_dir, *seed_parts(seed), leaf)
+
+
+def move_to(old, new):
+    """Move a summary folder, then remove the seed folders it emptied."""
+    if os.path.abspath(old) == os.path.abspath(new):
+        return
+    os.makedirs(os.path.dirname(new), exist_ok=True)
+    shutil.move(old, new)
+    up = os.path.dirname(old)
+    for _ in range(2):
+        try:
+            os.rmdir(up)
+        except OSError:
+            break
+        up = os.path.dirname(up)
+
+
 def main():
     out_dir, args = sys.argv[1], sys.argv[2:]
     os.makedirs(out_dir, exist_ok=True)
@@ -318,14 +370,27 @@ def main():
         for path, mod_id, mods_dir, kind in find_saves(arg):
             profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
             name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
-            d = os.path.join(out_dir, f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else ""))
-            sp = os.path.join(d, SUMMARY_FILE)
-            if os.path.isfile(sp) and up_to_date(d, path, commit):
-                skipped += 1
-                continue
+            leaf = f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else "")
+            d = summary_dirs(out_dir).get(leaf)
+            if d:
+                try:
+                    seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
+                except (OSError, ValueError):
+                    seed = None
+                new = place(out_dir, leaf, seed)
+                move_to(d, new)
+                d = new
+                if up_to_date(d, path, commit):
+                    skipped += 1
+                    continue
             print("reading", os.path.basename(path), file=sys.stderr)
             summary = summarise_save(path, mod_id, mods_dir, kind)
+            new = place(out_dir, leaf, summary["map_seed"])
+            if d:
+                move_to(d, new)
+            d = new
             os.makedirs(d, exist_ok=True)
+            sp = os.path.join(d, SUMMARY_FILE)
             with open(sp, "w", encoding="utf-8") as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
                 f.write("\n")
@@ -342,11 +407,13 @@ def main():
                 done += 1
                 with open(state, "w", encoding="utf-8") as f:
                     json.dump(file_key(path, summary["tools_commit"]), f)
+    if not args:  # alone at the end of a run: put every summary where its seed says
+        for leaf, d in summary_dirs(out_dir).items():
+            seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
+            move_to(d, place(out_dir, leaf, seed))
     rows = []
-    for sub in sorted(os.listdir(out_dir)):
-        sp = os.path.join(out_dir, sub, SUMMARY_FILE)
-        if os.path.isfile(sp):
-            rows.append(index_row(json.load(open(sp, encoding="utf-8"))))
+    for d in sorted(summary_dirs(out_dir).values(), key=lambda d: os.path.relpath(d, out_dir)):
+        rows.append(index_row(json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8"))))
     idx = os.path.join(out_dir, "index.csv")
     with open(idx, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
