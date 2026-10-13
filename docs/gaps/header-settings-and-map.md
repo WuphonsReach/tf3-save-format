@@ -18,7 +18,6 @@ Format of an entry: see [README.md](README.md).
 
 - **Whether setting changes act in play** (604) For example on buildings that already exist. See also [vehicles-and-costs.md](vehicles-and-costs.md#running-costs-and-upkeep). Home: [settings.md](../settings.md#open). Needs: new save.
 - **Whether a loaded save stays byte for byte as it was** (604) The first test save was not hashed before its load. Home: [settings.md](../settings.md#open). Needs: new save (hash first, load, hash the same file again).
-- **Where "Achievements cannot be earned" is kept, if at all** (604) Suggested: diff the script states of a New Game save against one loaded with six options changed. Home: [settings.md](../settings.md#open). Needs: existing saves.
 - **What `sensitivityUrbanCare`, `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen** (604) `sensitivityUrbanCare` is the unverified pairing for the Reputation toggle. Home: [settings.md](../settings.md#open). Needs: new save with the toggle changed.
 - **Whether the other presets change the sliders at 100%** (604) Population, passenger and cargo income stayed at 100% across all four presets, and only Easy moved them. Home: [settings.md](../settings.md). Needs: game window.
 - **A mod with options removed on load** (604) Whether the options go with it. Home: [mods.md](../mods.md#open). Needs: new save.

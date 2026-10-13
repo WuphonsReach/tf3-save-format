@@ -44,6 +44,15 @@ The Load Game screen has a Mods tab next to the Settings tab described in [setti
 
 **Switching a mod off.** **Confirmed** on 604, one load: on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. Whether a mod that has options loses them (the params table) the same way was not tested, as these two mods had none.
 
+**Two loads of one 14-mod save (Observed, 604, a Giant subarctic save).** The Mods tab shows one card per mod, each with an `Activated` button and a gear button beside it, plus Mod Hub, Save Preset, Load Preset, Disable All Mods and a heading that gains an asterisk (`Mods (13) *`) once the list is changed.
+
+- **First load.** Mods were deactivated with the gear icon, and the game was saved. The new save lists the same 14 mods, with the same flags, config-mods list and params keys, so nothing was deactivated and the game said nothing. Which mods were touched was not recorded.
+- **Second load.** One mod was switched off on the tab (the heading read `Mods (13) *`). The new save has 13 mods: `urbangames_vehicles_no_end_year_1` was gone from the mod list, the config-mods list and the params keys, the order of the rest unchanged, the settings the same, and the header 218 bytes shorter, the same as in the switch-off test above.
+
+- **Third load.** Two more were switched off on the tab (`Mods (11) *`): Early Road Vehicles and Early Trams (`ug_legacy_road_1850`, `ug_legacy_trams_1850`), two vehicle model mods, in a save with no vehicles. The next save has 11 mods, with both gone from the three places, the others in order, the settings unchanged and the achievements flag still 1 (the force mod is still in the list).
+
+So the gear button does not deactivate: it opens the mod's details page, not its settings (the player's report), and the `Activated` button switches the mod off. Removing some mods first shows a warning, and not others: none for `urbangames_vehicles_no_end_year_1`, `ingo_boathouse_asset`, `bobdike_achievements_unbound` or `advanced_track_patterns`, a warning for the `ug_legacy_*` vehicle mods, the Deluxe Upgrade and `stardorn_industry_upgrades`. That matches the `severityRemove` key in each mod's `mod.json` (`None`, `Warning` or `Critical`; the API says a value above 0 raises the message, `api/tealdef/api/type/mod.d.tl`), which was `Warning` in 22 of the 306 manifests read here, `Critical` in one and absent or `None` in the rest. A mod may carry `severityAdd` the same way (`stardorn_industry_upgrades` has `Warning`). The dialog script (`gui/menu/savegame_react_util.tl` in `base/content/gui.zip`) hands the load the save's `info` with only `modParams` replaced by the tab's edited copy, so the deactivation reaches the load through the params table, which loses the mod's key. **Open:** whether a mod with a script state (`advanced_track_patterns`, `stardorn_industry_upgrades`) or with models the save uses (a vehicle or asset on the map) can be switched off the same way; the model mods dropped here had nothing placed.
+
 ## Mod script states and stored errors
 
 A mod with scripts keeps its state in the same layout as the game's scripts: the script's path string, then its table. How to find and read one is in [script-states.md](script-states.md#finding-a-table), and the mod-specific part is [there too](script-states.md#mod-script-states-and-stored-errors): the mod's id sits just before the path, and a mod can keep a Lua error message whose chunk name is a path on the player's machine. That path can hold an account name. Don't copy it into notes; write it as `<path>/mod.io/10640/mods/<id>/...`.
@@ -78,6 +87,7 @@ A new game (604, subarctic, Normal difficulty) with seven mods active, saved at 
 
 ## Open
 
+- Whether mods with a script state, or with models in use on the map, drop out the way the no-option ones did.
 - Whether a deactivated mod with options is dropped together with its options. Only mods with no options were switched on and off.
 - What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
 - Whether mod options follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)).

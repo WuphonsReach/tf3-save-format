@@ -20,9 +20,9 @@ The upstream side was read at its release 0.2.0 (main branch, 2026-10-10). It ma
 
 Upstream's table names the `u8` before the preview's width and height `has preview`, and its reader drops the image when the byte is 0. It also reports an error if the byte is 0 and the width or height is not.
 
-What the saves show (**Observed**, 599 to 604): the byte is 0 in 60 of 120 catalog saves and in 18 of 72 of ours, and a full 640 x 360 image follows in every one of them. It also always equals the `u8` `flag` after `mission, kind`. Neither says anything about the preview, and what the value records is **open**. The evidence is in [header.md](header.md#the-two-flags).
+What the saves show (**Observed**, 599 to 604): the byte is 0 in 60 of 120 catalog saves and in 18 of 72 of ours, and a full 640 x 360 image follows in every one of them. It also always equals the `u8` `flag` after `mission, kind`. Neither says anything about the preview; the value is the save's achievements-earnable state ([header.md](header.md#the-two-flags)).
 
-So the name was a guess that the saves do not support, and it is not used here. These notes call the field "the flag before the preview", which says only where it is. The same goes for `tools/save_header.py`, whose key was `has_preview` and is now `flag_before_preview` (a field with an unknown meaning gets a name that says only where it is). By the source, upstream's reader would not show the preview of the saves whose byte is 0, and it would fail on them with a size error. I did not run it on one, so that is a reading of the code and not a test.
+So the name was a guess that the saves do not support, and it is not used here. These notes still call the field "the flag before the preview", which says only where it is; its meaning is in [header.md](header.md#the-two-flags). The same goes for `tools/save_header.py`, whose key was `has_preview` and is now `flag_before_preview` (a field with an unknown meaning gets a name that says only where it is). By the source, upstream's reader would not show the preview of the saves whose byte is 0, and it would fail on them with a size error. I did not run it on one, so that is a reading of the code and not a test.
 
 ## The preview image
 

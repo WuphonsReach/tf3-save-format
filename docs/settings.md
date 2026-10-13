@@ -102,5 +102,4 @@ The Load Game list shows the loaded save's own values: its Difficulty row read "
 - The questions about mods (a deactivated mod's options, whether mod options follow the position-plus-1 rule) are in [mods.md](mods.md#open).
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
-- Where the "Achievements cannot be earned" state is kept, if it is kept at all.
 - Whether `townConfig.sensitivityUrbanCare` is the Reputation toggle, and what `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
