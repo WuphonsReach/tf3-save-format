@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw a save's terrain as an SVG, with its roads and rails on top.
 
-Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--png | --raster]
+Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--grid-lines auto|none|dots|faint] [--png | --raster]
        [--contour M] [--index N] [--no-bands] [--tolerance M]
        [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--keep-dead] [--depots] [--coverage] [--industries] [--industry-size M] [--stream]
 
@@ -60,12 +60,20 @@ game's own palette.
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
              wide (at least one pixel). The PNG carries the SVG's view record (below) as an `iTXt` chunk `tf3map:view`, a UTF-8
              JSON object with the same names, so a picture says which way north is drawn (`north=game` or `sun`) without its command line.
---grid N     (SVG only) add a `grid` layer: a line at every multiple of N metres of map x and y,
-             labelled `y 4500` along the top (the lines that run up the picture) and `x -3000`
-             along the left (the lines that run across it), so a place seen in the
-             picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
-             Lines at multiples of 1000 are darker and thicker, the others dotted and faint; the
-             lines are one layer under the roads and the labels another over everything.
+--grid N     (SVG only) add a `grid` layer: a small cross where the lines at every multiple of N metres of map x
+             and y would meet (a larger one where two 1000 m lines meet), and a line of dots at each multiple of 1000, labelled `y 4500` along the top (the
+             lines that run up the picture) and `x -3000` along the left (the lines that run across it), so a place
+             seen in the picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
+             The grid is violet, a colour no road, rail or terrain uses, and the crosses keep it from running along
+             the roads. Sublayers `grid-minor` (the crosses) and `grid-major`; the grid is one layer under the roads
+             and the labels another over everything.
+--grid-lines auto|none|dots|faint   with --grid: `auto` (default) draws the crosses and the dotted 1000 m lines, but crosses only on a
+             picture of 1 m per pixel or finer, where a dot is a speck; `none` draws crosses only; `dots` and `faint` also draw the minor
+             lines between the crosses, `dots` (a round dot every
+             `--grid-dot-step` metres, default 25, at least 10 pixels apart and rounded so a whole number fit between two crosses;
+             a small cross's arm is a sixth of the gap, a larger cross's 0.4 of it; the 1000 m lines have twice as many dots; the 1000 m lines are
+             always dots unless `none` or an `auto` close-up, darker than the minor ones; every dot and small cross arm is one pixel wide, a large cross's arm 1.5) or `faint` (a thin
+             solid line).
 --game DIR   the game's install folder. A road or track is drawn as wide as its template's profile (the sum of
              its lanes' `width`, footpaths and shoulders included: a small town street 16 m, a medium one 24 m, a
              track 4 m), read from the install's street and track templates when the script runs (nothing is copied
@@ -545,24 +553,39 @@ def safe_id(text):
     return re.sub(r"[^A-Za-z0-9_-]+", "_", str(text))
 
 
-def grid_layers(size, mpp, fr, step):
-    """The grid as two layers, `grid` (the lines) and `grid-labels` (the coordinates, at the top
-    and left edges, meant to be drawn last so they sit over the network). A line at every
-    multiple of `step` metres in map x and y: those at multiples of 1000 m are darker and
-    thicker, the others dotted and faint. The lines that run up the picture are labelled along the
+GRID_HEX = "#6b3fa0"                                   # violet: no terrain, road or rail colour is near it
+GRID_MIN_DOT_PX = 10                                   # the closest two dots on a dotted line may be, in pixels (a cross is a third to a half of it)
+
+
+def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
+    """The grid as two layers, `grid` (the marks) and `grid-labels` (the coordinates, at the top
+    and left edges, meant to be drawn last so they sit over the network). The `grid` layer has sublayers
+    `grid-minor` (under) and `grid-major` (over). At every multiple of `step` metres in map x and y,
+    where two lines would cross, there is a small cross (`grid-minor`, its arm a sixth of the dot step), or a larger one
+    (`grid-major`, 0.4 of it, just short of the first dot) where both lines are at a multiple of 1000 m, so the grid reads as a set of marks that do not run along the roads. The
+    lines at multiples of 1000 m are dotted, twice as close as the minor dots (unless `lines` is `none`, or `auto` on a picture of 1 m per pixel or finer, where
+    a dot is a speck and the crosses are enough), a round dot every `dot_step` / 2 metres of map x or y (`dot_step` at least
+    `GRID_MIN_DOT_PX` pixels apart, and a whole number of them between two crosses, so
+    the step is nudged to `step / n`), as big as a cross's arm is wide (one pixel) and darker than the minor ones. `lines` is `auto` (the default: those dots and the crosses), `none` (crosses only), or adds the minor lines to the 1000 m dots: `dots`
+    (the same dots) or `faint` (a thin solid line). The lines that run up the
+    picture are labelled along the
     top (`game`: constant x, x rising to the right; `sun`: constant y, y falling to the right) and
     those that run across it along the left (`game`: constant y, falling downwards; `sun`: constant x,
     falling downwards). Coordinates inside are metres from the image's top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
     size_t = max(min(7 * mpp, 0.03 * max(w, h)), step * 0.07)   # label size in metres, smaller on a close crop
-    major = 'fill="none" stroke="#000" stroke-opacity="0.6" stroke-width="%g"' % max(mpp, 1.0)
-    minor = ('fill="none" stroke="#000" stroke-opacity="0.3" stroke-width="%g" stroke-dasharray="%g %g"'
-             % (max(0.5 * mpp, 0.5), 2 * mpp, 4 * mpp))
+    ink = 'fill="none" stroke="%s"' % GRID_HEX
+    sw = mpp                                                    # one pixel: the width of a small cross's arm and the diameter of every dot
+    mark = '%s stroke-opacity="0.65" stroke-width="%g"' % (ink, sw)
+    big_mark = '%s stroke-opacity="0.85" stroke-width="%g"' % (ink, 1.5 * sw)
     text = ('font-family="sans-serif" font-size="%g" fill="#000" stroke="#fff" stroke-width="%g"'
             ' paint-order="stroke"' % (size_t, size_t / 5))
     scale = "scale(%g)" % (1.0 / mpp)
-    lines = [layer("grid", "Grid %d m" % step, ' transform="%s" pointer-events="none"' % scale)]
-    labels = [layer("grid-labels", "Grid labels", ' transform="%s" pointer-events="none"' % scale)]
+    dot_step = max(dot_step, GRID_MIN_DOT_PX * mpp)
+    dot_step = step / max(1, round(step / dot_step))            # a whole number of dots between two crosses
+    gap = dot_step / 2                                          # the dots of a 1000 m line are twice as close as the others, so the line reads as a line
+    big_arm = 0.8 * gap                                         # a cross where two 1000 m lines meet stops just short of the first dot,
+    arm = dot_step / 6                                          # a small cross reaches a sixth of the way to the first dot of a minor line
     x_min, x_max, y_min, y_max = fr.box(size, mpp)
     if fr.kind == "sun":
         up_axis, (lo, hi) = "y", (y_min, y_max)
@@ -572,16 +595,58 @@ def grid_layers(size, mpp, fr, step):
     ups = list(range(first, int(math.floor(hi)) + 1, step))
     if fr.kind == "sun":
         ups.reverse()                                       # y falls to the right
-    for val in ups:
-        px = fr.pic(0, val)[0] if up_axis == "y" else fr.pic(val, 0)[0]
-        lines.append('<path d="M%g 0V%g" %s/>' % (px, h, major if val % 1000 == 0 else minor))
-        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, up_axis, val))
     across_axis, (lo, hi) = ("x", (x_min, x_max)) if fr.kind == "sun" else ("y", (y_min, y_max))
-    for val in range(int(math.floor(hi) // step) * step, int(math.ceil(lo)) - 1, -step):
-        py = fr.pic(val, 0)[1] if across_axis == "x" else fr.pic(0, val)[1]
-        lines.append('<path d="M0 %gH%g" %s/>' % (py, w, major if val % 1000 == 0 else minor))
+    acrosses = list(range(int(math.floor(hi) // step) * step, int(math.ceil(lo)) - 1, -step))
+    # where a line's map coordinate, counted along it from the picture's top or left edge, runs: the dots sit at
+    # multiples of dot_step in map metres, so the dots of crossing lines meet at the crosses
+    up_start = x_max if fr.kind == "sun" else y_max           # map coordinate at the top edge, falling downwards
+    across_start = y_max if fr.kind == "sun" else x_min        # at the left edge, falling (sun) or rising (game) to the right
+    across_sign = -1 if fr.kind == "sun" else 1
+    up_offset = (-up_start) % dot_step
+    across_offset = (-across_start) % dot_step if across_sign < 0 else across_start % dot_step
+    up_offset_major = (-up_start) % gap
+    across_offset_major = (-across_start) % gap if across_sign < 0 else across_start % gap
+    dash = 'stroke-linecap="round" stroke-dasharray="0 %g"' % dot_step
+    dots = '%s stroke-opacity="0.65" stroke-width="%g" %s' % (ink, sw, dash)
+    big_dots = ('%s stroke-opacity="0.85" stroke-width="%g" stroke-linecap="round" stroke-dasharray="0 %g"'
+                % (ink, sw, gap))
+    faint = '%s stroke-opacity="0.3" stroke-width="%g"' % (ink, sw)
+    style = {"dots": dots, "faint": faint}.get(lines)
+    dashed = lines == "dots"
+    major_dots = lines != "none" and not (lines == "auto" and mpp <= 1)
+    minor = [layer("grid-minor", "Grid minor")]
+    majors = [layer("grid-major", "Grid major")]
+    labels = [layer("grid-labels", "Grid labels", ' transform="%s" pointer-events="none"' % scale)]
+    crosses, big_crosses = [], []
+    ups_px = [(val, fr.pic(0, val)[0] if up_axis == "y" else fr.pic(val, 0)[0]) for val in ups]
+    across_py = [(val, fr.pic(val, 0)[1] if across_axis == "x" else fr.pic(0, val)[1]) for val in acrosses]
+    for val, px in ups_px:
+        if val % 1000 == 0:
+            if major_dots:
+                majors.append('<path d="M%g 0V%g" %s stroke-dashoffset="%g"/>' % (px, h, big_dots, up_offset_major))
+        elif style:
+            extra = ' stroke-dashoffset="%g"' % up_offset if dashed else ""
+            minor.append('<path d="M%g 0V%g" %s%s/>' % (px, h, style, extra))
+        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, up_axis, val))
+    for val, py in across_py:
+        if val % 1000 == 0:
+            if major_dots:
+                majors.append('<path d="M0 %gH%g" %s stroke-dashoffset="%g"/>' % (py, w, big_dots, across_offset_major))
+        elif style:
+            extra = ' stroke-dashoffset="%g"' % across_offset if dashed else ""
+            minor.append('<path d="M0 %gH%g" %s%s/>' % (py, w, style, extra))
         labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, across_axis, val))
-    return lines + ["</g>"], labels + ["</g>"]
+    for uv, px in ups_px:
+        for av, py in across_py:
+            big = uv % 1000 == 0 and av % 1000 == 0
+            a = big_arm if big else arm
+            (big_crosses if big else crosses).append("M%g %gh%gM%g %gv%g" % (px - a, py, 2 * a, px, py - a, 2 * a))
+    if crosses:
+        minor.append('<path d="%s" %s/>' % ("".join(crosses), mark))
+    if big_crosses:
+        majors.append('<path d="%s" %s/>' % ("".join(big_crosses), big_mark))
+    group = [layer("grid", "Grid %d m" % step, ' transform="%s" pointer-events="none"' % scale)]
+    return group + minor + ["</g>"] + majors + ["</g>", "</g>"], labels + ["</g>"]
 
 
 META_NS = "urn:tf3-save-format:terrain-map:1"
@@ -947,7 +1012,7 @@ def rose_layer(size, mpp, fr, where="lower-left", diameter=None):
     return out
 
 
-def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None, min_width=0.0, rose=()):
+def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None, min_width=0.0, rose=(), grid_lines="auto", dot_step=25):
     """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
     `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
     street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
@@ -976,7 +1041,7 @@ def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, ov
              '</g>'])
     grid_labels = []
     if grid:                                             # the lines above the terrain, under the network
-        grid_lines, grid_labels = grid_layers(size, mpp, fr, grid)
+        grid_lines, grid_labels = grid_layers(size, mpp, fr, grid, grid_lines, dot_step)
         parts += grid_lines
     parts += under                                       # coverage circles under the network
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
@@ -1018,6 +1083,11 @@ def main():
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--grid", type=int, metavar="N", help="SVG only: a labelled line every N metres of map x and y")
+    ap.add_argument("--grid-lines", choices=("auto", "none", "dots", "faint"), default="auto",
+                    help="SVG only, with --grid: auto (default) crosses and dotted 1000 m lines, but crosses only at 1 m per pixel "
+                    "or finer; none crosses only; dots or faint also draw the minor lines, as sparse dots or faint solid lines")
+    ap.add_argument("--grid-dot-step", type=float, default=25, metavar="M",
+                    help="metres between the dots of --grid-lines dots (default 25, at least %d pixels)" % GRID_MIN_DOT_PX)
     ap.add_argument("--game", help="the game's install folder, for the street and track widths "
                     "(default: the usual Steam places)")
     ap.add_argument("--min-width", type=float, default=0.0, metavar="M", help="SVG only: draw no road or rail "
@@ -1084,6 +1154,11 @@ def main():
         ap.error("--name wants SLOT=TEXT, with a number for the slot")
     if args.grid is not None and (args.grid < 1 or args.png):
         ap.error("--grid wants a step of 1 metre or more, and only works with the SVG")
+    if args.grid_lines != "auto" and not args.grid:
+        ap.error("--grid-lines needs --grid")
+    if args.grid_lines == "dots" and args.grid_dot_step < GRID_MIN_DOT_PX * args.mpp:
+        print("--grid-dot-step %g is under %d pixels at %g m per pixel; dots will be %g m apart"
+              % (args.grid_dot_step, GRID_MIN_DOT_PX, args.mpp, GRID_MIN_DOT_PX * args.mpp))
     crop = None
     if args.crop:
         try:
@@ -1219,7 +1294,8 @@ def main():
             over += industry_layers(args.mpp, fr, industry_rows, args.industry_size)
             open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, args.grid, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
-                                               [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size)))
+                                               [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size),
+                                               args.grid_lines, args.grid_dot_step))
             for i in depot_rows:
                 print("depot slot %-6d %-22s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (i["slot"], short_model(i["model"]), i["x"], i["y"], i["fx"], i["fy"]))
