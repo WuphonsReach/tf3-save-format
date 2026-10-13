@@ -52,7 +52,7 @@ Notes that use it: [compass.md](compass.md), [parcels.md](parcels.md), [finances
 ## Tiny flat editor game
 
 - Seed `tgzZmeqUSM`, tropical climate, economy `tropic` and Asian names, Tiny 1 : 3 (2048 x 6144 m), start year 1900, a map editor save (`isMapEditor` true, money 0, no mods). The ground is flat: `terrain_map.py` drew no height lines or bands at 20 m steps.
-- Three files in `save_maps/`, named `tiny-flat-1x3` (the blank template), `tiny-flat-1x3 1937` (two towns, three industries and a country road drawn) and `tiny-flat-1x3 1938` (four bypasses added to the road); the numbers are part of the names the player gave. What they show is in [editor-saves.md](editor-saves.md#a-blank-template-and-a-road-test).
+- Three files in `save_maps/`, named `tiny-flat-1x3` (the blank template), `tiny-flat-1x3 1937` (two towns, three industries and a country road drawn) and `tiny-flat-1x3 1938` (four bypasses added to the road); the numbers are part of the names the player gave, then saves `1939` to `1962` with a descriptive suffix (a delete, a road, a tree, a farm, a rock, bushes and palms from the tree tool, a brush-painted forest). What they show is in [editor-saves.md](editor-saves.md#a-blank-template-and-a-road-test).
 
 ## Giant temperate editor game
 
