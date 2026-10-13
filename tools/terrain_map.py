@@ -28,7 +28,12 @@ A `<metadata>` element
 (namespace `urn:tf3-save-format:terrain-map:1`, one `view` element with attributes) records the
 save's file name, the map size, the metres per pixel, the map point at the picture's top-left
 corner and the x and y range the picture covers, which way north is drawn (`north`: `game` or `sun`, and a sentence
-saying which way is up, since a compass word such as "north building" points differently in the two), the crop (X, Y, R) if any and the grid step.
+saying which way is up, since a compass word such as "north building" points differently in the two), the crop (X, Y, R) if any and the grid step if `--grid` gave one,
+and which script made it: `generator`, `generator-commit` (the last commit that changed a `tools/*.py`, with `-dirty` added if one has
+uncommitted changes, as in `mine_saves.py`) and `generated-utc` (the time of the run, ISO 8601, to the second).
+A setting left at its default (vector terrain, contour 20, index 5, bands, the default grid, industries, `--grid-lines auto`) is not
+recorded; only a setting changed from it is (`terrain="raster"`, `contour-step`, `index-every`, `tolerance`, `bands="false"`, `grid="off"`,
+`industries="off"`, `grid-lines`).
 The terrain colours are a plain
 height ramp (water below the save's `waterLevel` in blue; hill shading in the raster picture only); they are not the
 game's own palette.
@@ -51,16 +56,20 @@ game's own palette.
              rivers are one shape, since the game carves them below the water level) and `contours` (`contours-minor` and
              `contours-index`, one `<path class="contour" data-height>` per level, the height in metres above the water).
              No hill shading, so the file is hundreds of kilobytes where the raster one is megabytes (the 20 x 41 km
-             Giant map: 0.6 MB without roads, 81 MB raster). The metadata gains `terrain="vector"`, `contour-step`,
-             `index-every`, `tolerance` and `bands`. `--contour M` is the metres between lines and bands (default 20),
+             Giant map: 0.6 MB without roads, 81 MB raster). The metadata gains `contour-step`,
+             `index-every`, `tolerance` and `bands="false"` only when set away from their defaults. `--contour M` is the metres between lines and bands (default 20),
              `--index N` makes every Nth line heavier (default 5), `--no-bands` leaves the fills out, `--tolerance M`
              thins the lines (default 0.4 x `--mpp`). The height lines are half `--mpp` wide, in metres.
 --raster     (SVG only) draw the terrain as the shaded embedded PNG instead (height ramp, hill shading, water), as before
-             the vector terrain existed; the output name ends `-terrain-raster.svg` and the metadata says `terrain="raster"`.
+             the vector terrain existed; the output name ends `-terrain-raster.svg` and the metadata says `terrain="raster"` (a vector picture has no `terrain` attribute).
 --png        write one flat PNG instead of the SVG, with the lines drawn into the pixels about 4 m
              wide (at least one pixel). The PNG carries the SVG's view record (below) as an `iTXt` chunk `tf3map:view`, a UTF-8
              JSON object with the same names, so a picture says which way north is drawn (`north=game` or `sun`) without its command line.
---grid N     (SVG only) add a `grid` layer: a small cross where the lines at every multiple of N metres of map x
+(default grid) with no `--grid`, the SVG gets major marks only: a large cross where two grid lines meet, a line of dots along
+             each, and labels, at a step of a third of the picture's shorter side rounded down to 1, 2 or 5 times a power of ten (a
+             whole map: at least 1000 m, so Tiny and Small 1 km, Medium and Large 2 km, Giant 5 km; a `--crop` has no minimum). No minor
+             marks. `--no-grid` leaves the grid out; a flat `--png` has none.
+--grid N     (SVG only) add minor marks as well, for fine work: a `grid` layer with a small cross where the lines at every multiple of N metres of map x
              and y would meet (a larger one where two 1000 m lines meet), and a line of dots at each multiple of 1000, labelled `y 4500` along the top (the
              lines that run up the picture) and `x -3000` along the left (the lines that run across it), so a place
              seen in the picture can be turned into the coordinates `--crop` wants. The map's centre is 0, 0.
@@ -136,7 +145,7 @@ game's own palette.
              and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
              covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
              maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
---industries (SVG only) add an `industries` layer, a sublayer per industry key (`industry-KEY`), each industry a badge: a white
+--industries (SVG only, the default; `--no-industries` leaves it out) add an `industries` layer, a sublayer per industry key (`industry-KEY`), each industry a badge: a white
              disc with a grey border and the key's icon from tools/icons/industries/ in dark grey, centred on the origin of the
              industry's main model (the one `industry_compass.py` uses). The disc is 96 m across by default, `--industry-size M`
              sets another diameter; the icon, the border and the margin scale with it. The industry's real footprint was not
@@ -160,6 +169,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 """
 import argparse
 import base64
+import datetime
 import glob
 import json
 import math
@@ -557,13 +567,23 @@ GRID_HEX = "#6b3fa0"                                   # violet: no terrain, roa
 GRID_MIN_DOT_PX = 10                                   # the closest two dots on a dotted line may be, in pixels (a cross is a third to a half of it)
 
 
-def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
+def auto_grid_step(short_side, cropped):
+    """The default major grid step in metres: a third of the picture's shorter side (map metres) rounded down to 1, 2 or
+    5 times a power of ten. A whole map is never finer than 1000 m, so the smallest maps get a mark every km."""
+    third = short_side / 3
+    power = 10 ** math.floor(math.log10(third))
+    step = max(m * power for m in (1, 2, 5) if m * power <= third)
+    return step if cropped else max(step, 1000)
+
+
+def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
     """The grid as two layers, `grid` (the marks) and `grid-labels` (the coordinates, at the top
     and left edges, meant to be drawn last so they sit over the network). The `grid` layer has sublayers
     `grid-minor` (under) and `grid-major` (over). At every multiple of `step` metres in map x and y,
     where two lines would cross, there is a small cross (`grid-minor`, its arm a sixth of the dot step), or a larger one
-    (`grid-major`, 0.4 of it, just short of the first dot) where both lines are at a multiple of 1000 m, so the grid reads as a set of marks that do not run along the roads. The
-    lines at multiples of 1000 m are dotted, twice as close as the minor dots (unless `lines` is `none`, or `auto` on a picture of 1 m per pixel or finer, where
+    (`grid-major`, 0.4 of it, just short of the first dot) where both lines are at a multiple of `major` metres (1000, or `step`
+    itself for the default grid, which has no minor marks), so the grid reads as a set of marks that do not run along the roads. The
+    lines at multiples of `major` are dotted, twice as close as the minor dots (unless `lines` is `none`, or `auto` on a picture of 1 m per pixel or finer, where
     a dot is a speck and the crosses are enough), a round dot every `dot_step` / 2 metres of map x or y (`dot_step` at least
     `GRID_MIN_DOT_PX` pixels apart, and a whole number of them between two crosses, so
     the step is nudged to `step / n`), as big as a cross's arm is wide (one pixel) and darker than the minor ones. `lines` is `auto` (the default: those dots and the crosses), `none` (crosses only), or adds the minor lines to the 1000 m dots: `dots`
@@ -573,7 +593,7 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
     those that run across it along the left (`game`: constant y, falling downwards; `sun`: constant x,
     falling downwards). Coordinates inside are metres from the image's top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
-    size_t = max(min(7 * mpp, 0.03 * max(w, h)), step * 0.07)   # label size in metres, smaller on a close crop
+    size_t = max(min(7 * mpp, 0.03 * max(w, h)), min(step * 0.07, 70))   # label size in metres, smaller on a close crop, no bigger for a wide step
     ink = 'fill="none" stroke="%s"' % GRID_HEX
     sw = mpp                                                    # one pixel: the width of a small cross's arm and the diameter of every dot
     mark = '%s stroke-opacity="0.65" stroke-width="%g"' % (ink, sw)
@@ -621,7 +641,7 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
     ups_px = [(val, fr.pic(0, val)[0] if up_axis == "y" else fr.pic(val, 0)[0]) for val in ups]
     across_py = [(val, fr.pic(val, 0)[1] if across_axis == "x" else fr.pic(0, val)[1]) for val in acrosses]
     for val, px in ups_px:
-        if val % 1000 == 0:
+        if val % major == 0:
             if major_dots:
                 majors.append('<path d="M%g 0V%g" %s stroke-dashoffset="%g"/>' % (px, h, big_dots, up_offset_major))
         elif style:
@@ -629,7 +649,7 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
             minor.append('<path d="M%g 0V%g" %s%s/>' % (px, h, style, extra))
         labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, up_axis, val))
     for val, py in across_py:
-        if val % 1000 == 0:
+        if val % major == 0:
             if major_dots:
                 majors.append('<path d="M0 %gH%g" %s stroke-dashoffset="%g"/>' % (py, w, big_dots, across_offset_major))
         elif style:
@@ -638,7 +658,7 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
         labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, across_axis, val))
     for uv, px in ups_px:
         for av, py in across_py:
-            big = uv % 1000 == 0 and av % 1000 == 0
+            big = uv % major == 0 and av % major == 0
             a = big_arm if big else arm
             (big_crosses if big else crosses).append("M%g %gh%gM%g %gv%g" % (px - a, py, 2 * a, px, py - a, 2 * a))
     if crosses:
@@ -650,6 +670,15 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25):
 
 
 META_NS = "urn:tf3-save-format:terrain-map:1"
+
+
+def generator_attrs():
+    """[(name, value)] saying which script run made the picture: the script, the commit of `tools/` it ran from (None
+    outside a git checkout, so the attribute is left out) and the UTC time, so a map can be told from one made by an older
+    version of the drawing."""
+    from mine_saves import tools_commit
+    return [("generator", "terrain_map.py"), ("generator-commit", tools_commit()),
+            ("generated-utc", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))]
 
 
 def view_attrs(size, mpp, fr, map_size, crop=None, grid=None, source=None, extra=()):
@@ -666,12 +695,11 @@ def view_attrs(size, mpp, fr, map_size, crop=None, grid=None, source=None, extra
              ("x-min", "%g" % x_min), ("x-max", "%g" % x_max), ("y-min", "%g" % y_min), ("y-max", "%g" % y_max)]
     if fr.kind == "sun":
         attrs += [("x-top", "%g" % x_max), ("y-left", "%g" % y_max)]
-    attrs.append(("cropped", "true" if crop else "false"))
     if crop:
         attrs += [("crop-x", "%g" % crop[0]), ("crop-y", "%g" % crop[1]), ("crop-radius", "%g" % crop[2])]
     if grid:
         attrs.append(("grid-step", grid))
-    attrs += list(extra)
+    attrs += list(extra) + generator_attrs()
     return [(k, v) for k, v in attrs if v is not None]
 
 
@@ -1012,7 +1040,7 @@ def rose_layer(size, mpp, fr, where="lower-left", diameter=None):
     return out
 
 
-def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None, min_width=0.0, rose=(), grid_lines="auto", dot_step=25):
+def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, overlay=(), zoom=1, under=(), over=(), terrain=None, min_width=0.0, rose=(), grid_lines="auto", dot_step=25, grid_major=1000):
     """SVG text in layers (groups that Inkscape shows as layers, each `class="layer"` with its id in
     `data-layer`): `terrain` (the PNG as a data URI), `roads` and `rails`, each holding a sublayer per
     street or track type (`road-TYPE`, `rail-TYPE`) with one `<path data-a data-b>` per edge. `metadata` is the `svg_metadata` element, if wanted. Coordinates inside the layers are metres from the image's top-left corner, north up and east
@@ -1041,7 +1069,7 @@ def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, ov
              '</g>'])
     grid_labels = []
     if grid:                                             # the lines above the terrain, under the network
-        grid_lines, grid_labels = grid_layers(size, mpp, fr, grid, grid_lines, dot_step)
+        grid_lines, grid_labels = grid_layers(size, mpp, fr, grid, grid_lines, dot_step, grid_major)
         parts += grid_lines
     parts += under                                       # coverage circles under the network
     for fam, label in (("road", "Roads"), ("rail", "Rails")):     # rails last, so they draw on top
@@ -1083,6 +1111,8 @@ def main():
     ap.add_argument("--crop", help="X,Y,R: the square of half-width R metres around (X, Y)")
     ap.add_argument("--png", action="store_true")
     ap.add_argument("--grid", type=int, metavar="N", help="SVG only: a labelled line every N metres of map x and y")
+    ap.add_argument("--no-grid", action="store_true", help="SVG only: leave out the default grid (major marks every third of the "
+                    "shorter side, rounded down to 1, 2 or 5 x a power of ten; at least 1000 m on a whole map)")
     ap.add_argument("--grid-lines", choices=("auto", "none", "dots", "faint"), default="auto",
                     help="SVG only, with --grid: auto (default) crosses and dotted 1000 m lines, but crosses only at 1 m per pixel "
                     "or finer; none crosses only; dots or faint also draw the minor lines, as sparse dots or faint solid lines")
@@ -1109,8 +1139,9 @@ def main():
                     help="rename one vehicle instance in the picture (repeatable)")
     ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
                     "and tram depots (ground faces from the install)")
-    ap.add_argument("--industries", action="store_true", help="SVG only: stamp each industry's icon on a white disc with a grey "
-                    "border, 96 m across by default, at its origin (see the icon files in tools/icons/industries)")
+    ap.add_argument("--industries", action=argparse.BooleanOptionalAction, default=True,
+                    help="SVG only, on by default (--no-industries leaves it out): stamp each industry's icon on a white disc "
+                    "with a grey border, 96 m across by default, at its origin (see the icon files in tools/icons/industries)")
     ap.add_argument("--industry-size", type=float, default=INDUSTRY_DIAMETER, metavar="M",
                     help="with --industries: the badge's diameter in metres (default %g)" % INDUSTRY_DIAMETER)
     ap.add_argument("--mods", help="the mod.io game's mods folder, for a mod's depots (default: the usual places)")
@@ -1136,8 +1167,10 @@ def main():
         args.mpp = 8 if vector and not args.crop else 4
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
-    if (args.label or args.vehicles or args.depots or args.coverage or args.industries) and args.png:
-        ap.error("--label, --vehicles, --depots, --coverage and --industries only work with the SVG")
+    if (args.label or args.vehicles or args.depots or args.coverage) and args.png:
+        ap.error("--label, --vehicles, --depots and --coverage only work with the SVG")
+    if args.no_grid and args.grid:
+        ap.error("--no-grid and --grid exclude each other")
     labels = {}
     for item in args.label:
         pair, _, text = item.partition("=")
@@ -1154,8 +1187,8 @@ def main():
         ap.error("--name wants SLOT=TEXT, with a number for the slot")
     if args.grid is not None and (args.grid < 1 or args.png):
         ap.error("--grid wants a step of 1 metre or more, and only works with the SVG")
-    if args.grid_lines != "auto" and not args.grid:
-        ap.error("--grid-lines needs --grid")
+    if args.grid_lines != "auto" and args.no_grid:
+        ap.error("--grid-lines needs a grid")
     if args.grid_lines == "dots" and args.grid_dot_step < GRID_MIN_DOT_PX * args.mpp:
         print("--grid-dot-step %g is under %d pixels at %g m per pixel; dots will be %g m apart"
               % (args.grid_dot_step, GRID_MIN_DOT_PX, args.mpp, GRID_MIN_DOT_PX * args.mpp))
@@ -1247,7 +1280,7 @@ def main():
                     if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                         depot_rows.append(i)
             industry_rows = []
-            if args.industries:
+            if args.industries and not args.png:
                 try:
                     table = read_model_table(data)
                     mains = main_models(table[0])
@@ -1279,12 +1312,22 @@ def main():
                 tol = args.tolerance if args.tolerance is not None else 0.4 * args.mpp
                 terrain, (n_rings, n_lines, n_bands) = vector_terrain(picked, spacing, size, args.mpp, off_z, unit, water,
                                                                       args.contour, args.index, tol, not args.no_bands)
-                extra = (("terrain", "vector"), ("contour-step", "%g" % args.contour), ("index-every", args.index),
-                         ("tolerance", "%g" % tol), ("bands", "false" if args.no_bands else "true"))
+                extra = (("contour-step", "%g" % args.contour if args.contour != ap.get_default("contour") else None),
+                         ("index-every", args.index if args.index != ap.get_default("index") else None),
+                         ("tolerance", "%g" % tol if args.tolerance is not None else None),
+                         ("bands", "false" if args.no_bands else None))
                 print("vector terrain: %d water rings, %d height lines, %d height bands" % (n_rings, n_lines, n_bands))
             else:
                 extra = (("terrain", "raster"),)
                 dest = dest[:-len("-terrain.svg")] + "-terrain-raster.svg"
+            if args.grid:                                 # minor marks asked for: the 1000 m marks stay the major ones
+                grid_step, grid_major = args.grid, 1000
+            elif args.no_grid:
+                grid_step = grid_major = None
+            else:                                         # the default: major marks only
+                grid_step = grid_major = auto_grid_step(2 * crop[2] if crop else min(map_w, map_h), bool(crop))
+            extra += (("grid", "off" if args.no_grid else None), ("industries", "off" if not args.industries else None),
+                      ("grid-lines", args.grid_lines if args.grid_lines != "auto" else None))
             meta = svg_metadata(size, args.mpp, fr, (map_w, map_h), crop, args.grid,
                                 os.path.basename(path), extra)
             overlay, unmatched = overlay_layers(size, args.mpp, fr, edges, vehicles, labels, names)
@@ -1292,10 +1335,10 @@ def main():
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
             over += industry_layers(args.mpp, fr, industry_rows, args.industry_size)
-            open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, args.grid, meta,
+            open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, grid_step, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
                                                [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size),
-                                               args.grid_lines, args.grid_dot_step))
+                                               args.grid_lines, args.grid_dot_step, grid_major))
             for i in depot_rows:
                 print("depot slot %-6d %-22s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (i["slot"], short_model(i["model"]), i["x"], i["y"], i["fx"], i["fy"]))
@@ -1306,7 +1349,7 @@ def main():
                       % (v["slot"], short_model(v["model"]), v["x"], v["y"], v["fx"], v["fy"]))
         else:
             open(dest, "wb").write(png_with_view(png, view_attrs(size, args.mpp, fr, (map_w, map_h), crop, None,
-                                                                 os.path.basename(path), (("terrain", "raster"),))))
+                                                                 os.path.basename(path))))
         print("%s  %d x %d px, %d m/px, map %d x %d m%s, %d road and %d rail edges%s"
               % (dest, size[0], size[1], args.mpp, map_w, map_h, ", cropped" if crop else "", roads, rails,
                  ", %d vehicles" % len(vehicles) if args.vehicles else ""))
