@@ -61,6 +61,6 @@ In the window, phases 1, 3 and 5 show a bright cross button and 2, 4 and 6 a gre
 - What a listed id means and which movement each of the 16 is, from the geometry of the node.
 - Whether the minimum duration has an effect with skipping off, and what skipping does in play.
 - Whether the final `u32` of the block is the type, and what the types look like in the entity data (model instances, [models.md](models.md)).
-- Where lane connections are stored, if not in the turn table: a save before and after one edit would show it.
+- Where lane connections are stored, if not in the turn table: a path record per connection inside a node, in a table of its own ([lane-paths.md](lane-paths.md)); a rail crossing's Double Slip Switch setting adds two of them. Whether a lane connection edit of a road lands there too is not known.
 - Why the edge list of a record is empty for most nodes.
 - Whether a junction with an empty edge list can carry lights, and what removing lights (the None button) leaves behind.
