@@ -66,7 +66,7 @@ The [fish chain](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-tru
 | 8 | 7 | 14 |
 | 6 | 7 | 15 |
 
-The two agree in three games, differ by one in four and by seven in the Small one. So the figure on the screen is the preview's own count and not the number of industries the save starts with. Why is **Open**; the preview may be built before the game places and flattens the industries.
+The two agree in three games, differ by one in four and by seven in the Small one. So the figure on the screen is the preview's own count and not the number of industries the save starts with. Why is **Open**; the preview may be built before the game places and flattens the industries. The Small game is also the only one with Tutorial On (the welcome window showed at the start; its `mission.gs` state reads `isTutorialActive` true with 7 tasks and `guide_system.gs` holds 18, against 0 tasks in a game with Tutorial Off). Whether the tutorial adds industries is untested and was not found in the install's mission scripts.
 
 How the save was counted: an industry is an instance of its folder's main model (`industries/<key>/<key>_sm.mdl`, or the first `_particles` model where there is none). The entity names table, after the town names, holds about two slots per industry and not one: the same name twice, and the same name again for a second industry of a kind near the same town (`<town> Logging Camp` three times for two camps). So the number of names is not the number of industries, and an industry's name can say nothing about which instance it is. The names are the defaults here: a town or industry the player renamed no longer follows `<town> <kind>`, which is the case [entity-names.md](entity-names.md#town-names-604) lists as **Open**.
 
