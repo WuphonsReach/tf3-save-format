@@ -30,6 +30,14 @@ Notes that use it: [compass.md](compass.md), [parcels.md](parcels.md), [finances
 - Its tropical saves also serve [terrain.md](terrain.md#the-terrain-record) and [animals.md](animals.md).
 - Saves are named `test-tiny-trop-20261010-<time>`, some with `-add-mod` or `-del-mod`.
 
+## Tiny map-format tests
+
+Two new games made on 14 October 2026 (format 604), each saved at once from the New Game screen, to see what the Map Format option does to a Tiny map ([map-sizes.md](map-sizes.md#tiny)).
+
+- Seed `ic3DIKAw9j`, tropical, Asian names, Tiny with format 4 selected (2048 x 6144 m, 8 x 24 tiles), start year 1900, Hard difficulty, Deluxe Upgrade only, two towns. Ocean Large, Islands Scattered, Mountains Dense. Two saves were made from that screen, `1x3` and `1x4` in their names; the `1x3` one stored `map.format` 4, so that name was the wrong one. Both were deleted as easy to recreate, so only their header values (read before the deletion) remain here.
+- Seed `5IeGyerPPH`, tropical, Asian names, Tiny 1 : 5 (1536 x 7680 m, 6 x 30 tiles), start year 1900, Custom difficulty (the Hard values with landmark resources Very High, inflation Low, delivery Normal, noise Very High and pollution Low, [settings.md](settings.md#difficulty-presets)), Deluxe Upgrade and No Costs, two towns. Same three sliders. The save is `teset-tiny-drop-custom-1x5-1014-0152` (the typos are in the name). Every stored setting matched the New Game screen.
+- No Load Game screenshot of either game exists yet. Only the 1 : 5 save is kept.
+
 ## Tiny desert games
 
 - Seed `ktb5aEVwZg`, dry, Tiny 1 : 4 (2048 x 6144 m), start year 1900: the cases A to G of [terrain.md](terrain.md#what-was-compared), the same seed with the sliders moved one at a time. A has no mods; the others have Deluxe Upgrade. The animals of [animals.md](animals.md) were read from them.
