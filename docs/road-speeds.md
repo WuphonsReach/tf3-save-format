@@ -34,4 +34,6 @@ On a straight edge the label is the type's speed. On a bent one it is lower, and
 
 The other labels read, about 25 in one crop of Kulmbach, were the type's speed as predicted: every town street at 50, the pink road at 30, the country road at 80. Other measures of the bend (the radius from the chord and the turn, the curvature at the middle) did not fit: they gave A from 1.4 to 2.6 for the same edges, a spread of nearly two to one. What stays **Open**: the exact measure the game uses (A runs 2.41 to 2.56, which is more than rounding allows for the sharpest bend, so it is not exactly this curve), whether it rounds or cuts off, how it treats junctions, rails and the other road families, and whether the vehicles drive at the number the layer shows.
 
+**Reported by the player, not tested here:** the limit drops as a road bends and the same holds for rail, and a slope does not lower it. The rule above uses the bend in the horizontal plane only, so it agrees with the second part. No track edge was read: the tool takes street edges only, and no rail label was compared (**Open**).
+
 `tools/edge_speeds.py` prints the stored and predicted numbers for every street edge of a save (`--curved` for the lowered ones, `--near` for a place).
