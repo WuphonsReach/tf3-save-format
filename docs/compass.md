@@ -44,7 +44,7 @@ The third game, six of its 11 towns with a compass name, the four surest names o
 What the words do not settle:
 
 - **When `#1` is used instead of a word (Open).** In the first game a second industry of a kind took `#1` when it lay in the same quarter as the first (Pune's `oil_platform`s and `forest`s, Caloocan's `livestock_farm`s) and a word when its quarter was new. Two pairs broke that: Bangkok's two `farm`s (north and east of the town) and two `oil_refinery`s (east and west) both got `#1`. Distance, order of creation and which town was nearest at the time are untested.
-- **The town's centre (Open).** The word is judged from a point the save does not name. The cluster mean used here fits every name in a new game, which is a sign it is near it, not that it is the same point.
+- **The town's centre (Open).** The word is judged from a point the save does not name. The cluster mean used here fits every name in a new game, which is a sign it is near it, not that it is the same point. The name label's anchor gives a measured centre ([town-centre.md](town-centre.md)); the names have not been judged from it yet.
 
 ## Other signals
 
