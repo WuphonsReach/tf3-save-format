@@ -147,7 +147,7 @@ game's own palette.
              its cell, the box that holds those too (they are not drawn themselves). One
              `<g class="station-piece" data-slot data-model data-x data-y>` each, and in each sublayer `station-outer`, the group's outer
              edge at an industry's outline width (1.5 m), with no line where two boxes touch. A `station-landings` sublayer stamps an
-             anchor (tools/icons/anchor_small.svg (11 m) or anchor_large.svg (24 m), very dark grey, no disc, moved out from the nearest deck edge so it does not overlap the outline, a large one turned so its ring points at the deck) on each landing marker, the
+             anchor (tools/icons/anchor_small.svg (11 m) or anchor_large.svg (24 m), very dark grey, no disc, moved out from the nearest deck edge so it does not overlap the outline and turned so its ring points at the deck; the small icon's own 35 degree tilt is taken out) on each landing marker, the
              `tn_small_pier_passenger*` models small and the `tn_medium_pier_passenger*` ones large. The boxes come from
              `stations/*.zip` in the install at run time and are never stored, so without an install nothing is drawn. Railings, roofs,
              lamps, paths, entrances and the freight terminals' add-ons are left out; the pieces are listed in docs/station-pieces.md.
@@ -335,6 +335,7 @@ LANDING_MODELS = {"tn_small_pier_passenger": "small", "tn_small_pier_passenger_l
                   "tn_small_pier_passenger_dual_r": "small", "tn_medium_pier_passenger": "large", "tn_medium_pier_passenger_dual": "large"}
 LANDING_SIZE = {"small": 11.0, "large": 24.0}                # metres across the icon
 LANDING_CLEARANCE = {"small": 0.35, "large": 0.5}            # of the icon's size, from the deck edge to its centre (the small icon's glyph is smaller than its box)
+LANDING_TILT = {"small": 35.0, "large": 0.0}                  # degrees the icon file turns its anchor, taken back out so it starts vertical
 LANDING_INK = "#1f1f1f"                                      # very dark grey, a plain stamp with no disc
 STATION_OUTLINE = 1.5                                        # metres at 2 m per pixel and finer: an industry's outline width
 _BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
@@ -1109,8 +1110,8 @@ def station_layers(mpp, fr, instances, boxes):
             d = LANDING_SIZE[size]
             (cx, cy), edge = _clear_of_edge(fr.pic(i["x"], i["y"]), LANDING_CLEARANCE[size] * d + 0.75 * k, deck_polys, deck_outer)
             turn = ""
-            if size == "large" and edge:                     # the ring at the top of a large anchor points at its dock
-                turn = ' transform="rotate(%.1f %.2f %.2f)"' % (math.degrees(math.atan2(edge[0] - cx, cy - edge[1])), cx, cy)
+            if edge:                                         # the ring at the top of an anchor points at its dock
+                turn = ' transform="rotate(%.1f %.2f %.2f)"' % (math.degrees(math.atan2(edge[0] - cx, cy - edge[1])) - LANDING_TILT[size], cx, cy)
             out.append('<use class="station-landing" data-slot="%s" data-model=%s data-size="%s" data-x="%.1f" data-y="%.1f" xlink:href="#station-anchor-%s" '
                        'x="%.2f" y="%.2f" width="%g" height="%g" color="%s"%s/>'
                        % (i["slot"], quoteattr(i["model"]), size, i["x"], i["y"], size, cx - d / 2, cy - d / 2, d, d, LANDING_INK, turn))
