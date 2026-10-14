@@ -78,7 +78,7 @@ def _plausible(a, b, p0, p1, t0, t1):
 
 
 def read_edges(data):
-    """The street-edge table as a list of dicts: `a`, `b` (node entity ids), `p0`, `p1` (x, y, z),
+    """The street-edge table as a list of dicts: `a`, `b` (node entity ids), `p0`, `p1` (x, y, z), `t0`, `t1` (the end tangents, x, y, z),
     `length` (horizontal, metres), `type` (street or track type without folder, or None if the type
     string was not found), `family` (`street` or `track`, from the folder; None with the type),
     `template` (the path under `infrastructure/` without the suffix, such as
@@ -98,9 +98,37 @@ def read_edges(data):
                 parts = tm.group(2).decode().split("/")
                 t, family, template = parts[-1], parts[1], "/".join(parts[1:])
                 break
-        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "type": t, "family": family, "template": template,
-                    "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
+        out.append({"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
+                    "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     return _largest_cluster(out)
+
+
+def edge_bezier(e):
+    """The four control points ((x, y) each) of the edge's centre line as a cubic Bezier: the end
+    positions and each end moved a third of its tangent inward. This is the cubic Hermite curve through
+    the ends with the stored tangents (docs/road-speeds.md), and a straight line when both tangents
+    are the difference vector. An edge without tangents (`t0` missing) is the straight line."""
+    (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
+    if "t0" not in e:
+        return (x0, y0), (x0, y0), (x1, y1), (x1, y1)
+    t0, t1 = e["t0"], e["t1"]
+    return ((x0, y0), (x0 + t0[0] / 3, y0 + t0[1] / 3), (x1 - t1[0] / 3, y1 - t1[1] / 3), (x1, y1))
+
+
+def bezier_point(c, t):
+    """The point of `edge_bezier` control points `c` at parameter `t` (0 to 1)."""
+    u = 1 - t
+    w = (u * u * u, 3 * u * u * t, 3 * u * t * t, t * t * t)
+    return (sum(w[i] * c[i][0] for i in range(4)), sum(w[i] * c[i][1] for i in range(4)))
+
+
+def edge_is_curved(e, tol=0.25):
+    """True when the centre line leaves the chord by more than `tol` metres: the distance of the
+    curve's middle from the chord's middle is (t0 - t1) / 8, and that bounds the bulge to within a
+    small factor for the bends the game allows."""
+    c = edge_bezier(e)
+    mid = bezier_point(c, 0.5)
+    return math.hypot(mid[0] - (c[0][0] + c[3][0]) / 2, mid[1] - (c[0][1] + c[3][1]) / 2) > tol
 
 
 def _largest_cluster(edges):

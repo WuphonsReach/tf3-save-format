@@ -186,7 +186,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from save_preview import png_bytes  # noqa: E402
 from model_instances import read_instances, read_model_table, short_model  # noqa: E402
 from industry_compass import main_models  # noqa: E402
-from street_edges import edge_ids, read_edges, read_free_ids, read_strips  # noqa: E402
+from street_edges import bezier_point, edge_bezier, edge_ids, edge_is_curved, read_edges, read_free_ids, read_strips  # noqa: E402
 from terrain_vector import level_rings, path_data, simplify, split_at_border  # noqa: E402
 from tf3save import decompress  # noqa: E402
 
@@ -543,10 +543,12 @@ def draw_network(img, size, fr, mpp, edges, widths):
         for e in edges:
             if e["family"] != fam and not (fam == "street" and e["family"] is None):
                 continue
-            (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-            (u0, v0), (u1, v1) = fr.pic(x0, y0), fr.pic(x1, y1)
-            _line(img, w, h, u0 / mpp, v0 / mpp, u1 / mpp, v1 / mpp, colour,
-                  max(1, round(edge_width(e, widths) / mpp)))
+            c = edge_bezier(e)
+            steps = max(1, math.ceil(e["length"] / (8 * mpp))) if edge_is_curved(e) else 1
+            pts = [fr.pic(*bezier_point(c, i / steps)) for i in range(steps + 1)]
+            for (u0, v0), (u1, v1) in zip(pts, pts[1:]):
+                _line(img, w, h, u0 / mpp, v0 / mpp, u1 / mpp, v1 / mpp, colour,
+                      max(1, round(edge_width(e, widths) / mpp)))
             n[fam] += 1
     return n["street"], n["track"]
 
@@ -783,23 +785,25 @@ def overlay_layers(size, mpp, fr, edges, vehicles, labels=False, names=None):
         ends = {}                                         # node point -> [(tint, direction along the edge, edge name)]
         for e in picked:
             c = tint[frozenset((e["a"], e["b"]))]
-            for (x, y, _), (xo, yo, _) in ((e["p0"], e["p1"]), (e["p1"], e["p0"])):
+            bz = edge_bezier(e)
+            for (x, y), (xo, yo) in ((bz[0], bz[1]), (bz[3], bz[2])):        # leaving each end along the curve
                 ends.setdefault((round(x, 1), round(y, 1)), []).append((c, fr.vec(xo - x, yo - y), "%x>%x" % (e["a"], e["b"])))
         top.append(layer("edge-labels", "Edge labels"))
         for e in picked:
             key = frozenset((e["a"], e["b"]))
             unmatched.discard(key)
-            (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
+            bz = edge_bezier(e)
+            (xm, ym), (xn, yn) = bezier_point(bz, 0.5), bezier_point(bz, 0.51)   # the middle of the curve and its direction there
             text = labels[key] or "%x>%x" % (e["a"], e["b"])
             if e.get("e"):
                 text += " e%x" % e["e"]
-            ex, ey = fr.vec(x1 - x0, y1 - y0)
+            ex, ey = fr.vec(xn - xm, yn - ym)
             angle = math.degrees(math.atan2(ey, ex))               # the edge in picture axes
             if angle > 90 or angle < -90:                           # keep the text upright
                 angle -= 180 if angle > 0 else -180
             top.append('<g class="edge-label" data-a="%x" data-b="%x"><text transform="translate(%.1f %.1f) rotate(%.1f)"'
                        ' y="%g" paint-order="stroke" stroke="%s" stroke-width="%g" stroke-linejoin="round">%s</text></g>'
-                       % ((e["a"], e["b"]) + fr.pic((x0 + x1) / 2, (y0 + y1) / 2) + (angle, lfs * 1.1,
+                       % ((e["a"], e["b"]) + fr.pic(xm, ym) + (angle, lfs * 1.1,
                           tint[key], fs / 4, escape(text))))
         top.append("</g>")
         r = lfs * 0.3
@@ -1049,12 +1053,15 @@ def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, ov
     groups = {"road": {}, "rail": {}}                    # family -> type -> one <path> per edge
     for e in edges:
         fam = "rail" if e["family"] == "track" else "road"
-        (x0, y0, _), (x1, y1, _) = e["p0"], e["p1"]
-        (u0, v0), (u1, v1) = fr.pic(x0, y0), fr.pic(x1, y1)
+        c = [fr.pic(*q) for q in edge_bezier(e)]
+        if edge_is_curved(e):                            # the stored tangents bend it: a cubic through both ends
+            d = "M%.1f %.1fC%.1f %.1f %.1f %.1f %.1f %.1f" % (c[0] + c[1] + c[2] + c[3])
+        else:
+            d = "M%.1f %.1fL%.1f %.1f" % (c[0] + c[3])
         groups[fam].setdefault(e["type"] or "unknown", []).append(
-            '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="M%.1f %.1fL%.1f %.1f"/>'
+            '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="%s"/>'
             % (fam, safe_id(e["type"] or "unknown"), e["a"], e["b"], ' data-edge="%x"' % e["e"] if e.get("e") else "",
-               edge_width(e, widths, min_width), u0, v0, u1, v1))
+               edge_width(e, widths, min_width), d))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
              ' xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"'
              ' width="%d" height="%d" viewBox="0 0 %d %d">' % (size[0] * zoom, size[1] * zoom, size[0], size[1]),
@@ -1258,9 +1265,11 @@ def main():
                           % (len(edges) - len(live), len(edges)))
                     edges = live
             if crop:                                  # only the edges that touch the picture
-                edges = [e for e in edges
-                         if max(e["p0"][0], e["p1"][0]) >= x_lo and min(e["p0"][0], e["p1"][0]) <= x_hi
-                         and max(e["p0"][1], e["p1"][1]) >= y_lo and min(e["p0"][1], e["p1"][1]) <= y_hi]
+                def touches(e):                       # the bounding box of the control points covers the curve
+                    c = edge_bezier(e)
+                    return (max(q[0] for q in c) >= x_lo and min(q[0] for q in c) <= x_hi
+                            and max(q[1] for q in c) >= y_lo and min(q[1] for q in c) <= y_hi)
+                edges = [e for e in edges if touches(e)]
             vehicles = []
             if args.vehicles and crop:
                 vehicles = [v for v in read_instances(data)
