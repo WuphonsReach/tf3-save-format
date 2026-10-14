@@ -147,18 +147,19 @@ game's own palette.
              maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
 --industries (SVG only, the default; `--no-industries` leaves it out) add an `industries` layer: a footprint sublayer
              (`industry-footprints`) and a sublayer per industry key (`industry-KEY`), each industry a badge: a white
-             disc with a grey border and the key's icon from tools/icons/industries/ in dark grey, centred on the origin of the
-             industry's main model (the one `industry_compass.py` uses). The disc is 96 m across by default, `--industry-size M`
-             sets another diameter; the icon, the border and the margin scale with it. The footprint is the industry's
-             `ground_face` polygon from its script (`<key>/<key>.script.lua` in the install's `industries/<key>.zip`, read when
-             the script runs and never stored; needs the install like `--depots`), placed from the origin and facing, drawn under
-             the badges with a dark purple outline and a translucent light purple fill, as the game's Towns layer paints an
-             industry. It is declared by the land industries only: the fishing grounds, oil platform and sand excavator (and a
-             mod's industry) get the badge alone, which may overhang a small industry, so lower `--industry-size` to keep
-             inside or raise it to read the picture from far away. On a whole-map picture a badge is a few pixels, so zoom
-             in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y>`, each footprint a
-             `<polygon class="industry-footprint" data-slot data-key>`; the icons are `<symbol>`s in the
-             layer's `<defs>`. Drawn upright whatever `--north` says. Reads the whole stream; no `--crop` needed.
+             disc with a grey border and the key's icon from tools/icons/industries/ in dark grey. The footprint is the
+             industry's `ground_face` polygon from its script (`<key>/<key>.script.lua` in the install's `industries/<key>.zip`,
+             read when the script runs and never stored; needs the install like `--depots`), placed from the origin and facing
+             of the industry's main model (the one `industry_compass.py` uses), drawn under the badges with a dark purple
+             outline and a translucent light purple fill, as the game's Towns layer paints an industry. A badge with a
+             footprint is 0.4 of the polygon's shorter side across (40 to 93 m for the base game's land industries) and sits
+             on the polygon's area centroid, or on the origin when the centroid falls outside the polygon; the icon, the border
+             and the margin scale with it. The land industries declare a footprint; the fishing grounds, oil platform and sand
+             excavator (and a mod's industry) get a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
+             instead. On a whole-map picture a badge is a few pixels, so zoom
+             in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y data-diameter>` (data-x and
+             data-y are the origin), each footprint a `<polygon class="industry-footprint" data-slot data-key>`; the icons are
+             `<symbol>`s in the layer's `<defs>`. Drawn upright whatever `--north` says. Reads the whole stream; no `--crop` needed.
 --stream     the files are decompressed streams, not saves.
 
 Layout read (docs/terrain.md): the terrain record gives the map in 256 m tiles and the height
@@ -932,21 +933,49 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
 
 
 ICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "industries")
-INDUSTRY_DIAMETER = 96.0                                 # metres, the default badge size (`--industry-size`)
+INDUSTRY_DIAMETER = 64.0                                 # metres, the badge of an industry with no footprint (`--industry-size` sets all)
+FOOTPRINT_SHARE = 0.4                                    # a badge is this share of its footprint's shorter side
 INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
 FOOTPRINT_FILL, FOOTPRINT_LINE = "#b44fe8", "#5b1a8f"     # the Towns layer paints an industry purple: light fill, dark line
 
 
-def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER, faces=None):
-    """SVG lines for the `industries` layer: a badge per industry, a white disc `diameter` metres across with a grey border and
-    the industry's icon (tools/icons/industries/KEY.svg, 64 x 64, in `currentColor`) in dark grey, centred on the origin of its main
-    model. `rows` are `read_instances` rows with a `key` added. One sublayer per key, one `<symbol>` per key used; a key without an icon
-    gets the disc only. The badge is upright whatever the north. `faces` is `read_industry_faces`' result: an industry whose key
-    has one gets its ground face, placed from the instance's origin and facing, in a `industry-footprints` sublayer under the
-    badges (dark purple outline, translucent light purple fill). Units are metres like the other layers."""
+def face_centre(face):
+    """The area centroid of a polygon (a list of (a, b) points) when it lies inside the polygon, else None (a shape bent
+    round its own centroid, or a polygon with no area)."""
+    area = cx = cy = 0.0
+    for (a0, b0), (a1, b1) in zip(face, face[1:] + face[:1]):
+        cross = a0 * b1 - a1 * b0
+        area += cross
+        cx += (a0 + a1) * cross
+        cy += (b0 + b1) * cross
+    if abs(area) < 1e-6:
+        return None
+    cx, cy = cx / (3 * area), cy / (3 * area)
+    inside = False
+    for (a0, b0), (a1, b1) in zip(face, face[1:] + face[:1]):
+        if (b0 > cy) != (b1 > cy) and cx < a0 + (cy - b0) * (a1 - a0) / (b1 - b0):
+            inside = not inside
+    return (cx, cy) if inside else None
+
+
+def face_badge(face):
+    """(centre (a, b) in the industry's axes, diameter in metres) of the badge for a footprint: the centroid when it lies
+    inside the polygon, else the origin, and `FOOTPRINT_SHARE` of the polygon's shorter bounding-box side."""
+    xs, ys = [a for a, _ in face], [b for _, b in face]
+    return face_centre(face) or (0.0, 0.0), FOOTPRINT_SHARE * min(max(xs) - min(xs), max(ys) - min(ys))
+
+
+def industry_layers(mpp, fr, rows, diameter=None, faces=None):
+    """SVG lines for the `industries` layer: a badge per industry, a white disc with a grey border and
+    the industry's icon (tools/icons/industries/KEY.svg, 64 x 64, in `currentColor`) in dark grey. `rows` are `read_instances` rows
+    with a `key` added. `faces` is `read_industry_faces`' result: an industry whose key has one gets its ground face, placed from
+    the instance's origin and facing, in a `industry-footprints` sublayer under the badges (dark purple outline, translucent light
+    purple fill), and its badge is `FOOTPRINT_SHARE` of the face's shorter side across and sits on the face's centroid (the origin
+    when the centroid falls outside the face). The others (no face) get `INDUSTRY_DIAMETER` on the origin. `diameter` fixes every
+    badge's size instead. One sublayer per key, one `<symbol>` per key used; a key without an icon gets the disc only. The badge is
+    upright whatever the north. Units are metres like the other layers."""
     if not rows:
         return []
-    r = diameter / 2.0
     out = [layer("industries", "Industries", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)), "<defs>"]
     have = set()
     for key in sorted({i["key"] for i in rows}):
@@ -970,15 +999,20 @@ def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER, faces=None):
                        ' stroke="%s" stroke-width="%g" stroke-linejoin="round"/>'
                        % (i["slot"], i["key"], pts, FOOTPRINT_FILL, FOOTPRINT_LINE, 1.5 * max(1.0, mpp / 2.0)))
         out.append("</g>")
-    border = diameter / 32.0                             # 2 m on a 64 m badge
-    side = 0.72 * diameter                      # the icon sits inside the disc with a margin
     for key in sorted({i["key"] for i in rows}):
         out.append(layer("industry-" + safe_id(key), "Industries: " + key, ' data-key="%s"' % key))
         for i in (i for i in rows if i["key"] == key):
-            cx, cy = fr.pic(i["x"], i["y"])
-            out.append('<g class="industry" data-slot="%d" data-key="%s" data-model=%s data-x="%.1f" data-y="%.1f">'
+            centre, d = (0.0, 0.0), INDUSTRY_DIAMETER
+            if faces and key in faces:
+                centre, d = face_badge(faces[key])
+            d = diameter or d
+            n = math.hypot(i["fx"], i["fy"]) or 1.0
+            fx, fy = i["fx"] / n, i["fy"] / n
+            cx, cy = fr.pic(i["x"] + centre[0] * fx - centre[1] * fy, i["y"] + centre[0] * fy + centre[1] * fx)
+            border, side = d / 32.0, 0.72 * d             # 2 m on a 64 m badge; the icon sits inside the disc with a margin
+            out.append('<g class="industry" data-slot="%d" data-key="%s" data-model=%s data-x="%.1f" data-y="%.1f" data-diameter="%.1f">'
                        '<circle cx="%.2f" cy="%.2f" r="%.2f" fill="#ffffff" stroke="%s" stroke-width="%g"/>'
-                       % (i["slot"], key, quoteattr(i["model"]), i["x"], i["y"], cx, cy, r - border / 2, INDUSTRY_BORDER, border))
+                       % (i["slot"], key, quoteattr(i["model"]), i["x"], i["y"], d, cx, cy, d / 2 - border / 2, INDUSTRY_BORDER, border))
             if key in have:
                 out.append('<use xlink:href="#industry-icon-%s" x="%.2f" y="%.2f" width="%g" height="%g" color="%s"/>'
                            % (safe_id(key), cx - side / 2, cy - side / 2, side, side, INDUSTRY_INK))
@@ -1189,8 +1223,9 @@ def main():
     ap.add_argument("--industries", action=argparse.BooleanOptionalAction, default=True,
                     help="SVG only, on by default (--no-industries leaves it out): stamp each industry's icon on a white disc "
                     "with a grey border, 96 m across by default, at its origin (see the icon files in tools/icons/industries)")
-    ap.add_argument("--industry-size", type=float, default=INDUSTRY_DIAMETER, metavar="M",
-                    help="with --industries: the badge's diameter in metres (default %g)" % INDUSTRY_DIAMETER)
+    ap.add_argument("--industry-size", type=float, metavar="M",
+                    help="with --industries: every badge's diameter in metres (default: %g of the footprint's shorter side, %g m "
+                    "for an industry with no footprint)" % (FOOTPRINT_SHARE, INDUSTRY_DIAMETER))
     ap.add_argument("--mods", help="the mod.io game's mods folder, for a mod's depots (default: the usual places)")
     ap.add_argument("--coverage", action="store_true", help="SVG only: draw their maintenance coverage circles")
     ap.add_argument("--stream", action="store_true")
@@ -1246,7 +1281,7 @@ def main():
             assert len(crop) == 3 and crop[2] > 0
         except (ValueError, AssertionError):
             ap.error("--crop wants X,Y,R in metres")
-    if args.industry_size <= 0:
+    if args.industry_size is not None and args.industry_size <= 0:
         ap.error("--industry-size wants a diameter above 0")
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
@@ -1338,7 +1373,7 @@ def main():
                         if i["model"] not in mains:
                             continue
                         key = mains[i["model"]]
-                        r = max([args.industry_size / 2] + [math.hypot(a, b) for a, b in industry_faces.get(key, ())])
+                        r = max([(args.industry_size or INDUSTRY_DIAMETER) / 2] + [math.hypot(a, b) for a, b in industry_faces.get(key, ())])
                         if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                             industry_rows.append(dict(i, key=key))
                 except ValueError as e:                   # an older save: no model table
