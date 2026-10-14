@@ -17,7 +17,7 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` (`--stations`), `coverage` (`--coverage`), `industries` (`--industries`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` (`--stations`, a sublayer per kind), `coverage` (`--coverage`), `industries` (`--industries`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
@@ -138,16 +138,20 @@ game's own palette.
              instance (`road_depot_sm`, likewise the rail depot's `rail_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
              usual mod.io places) and it has no ground face, so only its origin dot and facing line are drawn; the free
              decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
---stations   (SVG only) add a `stations` layer for the water stations (`harbor_modular` and its piers): each placed deck piece
-             (`dock_100_25`, `dock_50_12`, `platform_100`, `platform_25`) as its cell, the box that holds the model's `boundingInfo` and its
-             thin `_con_` and `_end_` edge pieces (which are not drawn themselves), and each main building (`main_building_s0`,
-             `main_building_s2`) as its bounding box, placed from the instance's origin and facing as the depots are (docs/models.md).
-             Sublayers `station-decks` (wood brown), `station-buildings` (darker brown; both provisional), one
-             `<g class="station-piece" data-slot data-model data-x data-y>` each, and `station-outline`: the decks' outer edge
-             at an industry's outline width (1.5 m; `station-outer`, no line where two cells touch) and each building's outline at
-             the same width, with no lines inside it. The boxes come from
-             `stations/water.zip` in the install at run time and are never stored, so without an install nothing is drawn.
-             Railings, clocks and the `tn_*` and `network_person` models are left out. Reads the whole stream; no `--crop` needed.
+--stations   (SVG only) add a `stations` layer for the platforms and buildings of water, rail and street (bus and tram) stations, a
+             sublayer per group: `station-water-decks` (wood brown) and `station-water-buildings` (darker brown),
+             `station-rail-platforms` (grey) and `station-rail-buildings` (dark grey), `station-street-platforms` (light grey;
+             the modular station's platform tiles and the small stops) and `station-street-buildings` (grey); all colours
+             provisional. Each placed piece is the box of its model's `boundingInfo`, placed from the instance's origin and facing as
+             the depots are (docs/models.md); a deck piece, rail building or other piece with thin `_con_` and `_end_` edge pieces is
+             its cell, the box that holds those too (they are not drawn themselves). One
+             `<g class="station-piece" data-slot data-model data-x data-y>` each, and in each sublayer `station-outer`, the group's outer
+             edge at an industry's outline width (1.5 m), with no line where two boxes touch. A `station-landings` sublayer stamps an
+             anchor (tools/icons/anchor_small.svg (11 m) or anchor_large.svg (24 m), very dark grey, no disc, moved out from the nearest deck edge so it does not overlap the outline, a large one turned so its ring points at the deck) on each landing marker, the
+             `tn_small_pier_passenger*` models small and the `tn_medium_pier_passenger*` ones large. The boxes come from
+             `stations/*.zip` in the install at run time and are never stored, so without an install nothing is drawn. Railings, roofs,
+             lamps, paths, entrances and the freight terminals' add-ons are left out; the pieces are listed in docs/station-pieces.md.
+             Reads the whole stream; no `--crop` needed.
 --coverage   (SVG only) add a `coverage` layer under the roads, a sublayer per building kind
              (`coverage-` plus each layer id above) holding one dashed circle
              per building, centred on its origin, with the `catchmentArea` radius of its script (a maintenance building
@@ -190,6 +194,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 """
 import argparse
 import base64
+import collections
 import datetime
 import glob
 import json
@@ -293,19 +298,44 @@ DEPOT_KINDS = (
 )
 MOD_DIRS = ("~/snap/steam/common/mod.io/common/10640/mods", "~/.local/share/mod.io/common/10640/mods")
 DEPOT_PREFIXES = ("depots/", "assets/ingo_bootsschuppen/")
-# water stations (`harbor_modular` and its piers): the pieces drawn, by model name under `stations/water/models/`. A deck piece is
-# drawn as its cell: the box that holds the `boundingInfo` of the model's `.mdl` in the install's `stations/water.zip` and of its thin
-# `_con_` and `_end_` edge pieces (railings and borders, 1 to 2 m wide, which fill the gap to the next piece), so neighbours abut and the
-# edge pieces are not drawn themselves. A main building is its own box. Read when the script runs, never stored. The `_sm` copies,
-# the safeguards (railings), clocks and the `network_person` paths are left out. A name the install lacks (a platform has no `_con_b`)
-# is skipped.
-STATION_PIECE_ENDS = ("_con_l", "_con_r", "_con_b", "_con_f", "_end_l", "_end_r", "_end_b", "_end_f")
-STATION_PREFIX = "stations/water/"
-STATION_KINDS = (                                            # (layer id, label, pieces, fill, opacity of the group, joined to edge pieces)
-    ("station-decks", "Water stations: docks and platforms", ("dock_100_25", "dock_50_12", "platform_100", "platform_25"),
-     "#a0622d", 0.65, True),
-    ("station-buildings", "Water stations: main buildings", ("main_building_s0", "main_building_s2"), "#5a3512", 0.85, False),
-)                                                            # decks wood brown, buildings darker brown; both provisional
+# station pieces (docs/station-pieces.md): each kind is a group of model instances drawn as boxes, (layer id, label, names, joined to
+# edge pieces, fill, opacity of the group). A name is the model's path under `stations/` without `.mdl`; its box is the `boundingInfo`
+# of that model's `.mdl` in the install's `stations/<first folder>.zip`, read when the script runs and never stored. A piece "joined to
+# its edge pieces" is drawn as its cell, the box that holds its own and those of the thin `_con_` and `_end_` pieces beside it
+# (railings and borders, which fill the gap to the next piece), so neighbours abut and the edge pieces are not drawn themselves.
+# Water stations are brown (decks wood, buildings darker); rail grey (platforms mid, buildings dark); street (bus and tram) lighter
+# grey. All are provisional. Left out: railings, roofs, clocks, lamps, paths and entrances, and the freight terminals' add-on models.
+STATION_PREFIXES = ("stations/water/", "stations/rail/", "stations/street/")
+_STREET_STATION = "street/modular_street_station/models/era_a/"
+STATION_KINDS = (
+    ("station-water-decks", "Water stations: docks and platforms",
+     ("water/models/dock_100_25", "water/models/dock_50_12", "water/models/platform_100", "water/models/platform_25"),
+     True, "#a0622d", 0.65),
+    ("station-rail-platforms", "Rail stations: platforms",
+     tuple("rail/era_a/" + n for n in ("perron_5", "perron_10", "perron_5_underpass", "perron_5_head", "perron_5_head_con",
+                                       "station_3_perron_head", "station_3_perron_side", "station_3_perron_side_main")),
+     False, "#8c8c8c", 0.85),
+    ("station-street-platforms", "Street stations: platforms and stops",
+     tuple(_STREET_STATION + "%spltfrm_%s_%s" % (c, side, part) for c in ("", "cargo_") for side in "lr"
+           for part in ("rep", "btm", "top", "btm_spcl", "top_spcl"))
+     + ("street/small_stops/small_old", "street/small_stops/small_mid"),
+     False, "#c8c8c8", 0.9),
+    ("station-water-buildings", "Water stations: main buildings", ("water/models/main_building_s0", "water/models/main_building_s2"),
+     False, "#5a3512", 0.85),
+    ("station-rail-buildings", "Rail stations: buildings",
+     tuple("rail/%s/station_%d%s" % (folder, n, main) for folder in ("era_a", "cargo") for n in (1, 2, 3) for main in ("", "_main")),
+     True, "#4a4a4a", 0.9),
+    ("station-street-buildings", "Street stations: buildings", (_STREET_STATION.replace("era_a/", "sidebuildings/") + "streetstation_sidebuilding_era_a_s2",),
+     False, "#9a9a9a", 0.9),
+)
+# Landings: a `tn_*_pier_passenger*` model is the marker of one landing a ship docks at (docs/station-pieces.md), drawn as an anchor icon
+# from tools/icons/, small or large by the model, upright, centred on the marker. (model name under `stations/water/models/`, size)
+LANDING_MODELS = {"tn_small_pier_passenger": "small", "tn_small_pier_passenger_l": "small", "tn_small_pier_passenger_r": "small",
+                  "tn_small_pier_passenger_dual": "small", "tn_small_pier_passenger_dual_l": "small",
+                  "tn_small_pier_passenger_dual_r": "small", "tn_medium_pier_passenger": "large", "tn_medium_pier_passenger_dual": "large"}
+LANDING_SIZE = {"small": 11.0, "large": 24.0}                # metres across the icon
+LANDING_CLEARANCE = {"small": 0.35, "large": 0.5}            # of the icon's size, from the deck edge to its centre (the small icon's glyph is smaller than its box)
+LANDING_INK = "#1f1f1f"                                      # very dark grey, a plain stamp with no disc
 STATION_OUTLINE = 1.5                                        # metres at 2 m per pixel and finer: an industry's outline width
 _BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
@@ -316,30 +346,41 @@ _DEPOT_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
 
 
 def read_station_boxes(content):
-    """{model path: (x0, y0, x1, y1)} for the pieces of `STATION_KINDS`: the x and y range of the `boundingInfo` of each model's `.mdl` in
-    the install's `stations/water.zip` (`content` is the `infrastructure` folder `find_content` returns), in the model's own axes.
-    A piece whose file is missing is left out; without an install the result is empty. Nothing is stored."""
+    """{model path: (x0, y0, x1, y1)} for the pieces of `STATION_KINDS`: the x and y range of the `boundingInfo` of each model's `.mdl`
+    in the install's `stations/*.zip` (`content` is the `infrastructure` folder `find_content` returns), in the model's own axes; for a
+    piece joined to its edge pieces the range holds theirs too (the `NAME_con...` and `NAME_end...` files beside it). A piece whose file is
+    missing is left out; without an install the result is empty. Nothing is stored."""
     out = {}
     if not content:
         return out
-    try:
-        zf = zipfile.ZipFile(os.path.join(os.path.dirname(content), "stations", "water.zip"))
-    except (OSError, zipfile.BadZipFile):
-        return out
-    for _lid, _label, names, _colour, _opacity, edges in STATION_KINDS:
+    zips = {}
+    for _lid, _label, names, edges, _colour, _opacity in STATION_KINDS:
         for name in names:
-            parts = []
-            for end in ("",) + (STATION_PIECE_ENDS if edges else ()):
+            folder, _, base = name.rpartition("/")
+            archive = name.split("/", 1)[0]
+            if archive not in zips:
                 try:
-                    text = zf.read("water/models/%s%s.mdl" % (name, end)).decode("utf-8", "replace")
-                except KeyError:
+                    zf = zipfile.ZipFile(os.path.join(os.path.dirname(content), "stations", archive + ".zip"))
+                    zips[archive] = (zf, set(zf.namelist()))
+                except (OSError, zipfile.BadZipFile):
+                    zips[archive] = None
+            if not zips[archive]:
+                continue
+            zf, members = zips[archive]
+            files = [name + ".mdl"]
+            if edges:
+                pat = re.compile(r"^%s/%s_(con|end)[^/]*\.mdl$" % (re.escape(folder), re.escape(base)))
+                files += sorted(m for m in members if pat.match(m))
+            parts = []
+            for f in files:
+                if f not in members:
                     continue
-                box = {k: (float(a), float(b)) for k, a, b in _BBOX.findall(text)}
+                box = {k: (float(a), float(b)) for k, a, b in _BBOX.findall(zf.read(f).decode("utf-8", "replace"))}
                 if "ax" in box and "in" in box:
                     parts.append((box["in"][0], box["in"][1], box["ax"][0], box["ax"][1]))
             if parts:
-                out["%smodels/%s.mdl" % (STATION_PREFIX, name)] = (min(q[0] for q in parts), min(q[1] for q in parts),
-                                                                  max(q[2] for q in parts), max(q[3] for q in parts))
+                out["stations/%s.mdl" % name] = (min(q[0] for q in parts), min(q[1] for q in parts),
+                                                 max(q[2] for q in parts), max(q[3] for q in parts))
     return out
 
 
@@ -959,71 +1000,123 @@ def _inside(poly, x, y):
     return True
 
 
+def _clear_of_edge(pt, clearance, polys, outer, reach=40.0):
+    """(`pt` moved away from the nearest stretch of the deck outline (`outer`, a list of polylines; `polys` the deck boxes) until it is
+    `clearance` metres from it, on the side that is not deck, and the nearest point of that outline), or (`pt`, None) when no outline
+    lies within `reach` metres."""
+    best = None
+    for run in outer:
+        for (x0, y0), (x1, y1) in zip(run, run[1:]):
+            dx, dy = x1 - x0, y1 - y0
+            n2 = dx * dx + dy * dy
+            if not n2:
+                continue
+            t = max(0.0, min(1.0, ((pt[0] - x0) * dx + (pt[1] - y0) * dy) / n2))
+            px, py = x0 + t * dx, y0 + t * dy
+            dist = math.hypot(pt[0] - px, pt[1] - py)
+            if dist <= reach and (best is None or dist < best[0]):
+                n = math.sqrt(n2)
+                best = (dist, px, py, -dy / n, dx / n)
+    if best is None:
+        return pt, None
+    _d, px, py, nx, ny = best
+    if any(_inside(c, px + 0.5 * nx, py + 0.5 * ny) for c in polys):
+        nx, ny = -nx, -ny                                    # the normal that leaves the deck
+    return (px + clearance * nx, py + clearance * ny), (px, py)
+
+
 def station_layers(mpp, fr, instances, boxes):
-    """SVG lines for the `stations` layer: each placed piece (`STATION_KINDS`) as its box in the model's own axes (`boxes`, from
-    `read_station_boxes`: a deck piece's cell, a building's bounding box), turned by the instance's facing and moved to its origin. A
-    sublayer per kind holds the fills (one `<g class="station-piece" data-slot data-model data-x data-y>` each, opaque inside a group
-    that is partly transparent as a whole, so overlapping boxes do not darken). The `station-outline` sublayer draws the decks' outer
-    edge at `STATION_OUTLINE`, the width of an industry's: a stretch of a cell's edge with another cell just outside it is inside the
-    station and is not drawn, so touching cells show no line between them. Each building is outlined at that width and has no lines
-    inside. `instances` are `read_instances` rows. Units are metres like the other layers."""
+    """SVG lines for the `stations` layer, a sublayer per `STATION_KINDS` entry that has a piece in the picture. Each placed piece is
+    its box in the model's own axes (`boxes`, from `read_station_boxes`), turned by the instance's facing and moved to its origin. A
+    sublayer holds the fills (one `<g class="station-piece" data-slot data-model data-x data-y>` each, opaque inside a group that is
+    partly transparent as a whole, so overlapping boxes do not darken) and the kind's outline, `station-outer`, at `STATION_OUTLINE`,
+    the width of an industry's: a stretch of a box's edge with another box of the kind just outside it is inside the group and is
+    not drawn, so touching boxes show no line between them. `instances` are `read_instances` rows. Units are metres like the other
+    layers; kinds are drawn in the table's order, so buildings lie over platforms."""
     k = max(1.0, mpp / 2.0)
-    pieces = []                                              # (kind index, row, corners in picture metres)
-    for n, (_lid, _label, names, _colour, _opacity, _edges) in enumerate(STATION_KINDS):
+    out = []
+    deck_polys, deck_outer = [], []
+    for lid, label, names, _edges, colour, opacity in STATION_KINDS:
+        models = {"stations/%s.mdl" % n for n in names}
+        polys, rows = [], []
         for i in instances:
-            if i["model"] in boxes and i["model"].rsplit("/", 1)[-1][:-4] in names:
+            if i["model"] in models and i["model"] in boxes:
                 x0, y0, x1, y1 = boxes[i["model"]]
                 h = math.hypot(i["fx"], i["fy"]) or 1.0
                 fx, fy = i["fx"] / h, i["fy"] / h
-                pieces.append((n, i, [fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
-                                      for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]))
-    if not pieces:
-        return []
-    out = [layer("stations", "Water stations", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp))]
-    for n, (lid, label, _names, colour, opacity, _edges) in enumerate(STATION_KINDS):
-        mine = [(i, c) for m, i, c in pieces if m == n]
-        if not mine:
+                polys.append([fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))])
+                rows.append(i)
+        if not polys:
             continue
-        out.append(layer(lid, label, ' opacity="%g"' % opacity))
-        for i, c in mine:
-            out.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" stroke="%s" stroke-width="%g"/></g>'
-                       % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % q for q in c), colour, colour, 0.5 * k))   # a same-colour edge hides the seam between two cells
+        if not out:
+            out.append(layer("stations", "Stations", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
+        out.append(layer(lid, label))
+        out.append('<g opacity="%g">' % opacity)
+        for i, c in zip(rows, polys):
+            out.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" '
+                       'stroke="%s" stroke-width="%g"/></g>'    # a same-colour edge hides the seam between two boxes
+                       % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % q for q in c), colour, colour, 0.5 * k))
         out.append("</g>")
-    polys = [c for m, _i, c in pieces if STATION_KINDS[m][5]]      # the deck cells
-    boxes_xy = [(min(q[0] for q in c), max(q[0] for q in c), min(q[1] for q in c), max(q[1] for q in c)) for c in polys]
-    outer = []
-    for me, c in enumerate(polys):
-        cx, cy = sum(q[0] for q in c) / 4, sum(q[1] for q in c) / 4
-        for (x0, y0), (x1, y1) in zip(c, c[1:] + c[:1]):
-            length = math.hypot(x1 - x0, y1 - y0)
-            steps = max(1, int(length))                      # test every metre of the edge
-            nx, ny = (y1 - y0) / (length or 1.0), -(x1 - x0) / (length or 1.0)
-            if nx * (x0 - cx) + ny * (y0 - cy) < 0:
-                nx, ny = -nx, -ny                            # the normal that points away from this cell
-            run, last = None, None
-            for st in range(steps):
-                t0, t1 = st / steps, (st + 1) / steps
-                mx, my = x0 + (x1 - x0) * (t0 + t1) / 2 + 0.3 * nx, y0 + (y1 - y0) * (t0 + t1) / 2 + 0.3 * ny
-                inside = any(other != me and b[0] <= mx <= b[1] and b[2] <= my <= b[3] and _inside(polys[other], mx, my)
-                             for other, b in enumerate(boxes_xy))
-                if run is None or inside != last:
-                    if run and not last:
-                        outer.append(run)
-                    run, last = [(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)], inside
-                run.append((x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1))
-            if run and not last:
-                outer.append(run)
-    out.append(layer("station-outline", "Water stations: outline"))
-    if outer:
-        d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in outer)
-        out.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
-                   ' stroke-linejoin="round"/>' % (d, STATION_OUTLINE * k))
-    for m, _i, c in pieces:
-        if not STATION_KINDS[m][5]:                          # a building: outlined, nothing inside
-            out.append('<polygon class="station-building-outline" points="%s" fill="none" stroke="#000" stroke-width="%g"'
-                       ' stroke-linejoin="round"/>' % (" ".join("%.2f,%.2f" % q for q in c), STATION_OUTLINE * k))
-    out.append("</g>")
-    out.append("</g>")
+        boxes_xy = [(min(q[0] for q in c), max(q[0] for q in c), min(q[1] for q in c), max(q[1] for q in c)) for c in polys]
+        buckets = collections.defaultdict(list)              # 50 m cells holding the boxes that reach them, so a test looks only nearby
+        for n, (bx0, bx1, by0, by1) in enumerate(boxes_xy):
+            for gx in range(int(bx0 // 50), int(bx1 // 50) + 1):
+                for gy in range(int(by0 // 50), int(by1 // 50) + 1):
+                    buckets[gx, gy].append(n)
+        outer = []
+        for me, c in enumerate(polys):
+            cx, cy = sum(q[0] for q in c) / 4, sum(q[1] for q in c) / 4
+            for (x0, y0), (x1, y1) in zip(c, c[1:] + c[:1]):
+                length = math.hypot(x1 - x0, y1 - y0)
+                steps = max(1, int(length))                  # test every metre of the edge
+                nx, ny = (y1 - y0) / (length or 1.0), -(x1 - x0) / (length or 1.0)
+                if nx * (x0 - cx) + ny * (y0 - cy) < 0:
+                    nx, ny = -nx, -ny                        # the normal that points away from this box
+                run, last = None, None
+                for st in range(steps):
+                    t0, t1 = st / steps, (st + 1) / steps
+                    mx, my = x0 + (x1 - x0) * (t0 + t1) / 2 + 0.3 * nx, y0 + (y1 - y0) * (t0 + t1) / 2 + 0.3 * ny
+                    inside = any(other != me and boxes_xy[other][0] <= mx <= boxes_xy[other][1]
+                                 and boxes_xy[other][2] <= my <= boxes_xy[other][3] and _inside(polys[other], mx, my)
+                                 for other in buckets.get((int(mx // 50), int(my // 50)), ()))
+                    if run is None or inside != last:
+                        if run and not last:
+                            outer.append(run)
+                        run, last = [(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)], inside
+                    run.append((x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1))
+                if run and not last:
+                    outer.append(run)
+        if lid == "station-water-decks":
+            deck_polys, deck_outer = polys, outer
+        if outer:
+            d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in outer)
+            out.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
+                       ' stroke-linejoin="round"/>' % (d, STATION_OUTLINE * k))
+        out.append("</g>")
+    landings = [i for i in instances if i["model"].startswith("stations/water/models/")
+                and LANDING_MODELS.get(i["model"].rsplit("/", 1)[-1][:-4])]
+    if landings:
+        if not out:
+            out.append(layer("stations", "Stations", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
+        out.append("<defs>")
+        for size in sorted({LANDING_MODELS[i["model"].rsplit("/", 1)[-1][:-4]] for i in landings}):
+            body = re.search(r"<svg[^>]*>(.*)</svg>", open(os.path.join(ICON_DIR, "..", "anchor_%s.svg" % size)).read(), re.S)
+            out.append('<symbol id="station-anchor-%s" viewBox="0 0 64 64">%s</symbol>' % (size, body.group(1)))
+        out.append("</defs>")
+        out.append(layer("station-landings", "Water stations: landings"))
+        for i in landings:
+            size = LANDING_MODELS[i["model"].rsplit("/", 1)[-1][:-4]]
+            d = LANDING_SIZE[size]
+            (cx, cy), edge = _clear_of_edge(fr.pic(i["x"], i["y"]), LANDING_CLEARANCE[size] * d + 0.75 * k, deck_polys, deck_outer)
+            turn = ""
+            if size == "large" and edge:                     # the ring at the top of a large anchor points at its dock
+                turn = ' transform="rotate(%.1f %.2f %.2f)"' % (math.degrees(math.atan2(edge[0] - cx, cy - edge[1])), cx, cy)
+            out.append('<use class="station-landing" data-slot="%s" data-model=%s data-size="%s" data-x="%.1f" data-y="%.1f" xlink:href="#station-anchor-%s" '
+                       'x="%.2f" y="%.2f" width="%g" height="%g" color="%s"%s/>'
+                       % (i["slot"], quoteattr(i["model"]), size, i["x"], i["y"], size, cx - d / 2, cy - d / 2, d, d, LANDING_INK, turn))
+        out.append("</g>")
+    if out:
+        out.append("</g>")
     return out
 
 
@@ -1524,13 +1617,13 @@ def main():
             depot_rows, station_rows = [], []
             if depot_specs or station_boxes:
                 try:
-                    found = read_instances(data, (DEPOT_PREFIXES if depot_specs else ()) + ((STATION_PREFIX,) if station_boxes else ()))
+                    found = read_instances(data, (DEPOT_PREFIXES if depot_specs else ()) + (STATION_PREFIXES if station_boxes else ()))
                 except ValueError as e:                   # an older save: no model table, so no instances
                     print("no depot or station layers: %s" % e)
                     found = []
                 for i in found:
-                    if i["model"] in station_boxes:
-                        x0, y0, x1, y1 = station_boxes[i["model"]]
+                    if i["model"] in station_boxes or (i["model"].startswith("stations/water/") and i["model"].rsplit("/", 1)[-1][:-4] in LANDING_MODELS):
+                        x0, y0, x1, y1 = station_boxes.get(i["model"], (-1.0, -1.0, 1.0, 1.0))
                         r = math.hypot(max(abs(x0), abs(x1)), max(abs(y0), abs(y1)))
                         if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                             station_rows.append(i)
