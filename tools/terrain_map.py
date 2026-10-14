@@ -90,8 +90,8 @@ game's own palette.
              16 m and a track 4 m. Default: the usual Steam folders.
 --rose WHERE (SVG only) a `compass` layer, the top one: a white circle with a black outline and a black compass rose (the
              shape of tools/icons/compass_rose.svg: north an arrow, E, S and W on shorter arms, the letters upright). The arms point
-             where north and east lie in the picture, so under `--north sun` north is left. WHERE is `lower-left` (the default),
-             `lower-right`, `upper-left`, `upper-right`, `off`, or `X,Y` in map metres for the circle's centre.
+             where north and east lie in the picture, so under `--north sun` north is left. WHERE is `lower-right` (the default),
+             `lower-left`, `upper-left`, `upper-right`, `off`, or `X,Y` in map metres for the circle's centre.
 --rose-size M the rose circle's diameter in metres (default 250, but at most an eighth of the picture's short side, so a
              close crop is not covered).
 --min-width M (SVG only) draw no road or rail narrower than M metres (default 0, the real widths). A picture of the
@@ -609,6 +609,9 @@ def auto_grid_step(short_side, cropped):
     return step if cropped else max(step, 1000)
 
 
+LABEL_EM = 0.62                                              # a grid label's average character width, in font sizes (a safe overestimate)
+
+
 def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
     """The grid as two layers, `grid` (the marks) and `grid-labels` (the coordinates, at the top
     and left edges, meant to be drawn last so they sit over the network). The `grid` layer has sublayers
@@ -624,7 +627,8 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
     picture are labelled along the
     top (`game`: constant x, x rising to the right; `sun`: constant y, y falling to the right) and
     those that run across it along the left (`game`: constant y, falling downwards; `sun`: constant x,
-    falling downwards). Coordinates inside are metres from the image's top-left corner, like the other layers."""
+    falling downwards). A label is never moved to keep it legible: a left one that would sit in the top row of labels, and a top
+    one that would run off the right edge, are left out. Coordinates inside are metres from the image's top-left corner, like the other layers."""
     w, h = size[0] * mpp, size[1] * mpp
     size_t = max(min(7 * mpp, 0.03 * max(w, h)), min(step * 0.07, 70))   # label size in metres, smaller on a close crop, no bigger for a wide step
     ink = 'fill="none" stroke="%s"' % GRID_HEX
@@ -671,6 +675,7 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
     majors = [layer("grid-major", "Grid major")]
     labels = [layer("grid-labels", "Grid labels", ' transform="%s" pointer-events="none"' % scale)]
     crosses, big_crosses = [], []
+    top_band = size_t * 1.4                                     # the height of the row of x labels along the top edge
     ups_px = [(val, fr.pic(0, val)[0] if up_axis == "y" else fr.pic(val, 0)[0]) for val in ups]
     across_py = [(val, fr.pic(val, 0)[1] if across_axis == "x" else fr.pic(0, val)[1]) for val in acrosses]
     for val, px in ups_px:
@@ -680,7 +685,9 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
         elif style:
             extra = ' stroke-dashoffset="%g"' % up_offset if dashed else ""
             minor.append('<path d="M%g 0V%g" %s%s/>' % (px, h, style, extra))
-        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (px + size_t * 0.3, size_t * 1.1, text, up_axis, val))
+        word = "%s %d" % (up_axis, val)
+        if px + size_t * 0.3 + len(word) * LABEL_EM * size_t <= w:   # one that would run off the right edge is left out
+            labels.append('<text x="%g" y="%g" %s>%s</text>' % (px + size_t * 0.3, size_t * 1.1, text, word))
     for val, py in across_py:
         if val % major == 0:
             if major_dots:
@@ -688,7 +695,8 @@ def grid_layers(size, mpp, fr, step, lines="auto", dot_step=25, major=1000):
         elif style:
             extra = ' stroke-dashoffset="%g"' % across_offset if dashed else ""
             minor.append('<path d="M0 %gH%g" %s%s/>' % (py, w, style, extra))
-        labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, across_axis, val))
+        if py - size_t * 1.4 >= top_band:                       # one in the top row of labels is left out, not moved
+            labels.append('<text x="%g" y="%g" %s>%s %d</text>' % (size_t * 0.3, py - size_t * 0.3, text, across_axis, val))
     for uv, px in ups_px:
         for av, py in across_py:
             big = uv % major == 0 and av % major == 0
@@ -1107,7 +1115,7 @@ ROSE_CORNERS = ("lower-left", "lower-right", "upper-left", "upper-right")
 ROSE_SIZE = 250.0                                            # metres across the circle, at most an eighth of the picture's short side
 
 
-def rose_layer(size, mpp, fr, where="lower-left", diameter=None):
+def rose_layer(size, mpp, fr, where="lower-right", diameter=None):
     """The `compass` layer: a white circle with a black outline and a black compass rose in it, in map metres from the picture's
     top-left corner. `where` is a corner of the picture (`ROSE_CORNERS`) or `X,Y` in map metres for the centre, `diameter` the circle's
     width in metres (default `ROSE_SIZE`, at most an eighth of the picture's short side). The rose is the shape of tools/icons/
@@ -1228,8 +1236,8 @@ def main():
                     "(default: the usual Steam places)")
     ap.add_argument("--min-width", type=float, default=0.0, metavar="M", help="SVG only: draw no road or rail "
                     "narrower than M metres, so a whole-map picture keeps them visible (default 0: real widths)")
-    ap.add_argument("--rose", default="lower-left", metavar="WHERE",
-                    help="SVG only: where the compass rose goes: lower-left (default), lower-right, upper-left, "
+    ap.add_argument("--rose", default="lower-right", metavar="WHERE",
+                    help="SVG only: where the compass rose goes: lower-right (default), lower-left, upper-left, "
                     "upper-right, off, or X,Y (map metres) for its centre")
     ap.add_argument("--rose-size", type=float, metavar="M", help="SVG only: the rose circle's diameter in metres "
                     "(default 250, at most an eighth of the picture's short side)")
