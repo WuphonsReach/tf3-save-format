@@ -48,7 +48,7 @@ u64  timeBuilt    a clock value, see calendar.md
 
 ### The town field and the town boundaries
 
-The `town` field of a building record is the owning town (Confirmed, 604, two buildings), and the boundary between two towns on the map fits the line equidistant from their first crossings (Observed, two games). The evidence, the screenshots and the open questions are in [town-boundaries.md](town-boundaries.md).
+The `town` field of a building record is the owning town (Confirmed, 604, two buildings), and the boundary between two towns on the map fits the line equidistant from their first crossings (Observed, three games). The evidence, the screenshots and the open questions are in [town-boundaries.md](town-boundaries.md).
 
 The ticks made in the map editor, a building's position and what the record's `town` value is are in [editor-map-buildings.md](editor-map-buildings.md).
 
