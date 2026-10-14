@@ -85,7 +85,6 @@ Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578
 |---|---|---|---|---|---|---|---|
 | 2 | 1 | Small | 1 : 1 | 11264 x 11264 | 126.9 | Medium 1 : 1 | [kaspars](https://mod.io/g/transportfever3/m/kaspars) (6432023) |
 | 3 | 1 | Medium | 1 : 1 | 8192 x 24576 | 201.3 | Large 1 : 3 | [autosave_Emerald Shores_1965-07-29](https://mod.io/g/transportfever3/m/autosave-emerald-shores-1965-07-29) (6419141) |
-| 3 | 1 | Medium | 1 : 1 | 8192 x 24576 | 201.3 | Large 1 : 3 | [LXYY](https://mod.io/g/transportfever3/m/na263651) (6422633) |
 | 3 | 1 | Medium | 1 : 1 | 10240 x 20480 | 209.7 | Large 1 : 2 | [Brasil](https://mod.io/g/transportfever3/m/brasil1) (6423816) |
 | 3 | 1 | Medium | 1 : 1 | 14336 x 14336 | 205.5 | Large 1 : 1 | [Redrock Bends](https://mod.io/g/transportfever3/m/redrock-bends2) (6425276) |
 | 3 | 1 | Medium | 1 : 1 | 16384 x 16384 | 268.4 | Very Large 1 : 1 | [YF-EL](https://mod.io/g/transportfever3/m/oresund-strait-eng1) (6435288) |
