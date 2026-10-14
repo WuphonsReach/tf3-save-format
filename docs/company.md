@@ -38,7 +38,8 @@ The thresholds the game shows ("Reach a Population of N") are not stored. The ga
 
 - Rank 1 needs `basePopulation` itself.
 - For rank r, the game takes a base that slides from a fixed 725 at rank 1 to `basePopulation` at rank 15, multiplies it by a growth factor, a cubic in r that is 1 at rank 1 and 12.5 at rank 15 (coefficients 0.001, 0.027398, 0.14221 and 0.829392 for r³, r², r and 1), and adds the difference between `basePopulation` and that base. The base and the product are rounded down.
-- Checks: rank 1 at 1,355 with `basePopulation` 1,355; rank 2 at 1,622 with 1,443; Vice President (13) at 14,842 with 1,685 (6428935); President (14) at 24,037 with 2,301 (6417707), plus that save's 88% bar above. All four match exactly.
+- Checks: rank 1 at 1,355 with `basePopulation` 1,355; rank 2 at 1,622 with 1,443; Vice President (13) at 14,842 with 1,685 (6428935); President (14) at 24,037 with 2,301 (6417707), plus that save's 88% bar above. All four match exactly. A fifth, from our own new game (Small 1 : 3, five towns, 604): `basePopulation` 952 gives 1,123 for Mechanic (rank 2), the figure its company window showed, with a progress bar of 955 / 1,123.
+- **In a new game `basePopulation` is the starting population (Observed, 604, eight new games of ours):** it equalled the first `experience` in each of them (109, 98, 952, 319, 224, 105, 86 and 134), and `experience` is the sum of the Towns tab's populations: 127 + 312 + 146 + 278 + 92 = 955 in the Small game after a few seconds of play, where the first save had 952.
 - The rank is the highest whose threshold `experience` has reached. That gives `potentialLevel`.
 
 ## Loans
