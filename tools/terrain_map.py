@@ -145,13 +145,19 @@ game's own palette.
              and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
              covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
              maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
---industries (SVG only, the default; `--no-industries` leaves it out) add an `industries` layer, a sublayer per industry key (`industry-KEY`), each industry a badge: a white
+--industries (SVG only, the default; `--no-industries` leaves it out) add an `industries` layer: a footprint sublayer
+             (`industry-footprints`) and a sublayer per industry key (`industry-KEY`), each industry a badge: a white
              disc with a grey border and the key's icon from tools/icons/industries/ in dark grey, centred on the origin of the
              industry's main model (the one `industry_compass.py` uses). The disc is 96 m across by default, `--industry-size M`
-             sets another diameter; the icon, the border and the margin scale with it. The industry's real footprint was not
-             read and the origin is not known to be its centre, so a badge may overhang a small industry: lower `--industry-size`
-             to keep inside, raise it to read the picture from far away. On a whole-map picture a badge is a few pixels, so zoom
-             in. Each is a `<g class="industry" data-slot data-key data-model data-x data-y>`; the icons are `<symbol>`s in the
+             sets another diameter; the icon, the border and the margin scale with it. The footprint is the industry's
+             `ground_face` polygon from its script (`<key>/<key>.script.lua` in the install's `industries/<key>.zip`, read when
+             the script runs and never stored; needs the install like `--depots`), placed from the origin and facing, drawn under
+             the badges with a dark purple outline and a translucent light purple fill, as the game's Towns layer paints an
+             industry. It is declared by the land industries only: the fishing grounds, oil platform and sand excavator (and a
+             mod's industry) get the badge alone, which may overhang a small industry, so lower `--industry-size` to keep
+             inside or raise it to read the picture from far away. On a whole-map picture a badge is a few pixels, so zoom
+             in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y>`, each footprint a
+             `<polygon class="industry-footprint" data-slot data-key>`; the icons are `<symbol>`s in the
              layer's `<defs>`. Drawn upright whatever `--north` says. Reads the whole stream; no `--crop` needed.
 --stream     the files are decompressed streams, not saves.
 
@@ -324,6 +330,26 @@ def read_depot_specs(content, mods_dir=None):
             out[lid] = {"face": [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))] if face else [],
                         "radius": int(radius.group(1)), "pool": int(pool.group(1)) if pool else 0,
                         "modes": ",".join(re.findall(r'"(\w+)"', modes.group(1))) if modes else ""}
+    return out
+
+
+def read_industry_faces(content):
+    """{industry key: [(a, b) ...]} for every industry of the install whose script declares a `ground_face`, in the
+    industry's own axes (a along the model's x axis): `<key>/<key>.script.lua` in `industries/<key>.zip`, read when the
+    script runs (`content` is the `infrastructure` folder `find_content` returns). An industry with no face (the water
+    ones keep a `collider` box only) or no archive is left out. Nothing is stored."""
+    out = {}
+    if not content:
+        return out
+    for path in sorted(glob.glob(os.path.join(os.path.dirname(content), "industries", "*.zip"))):
+        key = os.path.basename(path)[:-len(".zip")]
+        try:
+            text = zipfile.ZipFile(path).read("%s/%s.script.lua" % (key, key)).decode("utf-8", "replace")
+        except (OSError, KeyError, zipfile.BadZipFile):
+            continue
+        face = _FACE.search(text)
+        if face:
+            out[key] = [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))]
     return out
 
 
@@ -908,13 +934,16 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
 ICON_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icons", "industries")
 INDUSTRY_DIAMETER = 96.0                                 # metres, the default badge size (`--industry-size`)
 INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
+FOOTPRINT_FILL, FOOTPRINT_LINE = "#b44fe8", "#5b1a8f"     # the Towns layer paints an industry purple: light fill, dark line
 
 
-def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER):
+def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER, faces=None):
     """SVG lines for the `industries` layer: a badge per industry, a white disc `diameter` metres across with a grey border and
     the industry's icon (tools/icons/industries/KEY.svg, 64 x 64, in `currentColor`) in dark grey, centred on the origin of its main
     model. `rows` are `read_instances` rows with a `key` added. One sublayer per key, one `<symbol>` per key used; a key without an icon
-    gets the disc only. The badge is upright whatever the north. Units are metres like the other layers."""
+    gets the disc only. The badge is upright whatever the north. `faces` is `read_industry_faces`' result: an industry whose key
+    has one gets its ground face, placed from the instance's origin and facing, in a `industry-footprints` sublayer under the
+    badges (dark purple outline, translucent light purple fill). Units are metres like the other layers."""
     if not rows:
         return []
     r = diameter / 2.0
@@ -930,6 +959,17 @@ def industry_layers(mpp, fr, rows, diameter=INDUSTRY_DIAMETER):
             have.add(key)
             out.append('<symbol id="industry-icon-%s" viewBox="0 0 64 64">%s</symbol>' % (safe_id(key), body.group(1)))
     out.append("</defs>")
+    shapes = [i for i in rows if faces and i["key"] in faces]
+    if shapes:
+        out.append(layer("industry-footprints", "Industries: footprints"))
+        for i in shapes:
+            n = math.hypot(i["fx"], i["fy"]) or 1.0
+            fx, fy = i["fx"] / n, i["fy"] / n
+            pts = " ".join("%.2f,%.2f" % fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in faces[i["key"]])
+            out.append('<polygon class="industry-footprint" data-slot="%d" data-key="%s" points="%s" fill="%s" fill-opacity="0.45"'
+                       ' stroke="%s" stroke-width="%g" stroke-linejoin="round"/>'
+                       % (i["slot"], i["key"], pts, FOOTPRINT_FILL, FOOTPRINT_LINE, 1.5 * max(1.0, mpp / 2.0)))
+        out.append("</g>")
     border = diameter / 32.0                             # 2 m on a 64 m badge
     side = 0.72 * diameter                      # the icon sits inside the disc with a margin
     for key in sorted({i["key"] for i in rows}):
@@ -1212,6 +1252,7 @@ def main():
     content = find_content(args.game)
     widths = read_profile_widths(content) if content else {}
     depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
+    industry_faces = read_industry_faces(content) if args.industries and not args.png else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
     print("widths: %s" % (("%d templates read from the install" % len(widths)) if widths else
@@ -1293,10 +1334,13 @@ def main():
                 try:
                     table = read_model_table(data)
                     mains = main_models(table[0])
-                    r = args.industry_size / 2
                     for i in read_instances(data, ("industries/",), table):
-                        if i["model"] in mains and x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
-                            industry_rows.append(dict(i, key=mains[i["model"]]))
+                        if i["model"] not in mains:
+                            continue
+                        key = mains[i["model"]]
+                        r = max([args.industry_size / 2] + [math.hypot(a, b) for a, b in industry_faces.get(key, ())])
+                        if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
+                            industry_rows.append(dict(i, key=key))
                 except ValueError as e:                   # an older save: no model table
                     print("no industry layer: %s" % e)
             if args.edge_ids and labels:
@@ -1343,7 +1387,7 @@ def main():
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
-            over += industry_layers(args.mpp, fr, industry_rows, args.industry_size)
+            over += industry_layers(args.mpp, fr, industry_rows, args.industry_size, industry_faces)
             open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, grid_step, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
                                                [] if rose_at == "off" else rose_layer(size, args.mpp, fr, rose_at, args.rose_size),
