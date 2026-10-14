@@ -132,6 +132,7 @@ def level_rings(rows, spacing, water_v, step_v, min_perimeter=0.0):
     below the level reaches it. Rings shorter than `min_perimeter` metres are left out."""
     w, h = len(rows[0]), len(rows)
     top = max(max(r) for r in rows)
+    top = max(top, int(math.ceil(water_v)))                         # a picture wholly under water still gets a land border, so its water closes
     padded = [[top] * (w + 2)] + [[top] + list(r) + [top] for r in rows] + [[top] * (w + 2)]
     # band 0 is the ground below the water, band m (m >= 1) starts at water + (m - 1) * step, and the cut that
     # `_cut` calls m is the one between bands m - 1 and m, so ring set k of the result is cut m = k + 1
