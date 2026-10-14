@@ -4,7 +4,7 @@ Small read-only Python scripts used to check the notes in `docs/`. They are refe
 
 Python 3.14 or later, standard library only (older Python works with the `zstandard` package installed), except `town_centre.py`, which also needs numpy and Pillow (both permissively licensed, imported at run time, not bundled).
 
-None of these scripts write a save. For editing, see [tf3-save-editor](https://github.com/TBK/tf3-save-editor).
+None of these scripts write a save. To look at an SVG a script wrote (a browser for a person, `rsvg-convert` for a session), see [docs/developer/tooling.md](../docs/developer/tooling.md). For editing, see [tf3-save-editor](https://github.com/TBK/tf3-save-editor).
 
 | Script | What it does |
 |---|---|

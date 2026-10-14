@@ -82,6 +82,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [gaps/economy-and-events.md](gaps/economy-and-events.md) | Open questions on subsidies, industry spawning and closing, notification decoding, company offers and ranks, Finances columns, inflation, the balloon and the UFO |
 | [gaps/header-settings-and-map.md](gaps/header-settings-and-map.md) | Open questions on the seed and what rebuilds from it, terrain and heightmap, settings in play, calendar and clock, mods, script states, animals, platform |
 | [gaps/tools-and-analysis.md](gaps/tools-and-analysis.md) | Steps that still need a private script, tool defects (cargo ids in mod games), saves not yet compared |
+| [developer/tooling.md](developer/tooling.md) | Which program for which job when working in the repo: the scripts, a browser for people, `rsvg-convert` for a session to read an SVG, headless Firefox and its profile-lock hang, the `pkill -f` pitfall |
 | [developer/vscode-schema.md](developer/vscode-schema.md) | Clearing VS Code's "untrusted schema" warning on the summaries' `$schema` line |
 
 The money journal and the script-state container are documented in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). These notes do not repeat them.

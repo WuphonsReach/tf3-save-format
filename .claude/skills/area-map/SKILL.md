@@ -35,7 +35,7 @@ Roads dark grey, rails red, grid labels `x` and `y` in map metres. Each vehicle 
 
 Give the user the SVG and tell them to open it in Firefox or Chrome (the vector layers stay sharp when zoomed, and the browser shows the data-URI terrain that other viewers drop). Do not write `--png`, and do not leave a PNG next to the SVG, unless the user asks for a PNG. An SVG is superior in most cases, so offer nothing else by default.
 
-To check a picture yourself, the Read tool needs a raster. Take a headless browser screenshot into the scratchpad directory, not into `local/games/`, so it is not left for the user. The command: `firefox --headless --no-remote --profile DIR --window-size W,H --screenshot out.png file://…/map.svg`, where DIR is an empty profile folder the browser can write to (a snap-packaged Firefox cannot use `/tmp`; use a folder under its own `common` directory) and `W,H` are the SVG's width and height plus about 90 px. Look at it with the Read tool.
+To check a picture yourself, the Read tool needs a raster. Use `rsvg-convert -w 1400 map.svg -o PNG` (package `librsvg2-bin`), with the PNG in the scratchpad directory, not in `local/games/`, so it is not left for the user. It takes well under a second, needs no browser and draws the grid, labels and the embedded terrain of `--raster` files. Look at it with the Read tool. A headless Firefox screenshot is the fallback (command and its profile-folder and hang pitfalls in `docs/developer/tooling.md`); it hung four times in one session on a stale profile lock, so do not start with it.
 
 ## Known limits
 
