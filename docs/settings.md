@@ -31,7 +31,7 @@ Keys as stored: the settings table is flat and the dotted names are the keys (se
 | `advancedOptions.subventionRisk` | Subsidies Risk | None, **Fair**, Risky, Very Risky |
 | `advancedOptions.landmarkResources` | Landmark Required Resources | None, Low, **Normal**, High, Very High |
 | `advancedOptions.inflationFactor` | Inflation | None, Low, **Normal**, High, Very High |
-| `townConfig.sensitivityUrbanCare` | Reputation (probably, not toggled) | Off, **On** |
+| `townConfig.sensitivityUrbanCare` | Reputation | Off, **On** |
 | `townConfig.sensitivityTrafficCongestion` | Traffic Sensitivity | Off, Very Low, Low, **Normal**, High, Very High, Extreme |
 | `townConfig.sensitivityPeopleHappiness` | Happiness Sensitivity | Off, Very Low, Low, **Normal**, High, Very High, Extreme |
 | `townConfig.sensitivityCargoDelivery` | Delivery Sensitivity | Off, Very Low, Low, **Normal**, High, Very High, Extreme |
@@ -51,7 +51,9 @@ Keys as stored: the settings table is flat and the dotted names are the keys (se
 | `advancedOptions.trafficSpeedSensitivityScale` | not seen on a screen | 0%, 25%, 50%, 75%, **100%**, 125%, 150%, 175%, 200% |
 | `isMapEditor` | | bool; `true` in map editor saves ([editor-saves.md](editor-saves.md)) |
 
-The key-to-screen-name pairs come from comparing screenshots with the saved numbers. For the options moved during the tests (the presets, the six hand-set options, population, passenger and cargo income) the screen value and the stored entry changed together (**Confirmed** on 604); Infrastructure Costs and Infrastructure Upkeep were told apart in a save where one read 50% and the other 100%. The rest (town density, initial industry density, weather, time of day, tutorial, reforestation, map size, map format) were matched on a single value each (**Observed**).
+The key-to-screen-name pairs come from comparing screenshots with the saved numbers. For the options moved during the tests (the presets, the six hand-set options, population, passenger and cargo income) the screen value and the stored entry changed together (**Confirmed** on 604); Infrastructure Costs and Infrastructure Upkeep were told apart in a save where one read 50% and the other 100%. Two later new games (a Tiny dry 1 : 2 and a Small tropical 1 : 3, [test-games.md](test-games.md#map-format-tests)) were set by hand on every option and saved at once: all 32 stored values matched the New Game screens, including the whole range of Weather (Sunny 2, Rainy 4), Time of Day (Continuous 2, Evening 6), the sensitivities (Off 1, Very Low 2, Low 3, Very High 6, Extreme 7), Subsidies Never 1, Subsidies Risk None 1, Closing Very Often 5, Reforestation Off 1, Tutorial Off 1 and On 2, and **Reputation Off 1 and On 2** (**Confirmed** on 604 for the Reputation key; before this only On had been saved). The terrain sliders are not among the 32 keys.
+
+**The tutorial needs water (Observed, screenshots only):** with Tutorial On, a Tiny 1 : 3 map showed "Tutorial requires more water. Adjust water settings or change the seed." and the Start Game button was greyed out. The player cleared it by raising the map size one step, to Small, and the same seed then started. Whether the water sliders alone clear it was not tried.
 
 ## Difficulty presets
 
@@ -102,4 +104,4 @@ The Load Game list shows the loaded save's own values: its Difficulty row read "
 - The questions about mods (a deactivated mod's options, whether mod options follow the position-plus-1 rule) are in [mods.md](mods.md#open).
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
-- Whether `townConfig.sensitivityUrbanCare` is the Reputation toggle, and what `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
+- What `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.

@@ -15,6 +15,8 @@ The header names a climate and an economy in its config resources (`climate`, `e
 | `dry.clima` | `dry.eco` |
 | `mission6_tropical.clima` | `tropic.eco` |
 
+**The economy is a choice of its own (Observed, 604, new games).** The Industries dropdown in the Advanced group of the Gameplay Settings tab ([settings.md](settings.md#changing-settings-when-loading)) picks the economy file, and it is not tied to the climate: a new game on the dry climate stored `subarctic.eco` (Industries set to Subarctic), and a tropical one stored `all.eco` (All Industries). So `dry.clima` with `subarctic.eco` exists, which the table above does not list.
+
 ## What each economy leaves out of town cargo
 
 **Observed**, 599 to 604 (568 and 585 headers stop before the economy). The ids of [cargo-ids.md](cargo-ids.md) line up with what each economy leaves out of its town cargo:

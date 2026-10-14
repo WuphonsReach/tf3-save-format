@@ -10,7 +10,7 @@ The settings are stored as 1-based positions in the lists of [settings.md](setti
 
 | `map.size` | 1 : 1 | 1 : 2 | 1 : 3 | Area, km² |
 |---|---|---|---|---|
-| 1 Tiny | not seen | not seen | 2048 x 6144 | 11.8 to 12.6 |
+| 1 Tiny | not seen | 2560 x 5120 | 2048 x 6144 | 11.8 to 13.1 |
 | 2 Small | 8192 x 8192 | not seen | 4608 x 13824 | 64 to 67 |
 | 3 Medium | 11264 x 11264 | 8192 x 16384 | 6656 x 19968 | 127 to 134 |
 | 4 Large | 14336 x 14336 | 10240 x 20480 | 8192 x 24576 | 201 to 210 |
@@ -23,11 +23,11 @@ Two 1 : 5 maps were seen: Megalomaniac, 10752 x 53760 m (578 km², 601, mod.io [
 
 ## Tiny
 
-**Observed (604):** Tiny 1 : 3 and Tiny 1 : 4 both give 2048 x 6144 m (8 x 24 tiles), see [the terrain note](terrain.md#the-terrain-record). Tiny 1 : 5 gives 1536 x 7680 m (6 x 30 tiles, 11.8 km², one save). The New Game screen's own size readout agreed with each save: 2.0 x 6.0 km with 1 : 4 selected and 1.5 x 7.5 km with 1 : 5, so the shape comes from the game's setup and not from anything a save changes.
+**Observed (604):** Tiny 1 : 3 and Tiny 1 : 4 both give 2048 x 6144 m (8 x 24 tiles), see [the terrain note](terrain.md#the-terrain-record). Tiny 1 : 2 gives 2560 x 5120 m (10 x 20 tiles, 13.1 km²) and Tiny 1 : 5 gives 1536 x 7680 m (6 x 30 tiles, 11.8 km²), one save each. The New Game screen's own size readout agreed with each save: 2.5 x 5.0 km with 1 : 2 selected, 2.0 x 6.0 km with 1 : 3 and 1 : 4, and 1.5 x 7.5 km with 1 : 5, so the shape comes from the game's setup and not from anything a save changes.
 
 - A 1 : 4 map of the 12.6 km² would be about 1792 x 7168 m (7 x 28 tiles), which no save has. Tiny 1 : 4 comes out as the 1 : 3 shape. Why is **Open**.
 - 2048 m is not a minimum width: the 1 : 5 map is 1536 m wide. The 1 : 5 area is 6% under the 1 : 3 one, within the tile rounding of the rule above.
-- **Open:** no Tiny 1 : 1 or 1 : 2 save was seen.
+- **Open:** no Tiny 1 : 1 save was seen.
 
 ## Saves that disagree with their settings
 
@@ -37,7 +37,7 @@ Two 1 : 5 maps were seen: Megalomaniac, 10752 x 53760 m (578 km², 601, mod.io [
 
 **Confirmed (604):** the Load Game dialog shows a yellow line, "The map size is experimental.", for a save whose stored `map.size` is 1 (Tiny) or 6 to 8 (Huge, Megalomaniac, Gigantomaniac). It shows "The map format is experimental." for `map.format` 4 or 5, and one line naming both when both are out of range. It is not a separate flag in the header and not tied to the map editor: the game script that draws it (`gui/menu/savegame_react_util.tl` in `base/content/gui.zip`) compares the two stored settings with the range the desktop New Game options allow without the experimental map features: `map.size` 2 to 5 (Small to Very Large) and `map.format` 1 to 3. `base/mod.json` lists those two parameter sets, one without the tag `experimentalMapFeatures` and one with it. The header's width and height are not read.
 
-Eleven saves seen in the dialog agree with that rule: notice on Tiny 1 : 3 (a converted editor map, see [editor-saves.md](editor-play.md#a-converted-editor-map-loaded-as-a-played-game)) and Gigantomaniac 1 : 2; none on Small 1 : 3 (two saves), Medium 1 : 3 (two), Medium 1 : 1, Large 1 : 2, Very Large 1 : 1 and a Very Large 1 : 1 save with missing mods. **Open:** a save with `map.size` rewritten to 2 and a Tiny-sized terrain was not loaded, which would show that the width and height really are ignored; no 1 : 4 or 1 : 5 save was in the screenshots (the Tiny 1 : 5 save of the [map-format tests](test-games.md#tiny-map-format-tests) is kept; a 1 : 4 one must be made again).
+Eleven saves seen in the dialog agree with that rule: notice on Tiny 1 : 3 (a converted editor map, see [editor-saves.md](editor-play.md#a-converted-editor-map-loaded-as-a-played-game)) and Gigantomaniac 1 : 2; none on Small 1 : 3 (two saves), Medium 1 : 3 (two), Medium 1 : 1, Large 1 : 2, Very Large 1 : 1 and a Very Large 1 : 1 save with missing mods. **Open:** a save with `map.size` rewritten to 2 and a Tiny-sized terrain was not loaded, which would show that the width and height really are ignored; no 1 : 4 or 1 : 5 save was in the screenshots (the Tiny 1 : 5 save of the [map-format tests](test-games.md#map-format-tests) is kept, with a Tiny 1 : 2; a 1 : 4 one must be made again).
 
 ## File size
 
@@ -45,6 +45,6 @@ A save's file size follows the area class (a log-log correlation of 0.88 between
 
 ## Open
 
-- Tiny 1 : 1 and 1 : 2, Huge 1 : 3 and Megalomaniac 1 : 3: not seen.
+- Tiny 1 : 1, Huge 1 : 3 and Megalomaniac 1 : 3: not seen.
 - Why the 11 saves above disagree with their settings.
 - Why Tiny 1 : 4 gives the 1 : 3 shape while Tiny 1 : 5 follows the area rule.
