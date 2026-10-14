@@ -154,8 +154,9 @@ game's own palette.
              outline and a translucent light purple fill, as the game's Towns layer paints an industry. A badge with a
              footprint is 0.4 of the polygon's shorter side across (40 to 93 m for the base game's land industries) and sits
              on the polygon's area centroid, or on the origin when the centroid falls outside the polygon; the icon, the border
-             and the margin scale with it. The land industries declare a footprint; the fishing grounds, oil platform and sand
-             excavator (and a mod's industry) get a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
+             and the margin scale with it. The land industries declare a footprint; the fishing grounds and sand excavator
+             get one measured off the game's Towns layer (`MEASURED_FACES`, good to about 2 m); the oil platform (it has no
+             outline in the game) and a mod's industry get a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
              instead. On a whole-map picture a badge is a few pixels, so zoom
              in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y data-diameter>` (data-x and
              data-y are the origin), each footprint a `<polygon class="industry-footprint" data-slot data-key>`; the icons are
@@ -338,7 +339,7 @@ def read_industry_faces(content):
     """{industry key: [(a, b) ...]} for every industry of the install whose script declares a `ground_face`, in the
     industry's own axes (a along the model's x axis): `<key>/<key>.script.lua` in `industries/<key>.zip`, read when the
     script runs (`content` is the `infrastructure` folder `find_content` returns). An industry with no face (the water
-    ones keep a `collider` box only) or no archive is left out. Nothing is stored."""
+    ones keep a `collider` box only; `MEASURED_FACES` stands in for two of them) or no archive is left out. Nothing is stored."""
     out = {}
     if not content:
         return out
@@ -937,6 +938,13 @@ INDUSTRY_DIAMETER = 64.0                                 # metres, the badge of 
 FOOTPRINT_SHARE = 0.4                                    # a badge is this share of its footprint's shorter side
 INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
 FOOTPRINT_FILL, FOOTPRINT_LINE = "#b44fe8", "#5b1a8f"     # the Towns layer paints an industry purple: light fill, dark line
+# The water industries declare no `ground_face`. These outlines (metres, the industry's own axes, counter-clockwise) were read off
+# Towns-layer screenshots of one 604 game, registered on the industries' corner buoys (docs/models.md, "Industry footprints"),
+# good to about 2 m. The oil platform draws no outline in the game (its meshes are tinted), so it has none here.
+MEASURED_FACES = {
+    "fishing_grounds": [(-40.0, -28.0), (22.0, -28.0), (22.0, -12.8), (38.5, -12.8), (38.5, 20.7), (-30.0, 20.7), (-40.0, 15.5)],
+    "sand_excavator": [(-18.2, -43.5), (45.5, -43.5), (45.5, 65.0), (-18.2, 65.0)],
+}
 
 
 def face_centre(face):
@@ -1287,7 +1295,7 @@ def main():
     content = find_content(args.game)
     widths = read_profile_widths(content) if content else {}
     depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
-    industry_faces = read_industry_faces(content) if args.industries and not args.png else {}
+    industry_faces = dict(MEASURED_FACES, **read_industry_faces(content)) if args.industries and not args.png else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
     print("widths: %s" % (("%d templates read from the install" % len(widths)) if widths else
@@ -1369,7 +1377,13 @@ def main():
                 try:
                     table = read_model_table(data)
                     mains = main_models(table[0])
-                    for i in read_instances(data, ("industries/",), table):
+                    found = list(read_instances(data, ("industries/",), table))
+                    seen = {i["model"] for i in found}
+                    for path, key in list(mains.items()):    # a main model with no instance (the sand excavator's particles): the key's own model stands in
+                        own = "industries/%s/%s.mdl" % (key, key)
+                        if path not in seen and own in seen:
+                            mains[own] = key
+                    for i in found:
                         if i["model"] not in mains:
                             continue
                         key = mains[i["model"]]
