@@ -155,8 +155,10 @@ game's own palette.
              footprint is 0.4 of the polygon's shorter side across (40 to 93 m for the base game's land industries) and sits
              on the polygon's area centroid, or on the origin when the centroid falls outside the polygon; the icon, the border
              and the margin scale with it. The land industries declare a footprint; the fishing grounds and sand excavator
-             get one measured off the game's Towns layer (`MEASURED_FACES`, good to about 2 m); the oil platform (it has no
-             outline in the game) and a mod's industry get a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
+             get one measured off the game's Towns layer (`MEASURED_FACES`, good to about 2 m); the oil platform (the game
+             tints its meshes and draws no outline) gets a box of its `oil_platform_sm` model's size joined to the helipad's,
+             plus a circle on each docking station (`MEASURED_DISCS`) and a small one on each of its four buoys; a mod's
+             industry gets a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
              instead. On a whole-map picture a badge is a few pixels, so zoom
              in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y data-diameter>` (data-x and
              data-y are the origin), each footprint a `<polygon class="industry-footprint" data-slot data-key>`; the icons are
@@ -940,10 +942,17 @@ INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
 FOOTPRINT_FILL, FOOTPRINT_LINE = "#b44fe8", "#5b1a8f"     # the Towns layer paints an industry purple: light fill, dark line
 # The water industries declare no `ground_face`. These outlines (metres, the industry's own axes, counter-clockwise) were read off
 # Towns-layer screenshots of one 604 game, registered on the industries' corner buoys (docs/models.md, "Industry footprints"),
-# good to about 2 m. The oil platform draws no outline in the game (its meshes are tinted), so it has none here.
+# good to about 2 m. The oil platform has no outline in the game (its meshes are tinted); its box is the `oil_platform_sm` model's
+# footprint joined to the helipad's, a stand-in for the tinted deck.
 MEASURED_FACES = {
     "fishing_grounds": [(-40.0, -28.0), (22.0, -28.0), (22.0, -12.8), (38.5, -12.8), (38.5, 20.7), (-30.0, 20.7), (-40.0, 15.5)],
     "sand_excavator": [(-18.2, -43.5), (45.5, -43.5), (45.5, 65.0), (-18.2, 65.0)],
+    "oil_platform": [(-24.5, -29.5), (8.4, -29.5), (8.4, -30.9), (31.2, -30.9), (31.2, -10.7), (24.7, -10.7), (24.7, 24.7), (-24.5, 24.7)],
+}
+# Round parts the Towns layer tints beside a footprint, (a, b, radius) in metres in the industry's axes: the oil platform's two
+# docking stations (the big orange drums, about 10 m across) and its four large buoys (the small dots, 2 to 3 m).
+MEASURED_DISCS = {
+    "oil_platform": [(55.0, 0.0, 5.5), (-55.0, 0.0, 5.5)] + [(a, b, 1.5) for a in (-20.0, 20.0) for b in (-70.0, 70.0)],
 }
 
 
@@ -1002,6 +1011,11 @@ def industry_layers(mpp, fr, rows, diameter=None, faces=None):
         for i in shapes:
             n = math.hypot(i["fx"], i["fy"]) or 1.0
             fx, fy = i["fx"] / n, i["fy"] / n
+            for a, b, rad in MEASURED_DISCS.get(i["key"], ()):
+                cx, cy = fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
+                out.append('<circle class="industry-footprint" data-slot="%d" data-key="%s" cx="%.2f" cy="%.2f" r="%.2f" fill="%s" fill-opacity="0.45"'
+                           ' stroke="%s" stroke-width="%g"/>'
+                           % (i["slot"], i["key"], cx, cy, rad, FOOTPRINT_FILL, FOOTPRINT_LINE, 1.5 * max(1.0, mpp / 2.0)))
             pts = " ".join("%.2f,%.2f" % fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in faces[i["key"]])
             out.append('<polygon class="industry-footprint" data-slot="%d" data-key="%s" points="%s" fill="%s" fill-opacity="0.45"'
                        ' stroke="%s" stroke-width="%g" stroke-linejoin="round"/>'
@@ -1387,7 +1401,8 @@ def main():
                         if i["model"] not in mains:
                             continue
                         key = mains[i["model"]]
-                        r = max([(args.industry_size or INDUSTRY_DIAMETER) / 2] + [math.hypot(a, b) for a, b in industry_faces.get(key, ())])
+                        r = max([(args.industry_size or INDUSTRY_DIAMETER) / 2] + [math.hypot(a, b) for a, b in industry_faces.get(key, ())]
+                                 + [math.hypot(a, b) + rad for a, b, rad in MEASURED_DISCS.get(key, ())])
                         if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                             industry_rows.append(dict(i, key=key))
                 except ValueError as e:                   # an older save: no model table
