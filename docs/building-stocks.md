@@ -45,6 +45,7 @@ Do not diff a manual editor save against another by offset. A manual editor save
 ## Open
 
 - What the constant block is, what the float measures and where a building's customer count is kept.
-- Whether picking the cargo the record already holds triggers the building update, whether the game repairs a building that disagrees with its town on load or on a level change, and how stock capacity follows level and cargo weight: not tested.
+- **Observed** (604, play in the map editor and a game, not checked in a save): changing a town's cargo in its Editor tab changed all of that town's existing buildings, which agrees with the save diff in [Changing one town in the Editor tab](#changing-one-town-in-the-editor-tab). Buildings built afterwards followed the town's picks to an extent not known, and no building asked for a cargo that was not on the town's label. A town's label grows as it levels up ([cargo-ids.md](cargo-ids.md#how-the-game-adds-cargo-to-a-town); a record with a second commercial cargo is in [town-records.md](town-records.md)).
+- Still **Open**: the exact rule for new buildings, whether picking the cargo the record already holds triggers the building update, whether the game repairs a building that disagrees with its town on load or on a level change, and how stock capacity follows level and cargo weight: not tested in a save.
 - Residential buildings: no pick was changed, so none were looked at.
 - The Towns table's per-town demand figure was not rebuilt from the stocks.
