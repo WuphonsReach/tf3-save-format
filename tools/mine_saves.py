@@ -5,7 +5,8 @@ Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
-OUT_DIR/index.csv from every summary there. <seed> is the map seed from the header and <c>
+OUT_DIR/index.csv from every summary there (it has the map's size name and format ratio as stored in the
+settings, with their positions, next to the width and height in metres). <seed> is the map seed from the header and <c>
 its first character, so OUT_DIR holds few folders and the saves of one game (and the editor
 maps made from the same seed) sit together. A save without a seed (truncated, or a format
 that has none) goes to OUT_DIR/_noseed/<id>-<name>. A summary found in another place (an
@@ -222,7 +223,8 @@ FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", 
           "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
-INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_w_m", "map_h_m", "climate",
+INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_size", "map_size_name",
+              "map_format", "map_ratio", "map_w_m", "map_h_m", "climate",
               "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "tools_commit"]
 
@@ -282,14 +284,24 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
     return summary
 
 
+def setting_position_name(settings, key):
+    """('3', 'Medium') from a settings label like "3 (Medium, default)"; ('', '') where there is none."""
+    label = (settings or {}).get(key)
+    if not label:
+        return "", ""
+    pos, _, rest = str(label).partition(" (")
+    return pos, rest.rstrip(")").split(", default")[0]
+
+
 def index_row(sm):
     tr = sm.get("town_records") or {}
     if sm.get("error"):
-        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 11
+        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 15
                 + ["error", sm.get("kind", "savegame")] + [""] * 4 + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
+    size, fmt = (setting_position_name(sm.get("settings"), k) for k in ("map.size", "map.format"))
     return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
-            sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
+            *size, *fmt, sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
             len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
             cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
