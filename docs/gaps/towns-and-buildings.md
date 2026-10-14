@@ -24,6 +24,7 @@ Format of an entry: see [README.md](README.md).
 ## Stock records
 
 - **The constant block between stock records, the float that follows, and where a building's customer count is kept** (604) Home: [building-stocks.md](../building-stocks.md#open). Needs: existing saves.
+- **Which building a stock block belongs to** (604) A block is tied to its town by run and count; the order inside a run is not the record table order, the first id, `d`, `timeBuilt`, parcel or height order. Also open: why `b` equals `a` on some houses and not on some shops, and the 600th block. Home: [building-stocks.md](../building-stocks.md#which-blocks-belong-to-which-town-604). Needs: existing saves (the construction path run next to the blocks, entity data around them) or a save with one building removed.
 - **Whether picking the cargo a record already holds triggers the building update, and how stock capacity follows level and cargo weight** (604) Home: [building-stocks.md](../building-stocks.md#open). Needs: new save (one town changed in the Editor tab, loaded and saved).
 - **Residential buildings** (604) No pick was changed, so none were read. Home: [building-stocks.md](../building-stocks.md#open). Needs: new save.
 
