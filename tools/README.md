@@ -41,6 +41,8 @@ None of these scripts write a save. To look at an SVG a script wrote (a browser 
 
 `icons/industries/` holds one SVG per industry key (all 32 of the base game, named like the key, for example `icons/industries/saw_mill.svg`) for map plots. Each is a 64 x 64 solid pictogram drawn in `currentColor`, so the caller sets the colour with `color` or `fill`. They are our own drawings of plain objects (three wheat ears for `farm`, a pumpjack for `oil_well`, a tin for `food_factory`), picked to echo what the game's cargo icons show for each industry's products; none is traced from or copied out of the game's artwork. Like the code here, they are licensed MIT OR Apache-2.0. `icons/sunrise.svg` and `icons/sunset.svg` are the compass markers of `industry_compass.py`.
 
+`icons/anchor_large.svg` and `icons/anchor_small.svg` are two 64 x 64 anchor pictograms in `currentColor`, for ships and water stations: the large one is a vertical stock anchor filling the frame, the small one a tilted anchor with two flat blades, drawn about 0.72 times the size so the two tell apart at 16 px. Our own drawings.
+
 `icons/compass_rose.svg` is a standalone 64 x 64 compass rose (north an arrow, E, S and W on short arms), drawn in `currentColor` with bold sans-serif letters, so the letters take whatever sans-serif font the viewer has. It comes from `rose()` in `industry_compass.py` (scale 1.8, centre 32, 32.4), the same drawing as the rose in the corner of each compass plot.
 
 ## Editor setup
