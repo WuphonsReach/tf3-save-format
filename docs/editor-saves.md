@@ -6,7 +6,7 @@ Checked on 604.
 
 - Same container, same header layout, same settings keys.
 - The setting `isMapEditor` is `true` (see [header.md](header.md), "Settings").
-- Header money is 0 and the counter is low (0, 1024 and 1678 seen). The info table is empty.
+- Header money is 0 and the counter is low (0, 1024 and 1678 seen); with towns drawn it counts their residents ([editor-towns.md](editor-towns.md#the-header-counter-is-the-number-of-residents)). The info table is empty.
 - A different set of script states, and an empty `townStates` table.
 - Town records are in the same layout, so the town component is not editor-only. The last 17 bytes of each record are zero.
 - Starting cargo is in two places: the town record and the stock records of the town's existing buildings. Patching only the record changes the export and not the buildings ([building-stocks.md](building-stocks.md)).
