@@ -156,8 +156,9 @@ game's own palette.
              on the polygon's area centroid, or on the origin when the centroid falls outside the polygon; the icon, the border
              and the margin scale with it. The land industries declare a footprint; the fishing grounds and sand excavator
              get one measured off the game's Towns layer (`MEASURED_FACES`, good to about 2 m); the oil platform (the game
-             tints its meshes and draws no outline) gets a box of its `oil_platform_sm` model's size joined to the helipad's,
-             plus a circle on each docking station (`MEASURED_DISCS`) and a small one on each of its four buoys; a mod's
+             tints its meshes and draws no outline) gets a stand-in for the tinted deck (a box of its `oil_platform_sm` model's size
+             with the helipad's octagon and the big crane's boom, which show which way it faces) and a circle on each docking
+             station (`MEASURED_DISCS`); a mod's
              industry gets a 64 m badge on the origin. `--industry-size M` sets every badge's diameter
              instead. On a whole-map picture a badge is a few pixels, so zoom
              in. Each badge is a `<g class="industry" data-slot data-key data-model data-x data-y data-diameter>` (data-x and
@@ -942,17 +943,19 @@ INDUSTRY_BORDER, INDUSTRY_INK = "#8c8c8c", "#3a3a3a"
 FOOTPRINT_FILL, FOOTPRINT_LINE = "#b44fe8", "#5b1a8f"     # the Towns layer paints an industry purple: light fill, dark line
 # The water industries declare no `ground_face`. These outlines (metres, the industry's own axes, counter-clockwise) were read off
 # Towns-layer screenshots of one 604 game, registered on the industries' corner buoys (docs/models.md, "Industry footprints"),
-# good to about 2 m. The oil platform has no outline in the game (its meshes are tinted); its box is the `oil_platform_sm` model's
-# footprint joined to the helipad's, a stand-in for the tinted deck.
+# good to about 2 m. The oil platform has no outline in the game (its meshes are tinted); its stand-in is the deck (the
+# `oil_platform_sm` model's box) with the helipad as an octagon at a corner and the big crane's boom as a thin strip along +b, a
+# few metres coarse (the picture is tilted, so the boom's tip is the least certain).
 MEASURED_FACES = {
     "fishing_grounds": [(-40.0, -28.0), (22.0, -28.0), (22.0, -12.8), (38.5, -12.8), (38.5, 20.7), (-30.0, 20.7), (-40.0, 15.5)],
     "sand_excavator": [(-18.2, -43.5), (45.5, -43.5), (45.5, 65.0), (-18.2, 65.0)],
-    "oil_platform": [(-24.5, -29.5), (8.4, -29.5), (8.4, -30.9), (31.2, -30.9), (31.2, -10.7), (24.7, -10.7), (24.7, 24.7), (-24.5, 24.7)],
+    "oil_platform": [(-24.5, 24.7), (-24.5, -29.5), (13.7, -29.5), (15.5, -31.3), (24.2, -31.3), (30.3, -25.2), (30.3, -16.5),
+                     (24.7, -10.9), (24.7, 24.7), (4.0, 24.7), (7.0, 52.0), (3.0, 52.0), (0.0, 24.7)],
 }
 # Round parts the Towns layer tints beside a footprint, (a, b, radius) in metres in the industry's axes: the oil platform's two
-# docking stations (the big orange drums, about 10 m across) and its four large buoys (the small dots, 2 to 3 m).
+# docking stations (the big orange drums, about 10 m across). Its four large buoys are tinted too, but at 2 to 3 m they are left out.
 MEASURED_DISCS = {
-    "oil_platform": [(55.0, 0.0, 5.5), (-55.0, 0.0, 5.5)] + [(a, b, 1.5) for a in (-20.0, 20.0) for b in (-70.0, 70.0)],
+    "oil_platform": [(55.0, 0.0, 5.5), (-55.0, 0.0, 5.5)],
 }
 
 
