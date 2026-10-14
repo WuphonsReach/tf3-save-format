@@ -3,7 +3,7 @@
 
 Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--grid-lines auto|none|dots|faint] [--png | --raster]
        [--contour M] [--index N] [--no-bands] [--tolerance M]
-       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--keep-dead] [--depots] [--coverage] [--industries] [--industry-size M] [--stream]
+       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--keep-dead] [--depots] [--stations] [--coverage] [--industries] [--industry-size M] [--stream]
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as vector shapes (coloured
@@ -17,7 +17,7 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `coverage` (`--coverage`), `industries` (`--industries`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` (`--stations`), `coverage` (`--coverage`), `industries` (`--industries`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
@@ -138,6 +138,15 @@ game's own palette.
              instance (`road_depot_sm`, likewise the rail depot's `rail_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
              usual mod.io places) and it has no ground face, so only its origin dot and facing line are drawn; the free
              decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
+--stations   (SVG only) add a `stations` layer for the water stations (`harbor_modular` and its piers): each placed deck piece
+             (`dock_100_25`, `dock_50_12`, `platform_100`, `platform_25` and their `_con_` and `_end_` edge pieces) and main
+             building (`main_building_s0`, `main_building_s2` and its edge pieces) as the box of its model's `boundingInfo`, placed from the
+             instance's origin and facing as the depots are (docs/models.md). Sublayers `station-decks` (wood brown) and
+             `station-buildings` (ship pink; both provisional), one `<g class="station-piece" data-slot data-model data-x data-y>`
+             each, and `station-outline`: the station's outer edge at the depots' outline width and the lines between
+             touching pieces much thinner (`station-outer`, `station-partitions`). The boxes come from `stations/water.zip` in the
+             install at run time and are never stored, so without an install nothing is drawn. Safeguards (railings), clocks and
+             the `tn_*` and `network_person` models are left out. Reads the whole stream; no `--crop` needed.
 --coverage   (SVG only) add a `coverage` layer under the roads, a sublayer per building kind
              (`coverage-` plus each layer id above) holding one dashed circle
              per building, centred on its origin, with the `catchmentArea` radius of its script (a maintenance building
@@ -283,11 +292,50 @@ DEPOT_KINDS = (
 )
 MOD_DIRS = ("~/snap/steam/common/mod.io/common/10640/mods", "~/.local/share/mod.io/common/10640/mods")
 DEPOT_PREFIXES = ("depots/", "assets/ingo_bootsschuppen/")
+# water stations (`harbor_modular` and its piers): the pieces drawn, by model name under `stations/water/models/`. Each is one box,
+# the `boundingInfo` of the model's `.mdl` in the install's `stations/water.zip`, read when the script runs. The thin `_con_` and `_end_`
+# edge pieces are drawn too, since they close the 2 to 3 m gaps between two docks; the `_sm` copies, the safeguards (railings), clocks
+# and the `network_person` paths are left out. A name the install lacks (a platform has no `_con_b`) is skipped.
+STATION_PIECE_ENDS = ("", "_con_l", "_con_r", "_con_b", "_con_f", "_end_l", "_end_r", "_end_b", "_end_f")
+STATION_PREFIX = "stations/water/"
+STATION_KINDS = (
+    ("station-decks", "Water stations: docks and platforms",
+     tuple(base + end for base in ("dock_100_25", "dock_50_12", "platform_100") for end in STATION_PIECE_ENDS) + ("platform_25",),
+     "#a0622d"),
+    ("station-buildings", "Water stations: main buildings",
+     ("main_building_s0", "main_building_s2", "main_building_s2_con_l", "main_building_s2_end_r"), "#d6336c"),
+)                                                            # decks wood brown, buildings ship pink (like the ship depots); both provisional
+STATION_FILL_OPACITY = 0.65                                  # of a kind's group as a whole, so overlapping boxes do not darken
+STATION_OUTLINE, STATION_PARTITION = 0.35, 0.08              # stroke widths in pixels-at-2-m (as the depots'), the outline and the lines inside it
+_BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
 _POINT = re.compile(r"\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _RADIUS = re.compile(r"catchmentArea\s*=\s*\{\s*radius\s*=\s*(?:captureParams\.radius or )?(\d+)")
 _POOL = re.compile(r"maintenancePool\s*=\s*(\d+)")
 _DEPOT_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
+
+
+def read_station_boxes(content):
+    """{model path: (x0, y0, x1, y1)} for the pieces of `STATION_KINDS`: the x and y range of the `boundingInfo` of each model's `.mdl` in
+    the install's `stations/water.zip` (`content` is the `infrastructure` folder `find_content` returns), in the model's own axes.
+    A piece whose file is missing is left out; without an install the result is empty. Nothing is stored."""
+    out = {}
+    if not content:
+        return out
+    try:
+        zf = zipfile.ZipFile(os.path.join(os.path.dirname(content), "stations", "water.zip"))
+    except (OSError, zipfile.BadZipFile):
+        return out
+    for _lid, _label, names, _colour in STATION_KINDS:
+        for name in names:
+            try:
+                text = zf.read("water/models/%s.mdl" % name).decode("utf-8", "replace")
+            except KeyError:
+                continue
+            box = {k: (float(a), float(b)) for k, a, b in _BBOX.findall(text)}
+            if "ax" in box and "in" in box:
+                out["%s%s.mdl" % (STATION_PREFIX + "models/", name)] = (box["in"][0], box["in"][1], box["ax"][0], box["ax"][1])
+    return out
 
 
 def find_mod_script(rel, mods_dir=None):
@@ -894,6 +942,82 @@ def overlay_layers(size, mpp, fr, edges, vehicles, labels=False, names=None):
     return out + top, unmatched
 
 
+def _inside(poly, x, y):
+    """Whether (x, y) lies in the convex polygon `poly` (a list of points in either winding)."""
+    sign = 0
+    for (x0, y0), (x1, y1) in zip(poly, poly[1:] + poly[:1]):
+        c = (x1 - x0) * (y - y0) - (y1 - y0) * (x - x0)
+        if c:
+            if sign and (c > 0) != (sign > 0):
+                return False
+            sign = 1 if c > 0 else -1
+    return True
+
+
+def station_layers(mpp, fr, instances, boxes):
+    """SVG lines for the `stations` layer: each placed piece (`STATION_KINDS`) as its bounding box in the model's own axes (`boxes`,
+    from `read_station_boxes`), turned by the instance's facing and moved to its origin. A sublayer per kind holds the fills (one
+    `<g class="station-piece" data-slot data-model data-x data-y>` each, opaque inside a group that is half transparent as a whole, so
+    overlapping boxes do not darken); a `station-outline` sublayer draws the edges. A stretch of an edge that has another piece just
+    outside it is inside the station and gets the thin `STATION_PARTITION` line, the rest is the station's outline at the
+    `STATION_OUTLINE` width the depots' footprints use. `instances` are `read_instances` rows. Units are metres like the other layers."""
+    pieces = []                                              # (kind index, row, corners in picture metres)
+    for n, (_lid, _label, names, _colour) in enumerate(STATION_KINDS):
+        for i in instances:
+            if i["model"] in boxes and i["model"].rsplit("/", 1)[-1][:-4] in names:
+                x0, y0, x1, y1 = boxes[i["model"]]
+                h = math.hypot(i["fx"], i["fy"]) or 1.0
+                fx, fy = i["fx"] / h, i["fy"] / h
+                pts = [fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+                pieces.append((n, i, pts))
+    if not pieces:
+        return []
+    k = max(1.0, mpp / 2.0)
+    out = [layer("stations", "Water stations", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp))]
+    for n, (lid, label, _names, colour) in enumerate(STATION_KINDS):
+        mine = [(i, c) for m, i, c in pieces if m == n]
+        if not mine:
+            continue
+        out.append(layer(lid, label, ' opacity="%g"' % STATION_FILL_OPACITY))
+        for i, c in mine:
+            out.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s"/></g>'
+                       % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % p for p in c), colour))
+        out.append("</g>")
+    polys = [c for _n, _i, c in pieces]
+    boxes_xy = [(min(p[0] for p in c), max(p[0] for p in c), min(p[1] for p in c), max(p[1] for p in c)) for c in polys]
+    outer, inner = [], []
+    for me, c in enumerate(polys):
+        cx, cy = sum(p[0] for p in c) / 4, sum(p[1] for p in c) / 4
+        for (x0, y0), (x1, y1) in zip(c, c[1:] + c[:1]):
+            length = math.hypot(x1 - x0, y1 - y0)
+            steps = max(1, int(length))                      # test every metre of the edge
+            nx, ny = (y1 - y0) / (length or 1.0), -(x1 - x0) / (length or 1.0)
+            if nx * (x0 - cx) + ny * (y0 - cy) < 0:
+                nx, ny = -nx, -ny                            # the normal that points away from this piece
+            run, last = None, None
+            for s in range(steps):
+                t0, t1 = s / steps, (s + 1) / steps
+                mx, my = x0 + (x1 - x0) * (t0 + t1) / 2 + 0.3 * nx, y0 + (y1 - y0) * (t0 + t1) / 2 + 0.3 * ny
+                inside = any(other != me and b[0] <= mx <= b[1] and b[2] <= my <= b[3] and _inside(polys[other], mx, my)
+                             for other, b in enumerate(boxes_xy))
+                if run is None or inside != last:
+                    if run:
+                        (inner if last else outer).append(run)
+                    run, last = [(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)], inside
+                run.append((x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1))
+            if run:
+                (inner if last else outer).append(run)
+    out.append(layer("station-outline", "Water stations: outline"))
+    for runs, width, name in ((inner, STATION_PARTITION, "partitions"), (outer, STATION_OUTLINE, "outer")):
+        if runs:
+            d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in runs)
+            out.append('<path class="station-%s" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"/>'
+                       % (name, d, width * k))
+    out.append("</g>")
+    out.append("</g>")
+    return out
+
+
 def depot_layers(mpp, fr, instances, specs, footprints, coverage):
     """SVG lines for the depot layers: (`under`, `over`). `under` is the `coverage` layer (one circle per building,
     a sublayer per kind) and `over` the `maintenance-buildings`, `road-depots` and `tram-depots` layers (the
@@ -1251,6 +1375,8 @@ def main():
     ap.add_argument("--vehicles", action="store_true", help="SVG only: draw the vehicle model instances")
     ap.add_argument("--name", action="append", default=[], metavar="SLOT=TEXT",
                     help="rename one vehicle instance in the picture (repeatable)")
+    ap.add_argument("--stations", action="store_true", help="SVG only: draw the water stations' docks, platforms and "
+                    "main buildings as boxes (sizes from the install)")
     ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
                     "and tram depots (ground faces from the install)")
     ap.add_argument("--industries", action=argparse.BooleanOptionalAction, default=True,
@@ -1282,8 +1408,8 @@ def main():
         args.mpp = 8 if vector and not args.crop else 4
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
-    if (args.label or args.vehicles or args.depots or args.coverage) and args.png:
-        ap.error("--label, --vehicles, --depots and --coverage only work with the SVG")
+    if (args.label or args.vehicles or args.depots or args.coverage or args.stations) and args.png:
+        ap.error("--label, --vehicles, --depots, --stations and --coverage only work with the SVG")
     if args.no_grid and args.grid:
         ap.error("--no-grid and --grid exclude each other")
     labels = {}
@@ -1320,6 +1446,9 @@ def main():
     content = find_content(args.game)
     widths = read_profile_widths(content) if content else {}
     depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
+    station_boxes = read_station_boxes(content) if args.stations else {}
+    if args.stations and not station_boxes:
+        print("no install found (--game DIR): no station layer drawn")
     industry_faces = dict(MEASURED_FACES, **read_industry_faces(content)) if args.industries and not args.png else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
@@ -1383,14 +1512,20 @@ def main():
             if args.vehicles and crop:
                 vehicles = [v for v in read_instances(data)
                             if x_lo <= v["x"] <= x_hi and y_lo <= v["y"] <= y_hi]
-            depot_rows = []
-            if depot_specs:
+            depot_rows, station_rows = [], []
+            if depot_specs or station_boxes:
                 try:
-                    found = read_instances(data, DEPOT_PREFIXES)
+                    found = read_instances(data, (DEPOT_PREFIXES if depot_specs else ()) + ((STATION_PREFIX,) if station_boxes else ()))
                 except ValueError as e:                   # an older save: no model table, so no instances
-                    print("no depot layers: %s" % e)
+                    print("no depot or station layers: %s" % e)
                     found = []
                 for i in found:
+                    if i["model"] in station_boxes:
+                        x0, y0, x1, y1 = station_boxes[i["model"]]
+                        r = math.hypot(max(abs(x0), abs(x1)), max(abs(y0), abs(y1)))
+                        if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
+                            station_rows.append(i)
+                        continue
                     spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[4] == i["model"] and k[0] in depot_specs), None)
                     if not spec:
                         continue
@@ -1462,6 +1597,7 @@ def main():
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
+            under += station_layers(args.mpp, fr, station_rows, station_boxes)
             over += industry_layers(args.mpp, fr, industry_rows, args.industry_size, industry_faces)
             open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, grid_step, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
