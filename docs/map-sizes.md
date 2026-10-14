@@ -12,7 +12,7 @@ All 40 combinations, in the order of the stored settings. [tools/map_size_tables
 
 | `map.size` | `map.format` | Size | Format | Width x height, m | Area, km² |
 |---|---|---|---|---|---|
-| 1 | 1 | Tiny | 1 : 1 |  |  |
+| 1 | 1 | Tiny | 1 : 1 | 4096 x 4096 | 16.8 |
 | 1 | 2 | Tiny | 1 : 2 | 2560 x 5120 | 13.1 |
 | 1 | 3 | Tiny | 1 : 3 | 2048 x 6144 | 12.6 |
 | 1 | 4 | Tiny | 1 : 4 | 2048 x 6144 | 12.6 |
@@ -39,26 +39,27 @@ All 40 combinations, in the order of the stored settings. [tools/map_size_tables
 | 5 | 5 | Very Large | 1 : 5 |  |  |
 | 6 | 1 | Huge | 1 : 1 | 20480 x 20480 | 419.4 |
 | 6 | 2 | Huge | 1 : 2 | 14336 x 28672 | 411.0 |
-| 6 | 3 | Huge | 1 : 3 |  |  |
+| 6 | 3 | Huge | 1 : 3 | 11776 x 35328 | 416.0 |
 | 6 | 4 | Huge | 1 : 4 |  |  |
 | 6 | 5 | Huge | 1 : 5 |  |  |
 | 7 | 1 | Megalomaniac | 1 : 1 | 24576 x 24576 | 604.0 |
 | 7 | 2 | Megalomaniac | 1 : 2 | 16896 x 33792 | 570.9 |
-| 7 | 3 | Megalomaniac | 1 : 3 |  |  |
+| 7 | 3 | Megalomaniac | 1 : 3 | 13824 x 41472 | 573.3 |
 | 7 | 4 | Megalomaniac | 1 : 4 |  |  |
 | 7 | 5 | Megalomaniac | 1 : 5 | 10752 x 53760 | 578.0 |
 | 8 | 1 | Gigantomaniac | 1 : 1 | 28672 x 28672 | 822.1 |
 | 8 | 2 | Gigantomaniac | 1 : 2 | 20480 x 40960 | 838.9 |
 | 8 | 3 | Gigantomaniac | 1 : 3 | 16384 x 49152 | 805.3 |
-| 8 | 4 | Gigantomaniac | 1 : 4 |  |  |
+| 8 | 4 | Gigantomaniac | 1 : 4 | 14336 x 57344 | 822.1 |
 | 8 | 5 | Gigantomaniac | 1 : 5 | 12800 x 64000 | 819.2 |
 
-Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578 km², 601, mod.io [6386596](https://mod.io/g/transportfever3/m/cargo-transfer)), Gigantomaniac, 12800 x 64000 m (819 km², 604, mod.io [6436516](https://mod.io/g/transportfever3/m/funnntimes)), and the Tiny one, 1536 x 7680 m ([below](#tiny)). The Tiny 1 : 4 row repeats the 1 : 3 shape. The default Map Size is Medium and the default format 1 : 1 ([settings.md](settings.md#the-options)), which is 11264 x 11264 m.
+Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578 km², 601, mod.io [6386596](https://mod.io/g/transportfever3/m/cargo-transfer)), Gigantomaniac, 12800 x 64000 m (819 km², 604, mod.io [6436516](https://mod.io/g/transportfever3/m/funnntimes)), and the Tiny one, 1536 x 7680 m ([below](#tiny)). The Tiny 1 : 4 row repeats the 1 : 3 shape, and Tiny 1 : 1 is the odd Tiny size ([below](#tiny)). The default Map Size is Medium and the default format 1 : 1 ([settings.md](settings.md#the-options)), which is 11264 x 11264 m.
 
 ## Tiny
 
 **Observed (604):** Tiny 1 : 3 and Tiny 1 : 4 both give 2048 x 6144 m (8 x 24 tiles), see [the terrain note](terrain.md#the-terrain-record). Tiny 1 : 2 gives 2560 x 5120 m (10 x 20 tiles, 13.1 km²) and Tiny 1 : 5 gives 1536 x 7680 m (6 x 30 tiles, 11.8 km²), one save each. The New Game screen's own size readout agreed with each save: 2.5 x 5.0 km with 1 : 2 selected, 2.0 x 6.0 km with 1 : 3 and 1 : 4, and 1.5 x 7.5 km with 1 : 5, so the shape comes from the game's setup and not from anything a save changes.
 
+- **Tiny 1 : 1 is 4096 x 4096 m (16 x 16 tiles, 16.8 km², 604), one editor map:** mod.io [6449839](https://mod.io/g/transportfever3/m/testupload), dry climate, stored as Tiny 1 : 1. Its area is a third above the other Tiny sizes (11.8 to 13.1 km²), so the area rule of the section above is loose at Tiny, or this map is one more oddity. **Open.**
 - A 1 : 4 map of the 12.6 km² would be about 1792 x 7168 m (7 x 28 tiles), which no save has. Tiny 1 : 4 comes out as the 1 : 3 shape. Why is **Open**.
 - 2048 m is not a minimum width: the 1 : 5 map is 1536 m wide. The 1 : 5 area is 6% under the 1 : 3 one, within the tile rounding of the rule above.
 
@@ -69,9 +70,9 @@ Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578
 | `map.size` | `map.format` | Size | Format | Width x height, m | Area, km² | The dimensions are those of | Map |
 |---|---|---|---|---|---|---|---|
 | 2 | 1 | Small | 1 : 1 | 11264 x 11264 | 126.9 | Medium 1 : 1 | [kaspars](https://mod.io/g/transportfever3/m/kaspars) (6432023) |
-| 3 | 1 | Medium | 1 : 1 | 10240 x 20480 | 209.7 | Large 1 : 2 | [Brasil](https://mod.io/g/transportfever3/m/brasil1) (6423816) |
 | 3 | 1 | Medium | 1 : 1 | 8192 x 24576 | 201.3 | Large 1 : 3 | [autosave_Emerald Shores_1965-07-29](https://mod.io/g/transportfever3/m/autosave-emerald-shores-1965-07-29) (6419141) |
 | 3 | 1 | Medium | 1 : 1 | 8192 x 24576 | 201.3 | Large 1 : 3 | [LXYY](https://mod.io/g/transportfever3/m/na263651) (6422633) |
+| 3 | 1 | Medium | 1 : 1 | 10240 x 20480 | 209.7 | Large 1 : 2 | [Brasil](https://mod.io/g/transportfever3/m/brasil1) (6423816) |
 | 3 | 1 | Medium | 1 : 1 | 14336 x 14336 | 205.5 | Large 1 : 1 | [Redrock Bends](https://mod.io/g/transportfever3/m/redrock-bends2) (6425276) |
 | 3 | 1 | Medium | 1 : 1 | 16384 x 16384 | 268.4 | Very Large 1 : 1 | [YF-EL](https://mod.io/g/transportfever3/m/oresund-strait-eng1) (6435288) |
 | 3 | 1 | Medium | 1 : 1 | 16384 x 16384 | 268.4 | Very Large 1 : 1 | [xyfel](https://mod.io/g/transportfever3/m/xyfel) (6440248) |
@@ -93,6 +94,6 @@ A save's file size follows the area class (a log-log correlation of 0.88 between
 
 ## Open
 
-- The blank rows of the table: Tiny 1 : 1, Small 1 : 4 and 1 : 5, every 1 : 4 except Tiny, Medium to Very Large 1 : 5, Huge 1 : 3 to 1 : 5 and Megalomaniac 1 : 3 and 1 : 4.
+- The blank rows of the table above.
 - Why the saves above disagree with their settings.
 - Why Tiny 1 : 4 gives the 1 : 3 shape while Tiny 1 : 5 follows the area rule.
