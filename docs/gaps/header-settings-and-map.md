@@ -4,6 +4,7 @@ Format of an entry: see [README.md](README.md).
 
 ## Seed, terrain and the map
 
+- **Why a Tutorial On game's industry count differs from the New Game screen** (604) The Small tropical game read 8 industries on the screen and held 15 in the save and in the loaded Industries tab; the Tutorial Off games differ by 0 or 1. Whether the tutorial adds industries or the preview is simply built before placement is untested. Home: [tutorial.md](../tutorial.md#open-the-town-and-industry-counts), [industries.md](../industries.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604). Needs: new save pair (two New Games, same seed and sliders, Tutorial On and Off), each saved at once.
 - **Whether the seed alone rebuilds the map** (604) The sliders are not stored, so a rebuild would need the same sliders; whether default sliders reproduce the New Game screen's map is untested. Home: [seed.md](../seed.md), [terrain.md](../terrain.md#open). Needs: new save pair (two new games, same seed and sliders; then one with only Mountains changed), each saved at once.
 - **Seed edge cases** (599 to 604) What `id` stores for an empty seed, 40 characters, spaces, accents or CJK. Home: [seed.md](../seed.md). Needs: new saves.
 - **A map editor seed** (604) Whether a new editor map with a typed seed keeps it in `id`. Home: [seed.md](../seed.md), [editor-saves.md](../editor-saves.md). Needs: new save.
