@@ -1,6 +1,6 @@
 # Finances tab and the money journal
 
-How the company window's Finances tab (Earnings Details and Summary) lines up with the money journal. The journal's layout, its category enums and how to find it are in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md) and are not repeated here. Here only the link to what the game shows is covered. How upkeep and vehicle running costs are booked is in [running-costs.md](running-costs.md).
+How the company window's Finances tab (Earnings Details and Summary) lines up with the money journal. The journal's layout, its category enums and how to find it are in [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md) and are not repeated here. Here only the link to what the game shows is covered. How upkeep and vehicle running costs are booked is in [running-costs.md](running-costs.md). How long a game was played, read from the journal's periods: [play-length.md](play-length.md).
 
 Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) saved again with the game paused (calendar speed 0.50x, no mods, no loan taken at the time). 585 and 601 were not looked at.
 
