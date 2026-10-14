@@ -1,6 +1,6 @@
 # Compass: which way north is
 
-The save stores x and y and no compass. The game does use compass words, though: it puts one in the names of things it places near a town. Those words, the New Game preview and a real-world editor map all agree that **x is east and y is north**. The sun's path on the screen is a quarter turn off that frame. This repo draws pictures in the game's frame by default and keeps the sun's frame as an option.
+The save stores x and y and no compass. The game does use compass words, though: it puts one in the names of things it places near a town. Those words and the New Game preview agree that **x is east and y is north**; real-place editor maps do not count as evidence, because their authors turn them ([below](#real-place-maps-are-turned-by-their-authors)). The sun's path on the screen is a quarter turn off that frame. This repo draws pictures in the game's frame by default and keeps the sun's frame as an option.
 
 Labels as in [README.md](README.md): Confirmed, Observed, Open. Everything here was read on 604.
 
@@ -10,7 +10,7 @@ Labels as in [README.md](README.md): Confirmed, Observed, Open. Everything here 
 
 | `--north` | Image up | Image right | Why |
 |---|---|---|---|
-| `game` (default) | +y | +x | the frame the name words use (below), the New Game preview, a real map |
+| `game` (default) | +y | +x | the frame the name words use (below), the New Game preview |
 | `sun` | +x | -y | the sun's path (below), the picture the repo drew before 2026-10-12 |
 
 Other notes written before that date may give a direction with the sun's axes; where one does, it names the axis. [industry_compass.py](../tools/industry_compass.py) draws in the game's frame only.
@@ -49,7 +49,29 @@ What the words do not settle:
 ## Other signals
 
 - **The New Game preview (Observed, two games).** In the preview, x runs to the right and y up the screen. In the Large tropical game the eight town icons sat within 10 pixels of where the street groups put the towns at 39 m per pixel. The Medium dry game (seed `nDhSseN3R8`) was matched by a river and a lake and gave the same layout.
-- **A real map (Observed, one map).** The Seattle editor map (mod.io 6426561, 16,384 x 49,152 m) reads right with +y up and +x to the right: Green Lake and the ship canal in the north, then Elliott Bay, West Seattle and the Duwamish valley to the south, Puget Sound on the left. That is the game's frame again. A map maker may lay a real place on the grid however they like, so this alone proves nothing; it only agrees. A square map can be turned as well, so only the map's author can say whether the orientation was chosen.
+- **Real-place maps (Observed, 11 maps): no signal.** An editor map of a real place may be laid on the grid at any angle, so it can neither confirm nor refute the frame ([next section](#real-place-maps-are-turned-by-their-authors)).
+
+## Real-place maps are turned by their authors
+
+**Observed, 11 mod.io editor maps, all 604.** Each map's coast, rivers and lakes were read by eye against the real place, north-up or turned back until they matched, with no mirroring in any of them. The turn is the map's real north, measured clockwise from image up; "about" marks an angle taken by eye. Scale is the real length of one feature over its length on the map, also by eye (a dash: not measured).
+
+| Mod | Place | Map size (m) | Real north is | Scale |
+|---|---|---|---|---|
+| 6426561 | Seattle | 16,384 x 49,152 | up | - |
+| 6432283 | Akureyri and Eyjafjörður | 20,480 x 40,960 | up | about 1 : 1.5 |
+| 6444410 | South Korea | 20,480 x 40,960 | up | about 1 : 15 |
+| 6446060 | Sakhalin | 11,264 x 22,528 | up | about 1 : 48 |
+| 6443296 | Japan | 28,672 square | up | about 1 : 50 |
+| 6437731 | Iberia | 28,672 square | up | about 1 : 47 |
+| 6450186 | Adelaide | 28,672 square | up | about 1 : 4 |
+| 6436671 | South-West Ontario | 20,480 x 40,960 | right (about 90 degrees) | about 1 : 10 to 1 : 20 |
+| 6436908 | Sudeste coast of Brazil | 13,824 x 41,472 | about 110 degrees clockwise | - |
+| 6447883 | Long Island | 20,480 x 40,960 | left (about 270 degrees) | about 1 : 6 |
+| 6440244 | Continental USA | 20,480 x 40,960 | left (270 degrees) | about 1 : 110 |
+
+- **Turned to fit the strip (Observed, 11 maps).** The seven maps whose place runs along the long side of the picture, or is square, are north-up. The four strips turned (Ontario, Brazil, Long Island, the USA) hold a place that is wider than tall or runs on a diagonal, which a turn lays along the long side. Both senses occur, a quarter turn either way and one of about 110 degrees. That the author turned them to fit is a reading of the pattern; only the authors can confirm it.
+- **Scale is the author's too (Observed).** Whole countries sit near 1 : 50, an area such as Adelaide or Long Island between 1 : 4 and 1 : 6, a fjord near true size, the USA at about 1 : 110. Heights and water are also edited: the Japan and USA maps keep a sloping sea floor, while the Akureyri fjord and the Great Lakes of the Ontario and USA maps are flat at the one water level.
+- **Who made them (Open).** That the authors turn real elevation data into a heightmap, and trace or adjust the water, is an account of common practice, not read from a save. The save holds only the finished height grid.
 
 ## The sun's path is a quarter turn off
 
