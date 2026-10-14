@@ -10,6 +10,7 @@ A `str`, the last field of the header.
 - **Observed** on 599 to 604 in the 110 catalog saves whose header reads to the end: 104 hold 10 random letters and digits (the form the game offers), 6 hold typed text such as a town name or `0`. 94 distinct values in 110 saves, so a seed is not unique.
 - It is unchanged across re-saves and autosaves of one game, and equal in two catalog saves and the re-saves made from them.
 - 568 and 585 headers stop before it (see [versions.md](versions.md)).
+- What the editor calls the field is **Open**. Every branch of `tf3-save-editor` read (upstream 0.4.0 and our forks) names it `id`, but the user has heard that an update renamed it, and no such change was found. Our tools call it `map_seed`. Recheck against the editor's newest `header.rs` and `docs/FORMAT.md` before relying on either name.
 
 ## Does the seed rebuild the map?
 
