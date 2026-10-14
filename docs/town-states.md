@@ -3,6 +3,7 @@
 The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. Checked on 604.
 
 - Editor saves: empty.
+- A new game (**Observed**, 604, eight of our games saved at once, 2 to 5 towns): the table holds one entry for 2 towns, two for 3 towns and two for 5 towns, while the town records, the names run of [entity-names.md](entity-names.md#town-names-604) and the `townState` entries of the `town_cargo.gs` state all give the town count, and the count on the New Game screen is the same ([industries.md](industries.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604)). The count to trust for a new game is the town records, not this table.
 - Played saves: one entry per town that has state, so not every town is in it. 34 in a 34-town save of ours; 13 in catalog save [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods) and 11 in [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet).
 
 ## Fields per town

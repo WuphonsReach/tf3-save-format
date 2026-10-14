@@ -51,6 +51,25 @@ The [fish chain](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-tru
 - **Only producing industries have a list.** The Industries tab of the overview listed 23 industries: 17 primaries (three `farm` (Crop Farm), one `forest` (Logging Camp), three `quarry`, one `coal_mine`, one `iron_ore_mine`, five `fishing_grounds`, two `oil_platform`, one `oil_well`) and 6 secondaries (one each of `cement_plant`, `saw_mill`, `food_factory` (Canning Factory), `steel_mill`, `livestock_farm` and `oil_refinery`). There were 18 `itemsProduced` lists: one per primary and one for the cement plant, the only secondary that had been supplied (the other five showed input 0 and output 0). So the 10 industries created in play are all primaries, and 7 primaries and 6 secondaries made up the map. A secondary's list is created when it is first supplied, which fits the cement plant's list starting at 1,947,999. **Observed**, one game.
 - **A new game's lists first appear in the saves when they were created, no earlier.** In the manual saves made in order the first save holding each start time was the first one made after it (730,499 in `1208`, 1,460,999 and 2,191,499 in `1220-more-lines`, 2,921,999 and 3,652,499 in `1236`, the last three in `1246`). Closed industries were not seen to leave their lists behind or vanish; the game was not played through a closure. **Open**.
 
+## The industry count on the New Game screen and in the save (604)
+
+**Observed**, eight Tiny and Small games of ours saved at once from the New Game screen (on the first day of the start year, or the second for one, so nothing has spawned or closed in play; [test-games.md](test-games.md#map-format-tests)). The Towns figure on the screen matched the save every time (2, 2, 5, 2, 2, 2, 3, 2). The Industries figure did not always:
+
+| Screen | Industries in the save (main-model instances, as `tools/industry_compass.py` reads them) | Name slots after the towns |
+|---|---|---|
+| 4 | 4 | 8 |
+| 6 | 6 | 12 |
+| 8 | 15 (Small 1 : 3) | 23 |
+| 5 | 6 | 10 |
+| 8 | 8 | 17 |
+| 5 | 6 | 12 |
+| 8 | 7 | 14 |
+| 6 | 7 | 15 |
+
+The two agree in three games, differ by one in four and by seven in the Small one. So the figure on the screen is the preview's own count and not the number of industries the save starts with. Why is **Open**; the preview may be built before the game places and flattens the industries.
+
+How the save was counted: an industry is an instance of its folder's main model (`industries/<key>/<key>_sm.mdl`, or the first `_particles` model where there is none). The entity names table, after the town names, holds about two slots per industry and not one: the same name twice, and the same name again for a second industry of a kind near the same town (`<town> Logging Camp` three times for two camps). So the number of names is not the number of industries, and an industry's name can say nothing about which instance it is. The names are the defaults here: a town or industry the player renamed no longer follows `<town> <kind>`, which is the case [entity-names.md](entity-names.md#town-names-604) lists as **Open**.
+
 ## Closing: the deadline is a field of the industry (604)
 
 **Observed** on 604 in the three saves of the saw mill's closing (`1438`, `1439` and `1440`), described with the notification entry in [notifications.md](notifications-in-play.md#industry-closing-notifications-604).
