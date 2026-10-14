@@ -2,16 +2,17 @@
 """The speed limit the game's speed layer shows for each street edge (docs/road-speeds.md).
 
 Usage:
-  edge_speeds.py SAVE.sav [--near X,Y,RADIUS] [--curved] [--json] [--accel A]
+  edge_speeds.py SAVE.sav [--near X,Y,RADIUS] [--family street|track|all] [--curved] [--json] [--accel A]
 
 Each edge record stores its type's speed (the sixth float after the two tangents, in m/s). On a
 curved edge the layer shows a lower number. This prints, per edge, the stored speed and the
 number the rule in the note predicts: the lower of the stored speed and 3.6 * sqrt(A / k) km/h,
 k being the largest curvature of the cubic Hermite curve through the edge's two end positions
 with its two stored tangents, A a lateral acceleration (default 2.5 m/s^2). The rule was read
-off about seven labels in screenshots of one game; treat the curved values as +-1 km/h.
+off about 45 labels (road and rail) in screenshots of one game; treat the curved values as +-1 km/h.
 
   --near X,Y,R   only edges with an end within R metres of (X, Y)
+  --family F     street (default), track (rails) or all
   --curved       only edges the rule lowers
   --accel A      the acceleration in m/s^2
   --json         JSON instead of a table
@@ -72,12 +73,13 @@ def main():
     ap = argparse.ArgumentParser(description="Speed limits of the street edges of a TF3 save")
     ap.add_argument("save")
     ap.add_argument("--near")
+    ap.add_argument("--family", choices=("street", "track", "all"), default="street")
     ap.add_argument("--curved", action="store_true")
     ap.add_argument("--accel", type=float, default=ACCEL)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
     data = load(args.save, False)
-    edges = [e for e in read_edges(data) if e["family"] == "street"]
+    edges = [e for e in read_edges(data) if args.family == "all" or e["family"] == args.family]
     if args.near:
         x, y, r = (float(v) for v in args.near.split(","))
         edges = [e for e in edges if any(math.hypot(p[0] - x, p[1] - y) <= r for p in (e["p0"], e["p1"]))]
@@ -94,7 +96,7 @@ def main():
     if args.json:
         print(json.dumps(rows, indent=1))
         return
-    print(f"{len(rows)} edges (of {len(edges)} street edges), lateral acceleration {args.accel} m/s^2")
+    print(f"{len(rows)} edges (of {len(edges)} edges), lateral acceleration {args.accel} m/s^2")
     for r in rows:
         print(f"{r['a']:x} > {r['b']:x}  {r['type'] or '?':<22} {r['length']:6.1f} m  turn {r['turn_deg']:5.1f}  "
               f"stored {r['stored_kmh']}  shown {r['shown_kmh']}  mid ({r['mid'][0]}, {r['mid'][1]})")
