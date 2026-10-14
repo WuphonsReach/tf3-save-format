@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts.
+"""Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
-Usage: mine_saves.py OUT_DIR SAVE_OR_MODDIR [...]
+Usage: mine_saves.py [--no-maps] OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
@@ -18,39 +18,29 @@ folder holds one. A map-editor map (maps/) is written to <id>-<name>-map, so a
 mod that ships both a savegame and a map keeps two summaries. Catalog name, tags, author and link come from mod.io's metadata/state.json
 when it is found next to the mods directory.
 
+The summary is built by mine_summary.py (what is read from a save is described there; run alone it prints one).
+Next to each summary this script also writes terrain-map.svg, the picture terrain_map.py draws with no options (the
+vector terrain, the roads and rails, the default grid and compass rose; docs/terrain.md), so the picture follows that
+script's current defaults. `--no-maps` skips the pictures. A save the script cannot draw (it prints REFUSED or FAILED)
+gets no picture; the reason is kept in .map_state.json beside the summary. Pictures are other people's maps: they
+stay in OUT_DIR, which is never committed. The script needs about 2.5 GB of memory for a Giant map, so keep the
+parallel runs few (xargs -P4) on a small machine.
+
+Two things are rebuilt separately, each when the save changed or its own scripts did:
+- the summary, when the commit of mine_summary.py and the modules it imports (save_header.py, tf3save.py) differs
+  from the one in the summary's `tools_commit`;
+- the map, when the commit of terrain_map.py and the modules it imports differs from the one in .map_state.json.
+A change to tf3save.py is in both sets and rebuilds both; one to terrain_map.py, terrain_vector.py or street_edges.py
+redraws the maps and leaves the summaries; one to mine_summary.py rebuilds the summaries only. A set with uncommitted
+changes ("-dirty") is always rebuilt. `script_commits.py SCRIPT` lists a set and its commit.
+
 Safe to re-run while mod.io is still downloading: a save whose size and mtime
 match the last run is skipped, and a save that fails to read gets an error
 summary and is retried next run. The size and mtime are kept in a
-.mine_state.json next to each summary, not in the summary, so summaries hold
-no local paths or timestamps. About 8 s per save; for many saves run several
-at once, for example with `xargs -P4`.
-
-Each summary records `tools_commit`, the last git commit that changed a script
-in tools/ (with "-dirty" if one has uncommitted changes, null outside a git
-checkout). Changes to the README or the schema alone do not count.
-A save is read again when that commit differs from the one its summary was
-built with, so summaries follow the scripts; a dirty build is always redone.
-
-What is read:
-- the header (save_header.py): format version, start year, map size in metres,
-  climate, economy, name list, mods, a few settings
-- town records: the validated scan in tf3save.py (docs/town-records.md).
-  `records` is every record found; `starting_layout` those whose four floats
-  are all 1.0 (cargo counts use these). Towns that have run for a while use
-  other record shapes and are missed.
-- settings: every New Game setting as "stored (label)", for example
-  "3 (100%, default)", from tf3save.SETTING_OPTIONS. Needs the full header
-  (599 to 604); 568 and 585 have none.
-- calendar (docs/calendar.md): the date shown, the start date, the
-  calendar speed (millisPerDay) and play speed, the clock and the day table.
-- company, counters, cycles, subsidies, town_states: from the script states
-  of the company, achievements, game time, subsidy and town scripts. A save
-  without one of them (editor maps) has null there.
-
-Every key of the schema is written, null where the save has no value or could
-not be read (then `error` says why).
+.mine_state.json (summary) and .map_state.json (map) next to each summary, not in the summary, so summaries hold
+no local paths or timestamps. About 8 s per save for the summary, up to 40 s more for a Giant map; for many saves
+run several at once, for example with `xargs -P4`.
 """
-import collections
 import csv
 import json
 import os
@@ -58,138 +48,15 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from save_header import read_header  # noqa: E402
-from tf3save import (RANKS, calendar_speed_label, cargo_entries, date_of_day, day_table_regular,  # noqa: E402
-                     decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label,
-                     town_names)
+from mine_summary import (INDEX_COLS, OLD_SUMMARY_FILE, SUMMARY_FILE, catalog_profiles, index_row,  # noqa: E402
+                          summarise_save)
+from script_commits import TOOLS_DIR, closure_commit  # noqa: E402
 
-TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
-
-
-def tools_commit():
-    """Short hash of the last commit that changed a tools/*.py, "-dirty" if one has changes, or None."""
-    try:
-        git = ["git", "-C", TOOLS_DIR]
-        h = subprocess.run(git + ["log", "-1", "--format=%h", "--", "*.py"], capture_output=True, text=True, check=True)
-        st = subprocess.run(git + ["status", "--porcelain", "--", "*.py"], capture_output=True, text=True, check=True)
-    except (OSError, subprocess.CalledProcessError):
-        return None
-    return (h.stdout.strip() or None) and h.stdout.strip() + ("-dirty" if st.stdout.strip() else "")
-
-
-def summarise_records(recs, cargo_names):
-    start = [r for r in recs if r["floats"] == (1.0, 1.0, 1.0, 1.0)]
-    run, best = 0, 0
-    for a, b in zip(recs, recs[1:]):
-        run = run + 1 if b["offset"] - a["offset"] == 78 else 0
-        best = max(best, run + 1)
-    out = {"records": len(recs), "starting_layout": len(start), "longest_78_byte_run": best}
-    if start:
-        for kind in ("com", "ind"):
-            c = collections.Counter(r["id"][kind] for r in start)
-            out[f"{kind}_cargo"] = {str(cargo_names[i] if cargo_names and i < len(cargo_names) else i): n
-                                    for i, n in sorted(c.items())}
-        out["capacity_totals"] = [sum(r["caps"][k] for r in start) for k in range(3)]
-    return out
-
-
-def summarise_towns(data, recs, states):
-    """Town names from the entity names table (town_names in tf3save.py); null where they cannot be told."""
-    names = town_names(data, max(len(recs), states or 0))
-    return {"count": len(names), "names": names} if names else None
-
-
-def num(v):
-    """Lua numbers are floats; whole ones as int for the JSON."""
-    return int(v) if isinstance(v, float) and v.is_integer() else v
-
-
-def rank(level):
-    level = num(level)
-    if isinstance(level, int) and 1 <= level <= len(RANKS):
-        return f"{level} ({RANKS[level - 1]})"
-    return level
-
-
-def summarise_calendar(data):
-    g = find_game_speed(data)
-    if g is None:
-        return None
-    table = find_day_table(data) or []
-    mpd, ps = g["millis_per_day"], g["play_speed"]
-    first, last = (date_of_day(table[0][1]), date_of_day(table[-1][1])) if table else (None, None)
-    return {
-        "date": last and last.isoformat(),
-        "start_date": first and first.isoformat(),
-        "calendar_speed": f"{mpd} ({'Paused' if mpd == 0 else calendar_speed_label(mpd) or 'not a slider step'})",
-        "play_speed": f"{ps} ({'paused' if ps == 0 else f'{ps}x'})",
-        "clock": g["t1"],
-        "day_table_entries": len(table),
-        "day_table_regular": day_table_regular(table),
-    }
-
-
-# Script states as the game stores them; see docs/script-states.md and docs/town-states.md.
-# game_time.gs mode names to the Cycle menu's names.
-TIME_OF_DAY_MODES = {"Dynamic": "Dynamic", "Automatic": "Continuous", "Constant": "Custom"}
-WEATHER_MODES = {"Dynamic": "Dynamic", "Constant": "Custom"}
-
-
-def summarise_states(data):
-    out = {}
-    prog = script_state(data, "game_mechanics/company/company_progression.gs") or {}
-    company = script_state(data, "game_mechanics/company/company.gs") or {}
-    states = [s for s in (prog.get("companyState") or {}).values() if isinstance(s, dict)]
-    if states or company:
-        cs = states[0] if states else {}
-        out["company"] = {
-            "rank_earned": rank(cs.get("potentialLevel")),
-            "rank_claimed": rank(cs.get("level")),
-            "experience": num(cs.get("experience")),
-            "base_population": num(company.get("basePopulation")),
-        }
-    else:
-        out["company"] = None
-    ach = script_state(data, "game_mechanics/achievements/achievements.gs")
-    if ach is not None:
-        skip = {"version", "lastIncomeUpdateTime", "stationGroupEntity"}
-        counters = {k: num(v) for k, v in sorted(ach.items()) if isinstance(v, float) and k not in skip}
-        for k in ("cargoTypesDelivered", "vehiclesUsed", "shipsUsed"):
-            if isinstance(ach.get(k), dict):
-                counters[k] = len(ach[k])
-        out["counters"] = counters
-    else:
-        out["counters"] = None
-    gt = script_state(data, "game_mechanics/game_time/game_time.gs")
-    if gt is not None:
-        tod, wx = gt.get("timeOfDayMode"), gt.get("weatherMode")
-        out["cycles"] = {
-            "time_of_day": f"{tod} ({TIME_OF_DAY_MODES[tod]})" if TIME_OF_DAY_MODES.get(tod, tod) != tod else tod,
-            "weather": f"{wx} ({WEATHER_MODES[wx]})" if WEATHER_MODES.get(wx, wx) != wx else wx,
-        }
-    else:
-        out["cycles"] = None
-    sub = script_state(data, "game_mechanics/subventions/subventions.gs")
-    if sub is not None:
-        out["subsidies"] = {k: len(t) if isinstance(t := sub.get(k + "Subventions"), dict) else 0
-                            for k in ("proposed", "active", "completed", "failed")}
-    else:
-        out["subsidies"] = None
-    town = script_state(data, "game_mechanics/towns/town.gs")
-    ts = (town or {}).get("townStates")
-    out["town_states"] = len(ts) if isinstance(ts, dict) else (0 if town is not None else None)
-    return out
-
-
-def catalog_profiles(mods_dir):
-    state = os.path.join(os.path.dirname(mods_dir), "metadata", "state.json")
-    try:
-        mods = json.load(open(state, encoding="utf-8"))["Mods"]
-    except (OSError, KeyError, ValueError):
-        return {}
-    return {str(m["ID"]): m["Profile"] for m in mods}
+SUMMARY_SCRIPT = "mine_summary.py"
+MAP_SCRIPT = "terrain_map.py"
 
 
 def find_saves(arg):
@@ -209,108 +76,11 @@ def find_saves(arg):
 def slug(s):
     return re.sub(r"[^A-Za-z0-9]+", "-", s).strip("-").lower() or "save"
 
-
-SUMMARY_FILE = "tf3-save-summary.json"
-OLD_SUMMARY_FILE = "summary.json"
-# Any layout change raises the version and adds a new schema file; committed ones are never edited.
-SCHEMA_VERSION = 4
-SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
-              f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
-# Every key, in the order written (the schema file of SCHEMA_VERSION).
-FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
-          "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
-          "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
-          "stream_bytes", "calendar", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
-          "settings", "mods", "cargo_list", "cargo_from_mods"]
-
-INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_size", "map_size_name",
-              "map_format", "map_ratio", "map_w_m", "map_h_m", "climate",
-              "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
-              "date", "calendar_speed", "play_speed", "rank", "tools_commit"]
-
-
-def summarise_save(path, mod_id, mods_dir, kind="savegame"):
-    profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
-    name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
-    summary = dict.fromkeys(FIELDS)
-    summary.update({
-        "$schema": SCHEMA_URL,
-        "schema_version": SCHEMA_VERSION,
-        "name": name,
-        "mod_id": mod_id,
-        "kind": kind,
-        "source_name": os.path.basename(path),
-        "source_size": os.stat(path).st_size,
-        "author": (profile.get("submitted_by") or {}).get("username"),
-        "tags": [t["name"] for t in profile.get("tags", [])],
-        "url": profile.get("profile_url"),
-        "tools_commit": tools_commit(),
-    })
-    try:
-        data = decompress(open(path, "rb").read())
-        h = read_header(path, data)
-        s = h.get("settings", {})
-        res = dict(h.get("resources", []))
-        entries = cargo_entries(data)
-        cargo_names = [n for _, n, _ in entries] if entries else None
-        states = summarise_states(data)
-        summary.update({
-            "version": h["version"],
-            "first_version": h.get("first_version"),
-            "map_seed": h.get("map_seed"),
-            "start_year": h["start_year"],
-            "map_w_m": h["map_w_m"],
-            "map_h_m": h["map_h_m"],
-            "header_money": h["money"],
-            "header_counter": h["counter"],
-            "climate": os.path.basename(res["climate"]) if "climate" in res else None,
-            "economy": res.get("economy"),
-            "name_list": res.get("nameList"),
-            "is_map_editor": s.get("isMapEditor"),
-            "header_partial": h["partial"],
-            "stream_bytes": h["stream_len"],
-            "calendar": summarise_calendar(data),
-            **states,
-            "town_records": summarise_records(recs := scan_records(data), cargo_names),
-            "towns": summarise_towns(data, recs, states["town_states"]),
-            "settings": {k: setting_label(k, v) for k, v in sorted(s.items())} if s else None,
-            "mods": [m["id"] for m in h["mods"]],
-            "cargo_list": cargo_names,
-            "cargo_from_mods": {n: m for _, n, m in entries if m} if entries else None,
-        })
-        del data
-    except Exception as e:  # truncated download, unknown format, ...
-        summary["error"] = f"{type(e).__name__}: {e}"
-    return summary
-
-
-def setting_position_name(settings, key):
-    """('3', 'Medium') from a settings label like "3 (Medium, default)"; ('', '') where there is none."""
-    label = (settings or {}).get(key)
-    if not label:
-        return "", ""
-    pos, _, rest = str(label).partition(" (")
-    return pos, rest.rstrip(")").split(", default")[0]
-
-
-def index_row(sm):
-    tr = sm.get("town_records") or {}
-    if sm.get("error"):
-        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 15
-                + ["error", sm.get("kind", "savegame")] + [""] * 4 + [sm.get("tools_commit")])
-    cal = sm.get("calendar") or {}
-    size, fmt = (setting_position_name(sm.get("settings"), k) for k in ("map.size", "map.format"))
-    return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
-            *size, *fmt, sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
-            len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
-            sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
-            cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
-            (sm.get("company") or {}).get("rank_earned"), sm.get("tools_commit")]
-
-
-# Size and mtime of the save last read and the tools commit that read it, one file per summary
-# so parallel runs do not clash.
+# Size and mtime of the save last read and the commit of the scripts that read it (the summary's, or the map's in
+# .map_state.json), one file per summary so parallel runs do not clash.
 STATE_FILE = ".mine_state.json"
+MAP_STATE_FILE = ".map_state.json"
+MAP_FILE = "terrain-map.svg"
 
 
 def file_key(path, commit):
@@ -325,6 +95,35 @@ def up_to_date(d, path, commit):
         return json.load(open(os.path.join(d, STATE_FILE), encoding="utf-8")) == file_key(path, commit)
     except (OSError, ValueError):
         return False
+
+
+def map_up_to_date(d, path, commit):
+    if not commit or commit.endswith("-dirty"):
+        return False
+    try:
+        return json.load(open(os.path.join(d, MAP_STATE_FILE), encoding="utf-8"))["key"] == file_key(path, commit)
+    except (OSError, ValueError, KeyError):
+        return False
+
+
+def draw_map(d, path, commit):
+    """Run terrain_map.py with its defaults on one save and put the SVG in d. Returns an error text or None."""
+    error = None
+    with tempfile.TemporaryDirectory() as tmp:
+        run = subprocess.run([sys.executable, "-I", os.path.join(TOOLS_DIR, MAP_SCRIPT), tmp, path],
+                             capture_output=True, text=True)
+        made = [f for f in os.listdir(tmp) if f.endswith(".svg")]
+        if made:
+            shutil.move(os.path.join(tmp, made[0]), os.path.join(d, MAP_FILE))
+        else:
+            lines = [ln for ln in (run.stdout + run.stderr).splitlines() if ln.startswith(("REFUSED", "FAILED", "Traceback"))]
+            error = (lines[0] if lines else (run.stderr.strip().splitlines() or ["no picture written"])[-1])
+            error = error.replace(path, os.path.basename(path))
+    if error and os.path.exists(os.path.join(d, MAP_FILE)):
+        os.remove(os.path.join(d, MAP_FILE))  # a stale picture from an older run
+    with open(os.path.join(d, MAP_STATE_FILE), "w", encoding="utf-8") as f:
+        json.dump({"key": file_key(path, commit), "error": error}, f)
+    return error
 
 
 def seed_parts(seed):
@@ -374,16 +173,20 @@ def move_to(old, new):
 
 
 def main():
-    out_dir, args = sys.argv[1], sys.argv[2:]
+    argv = sys.argv[1:]
+    maps = "--no-maps" not in argv
+    argv = [a for a in argv if a != "--no-maps"]
+    out_dir, args = argv[0], argv[1:]
     os.makedirs(out_dir, exist_ok=True)
-    done = skipped = failed = 0
-    commit = tools_commit()
+    done = skipped = failed = drawn = unmapped = 0
+    scommit, mcommit = closure_commit(SUMMARY_SCRIPT), closure_commit(MAP_SCRIPT)
     for arg in args:
         for path, mod_id, mods_dir, kind in find_saves(arg):
             profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
             name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
             leaf = f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else "")
             d = summary_dirs(out_dir).get(leaf)
+            readable = False                          # the summary is there and the save could be read
             if d:
                 try:
                     seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
@@ -392,33 +195,40 @@ def main():
                 new = place(out_dir, leaf, seed)
                 move_to(d, new)
                 d = new
-                if up_to_date(d, path, commit):
-                    skipped += 1
-                    continue
-            print("reading", os.path.basename(path), file=sys.stderr)
-            summary = summarise_save(path, mod_id, mods_dir, kind)
-            new = place(out_dir, leaf, summary["map_seed"])
-            if d:
-                move_to(d, new)
-            d = new
-            os.makedirs(d, exist_ok=True)
-            sp = os.path.join(d, SUMMARY_FILE)
-            with open(sp, "w", encoding="utf-8") as f:
-                json.dump(summary, f, indent=2, ensure_ascii=False)
-                f.write("\n")
-            old = os.path.join(d, OLD_SUMMARY_FILE)
-            if os.path.exists(old):
-                os.remove(old)
-            state = os.path.join(d, STATE_FILE)
-            if summary["error"]:
-                failed += 1
-                if os.path.exists(state):
-                    os.remove(state)  # retry next run
-                print("  FAILED:", summary["error"], file=sys.stderr)
-            else:
-                done += 1
-                with open(state, "w", encoding="utf-8") as f:
-                    json.dump(file_key(path, summary["tools_commit"]), f)
+                readable = up_to_date(d, path, scommit)
+                skipped += readable
+            if not readable:
+                print("reading", os.path.basename(path), file=sys.stderr)
+                summary = summarise_save(path, mod_id, mods_dir, kind)
+                new = place(out_dir, leaf, summary["map_seed"])
+                if d:
+                    move_to(d, new)
+                d = new
+                os.makedirs(d, exist_ok=True)
+                sp = os.path.join(d, SUMMARY_FILE)
+                with open(sp, "w", encoding="utf-8") as f:
+                    json.dump(summary, f, indent=2, ensure_ascii=False)
+                    f.write("\n")
+                old = os.path.join(d, OLD_SUMMARY_FILE)
+                if os.path.exists(old):
+                    os.remove(old)
+                state = os.path.join(d, STATE_FILE)
+                if summary["error"]:
+                    failed += 1
+                    if os.path.exists(state):
+                        os.remove(state)  # retry next run
+                    print("  FAILED:", summary["error"], file=sys.stderr)
+                else:
+                    done += 1
+                    readable = True
+                    with open(state, "w", encoding="utf-8") as f:
+                        json.dump(file_key(path, summary["tools_commit"]), f)
+            if maps and readable and not map_up_to_date(d, path, mcommit):
+                print("drawing", os.path.basename(path), file=sys.stderr)
+                if draw_map(d, path, mcommit):
+                    unmapped += 1
+                else:
+                    drawn += 1
     if not args:  # alone at the end of a run: put every summary where its seed says
         for leaf, d in summary_dirs(out_dir).items():
             seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
@@ -432,6 +242,8 @@ def main():
         w.writerow(INDEX_COLS)
         w.writerows(rows)
     print(f"{done} read, {skipped} unchanged, {failed} failed; {len(rows)} rows in {idx}", file=sys.stderr)
+    if maps:
+        print(f"{drawn} maps drawn, {unmapped} without a map (reason in .map_state.json)", file=sys.stderr)
 
 
 if __name__ == "__main__":

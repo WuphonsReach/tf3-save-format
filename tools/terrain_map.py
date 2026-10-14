@@ -30,7 +30,7 @@ save's file name, the map size, the metres per pixel, the map point at the pictu
 corner and the x and y range the picture covers, which way north is drawn (`north`: `game` or `sun`, and a sentence
 saying which way is up, since a compass word such as "north building" points differently in the two), the crop (X, Y, R) if any and the grid step if `--grid` gave one,
 and which script made it: `generator`, `generator-commit` (the last commit that changed a `tools/*.py`, with `-dirty` added if one has
-uncommitted changes, as in `mine_saves.py`) and `generated-utc` (the time of the run, ISO 8601, to the second).
+uncommitted changes, as in `script_commits.py`) and `generated-utc` (the time of the run, ISO 8601, to the second).
 A setting left at its default (vector terrain, contour 20, index 5, bands, the default grid, industries, `--grid-lines auto`) is not
 recorded; only a setting changed from it is (`terrain="raster"`, `contour-step`, `index-every`, `tolerance`, `bands="false"`, `grid="off"`,
 `industries="off"`, `grid-lines`).
@@ -676,7 +676,7 @@ def generator_attrs():
     """[(name, value)] saying which script run made the picture: the script, the commit of `tools/` it ran from (None
     outside a git checkout, so the attribute is left out) and the UTC time, so a map can be told from one made by an older
     version of the drawing."""
-    from mine_saves import tools_commit
+    from script_commits import tools_commit
     return [("generator", "terrain_map.py"), ("generator-commit", tools_commit()),
             ("generated-utc", datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))]
 
