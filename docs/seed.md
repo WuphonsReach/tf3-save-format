@@ -27,4 +27,5 @@ The seed can also be read without a tool, from the game's log (a tip from the ga
 - Starting a new game writes a line ending `Seed text: <seed>`, then one ending `Map seed text: <seed>`.
 - Loading a save writes only the `Map seed text` line. The log does not name the save, but all 7 loads were of one test series and printed its seed, the value every save of that series holds in `id`. Just before the line the log prints the active mods, the `climate`, `economy` and `nameList` paths and the game settings table, the same values as the header's config fields.
 - The file began with that session's startup line and held nothing from earlier sessions, so it seems to be rewritten each time the game starts. To find the seed of an older game, load its save and then search the log for `seed`; the last match is that save's.
+- The same log carries the export of the Transit Overlay mod when its button is pressed: [transit-overlay.md](transit-overlay.md).
 - No terrain sliders appeared in the log either, so it does not settle whether the seed alone rebuilds the map.
