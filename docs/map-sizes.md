@@ -4,7 +4,21 @@ How the Map Size and Map Format options set the map's width and height in a save
 
 ## The rule
 
-**Observed (599 to 604):** each Map Size is a set area in km², and Map Format only changes the shape of that area. Take the 1:1 map of a size: its 1:2 and 1:3 maps hold about the same area, as a longer, narrower rectangle. The two are not exactly equal, because every side is a whole number of 256 m tiles (every size seen is a multiple of 256), so the area of one size differs by up to a few percent between formats.
+**Observed (599 to 604):** each Map Size is a set area in km², and Map Format only changes the shape of that area. Take the 1:1 map of a size: its 1:2 and 1:3 maps hold about the same area, as a longer, narrower rectangle. The two are not exactly equal, because every side is a whole number of 256 m terrain tiles ([terrain.md](terrain.md#the-terrain-record)), so the area of one size differs by up to a few percent between formats.
+
+**Observed (599 to 604), a fit and not a read field:** every side seen is also a multiple of 512 m (both sides of every save in the mined set, including the ones that disagree with their settings below), so the map is a whole number of 2-tile steps; it is not always a multiple of 1024 (Tiny 1 : 2 is 2560 x 5120). Taking the width as sqrt(area / n) for 1 : n, rounded to the nearest 512 m, with the height n times the width, one area per Map Size reproduces 28 of the 29 seen combinations at best (the Megalomaniac exception is below). The areas that fit all the seen formats of a size, in km²:
+
+| Size | Fitting area range |
+|---|---|
+| Tiny | 14.7 to 15.9 |
+| Small | 63.0 to 69.3 |
+| Medium | 126.0 to 132.7 |
+| Large | 199.4 to 212.9 |
+| Very Large | 260.1 to 265.4 |
+| Huge | 409.0 to 425.9 |
+| Gigantomaniac | 818.0 to 830.7 |
+
+Megalomaniac has no single area: its 1 : 1 needs 591.5 to 616.6 km² and its 1 : 2, 1 : 3 and 1 : 5 need at most 588.4, under 1% apart. Whether the game uses another rounding there, or a per-size tweak, is **Open**. The rule does not say what the game computes, only that no seen size breaks it. A new size that breaks it would show what the real setup is.
 
 The settings are stored as 1-based positions in the lists of [settings.md](settings.md#the-options): `map.size` 1 is Tiny and 8 is Gigantomaniac, `map.format` 1 is 1 : 1 and 5 is 1 : 5. The header's width and height ([header.md](header.md)) are in metres.
 
@@ -59,8 +73,8 @@ Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578
 
 **Observed (604):** Tiny 1 : 3 and Tiny 1 : 4 both give 2048 x 6144 m (8 x 24 tiles), see [the terrain note](terrain.md#the-terrain-record); a second Tiny 1 : 4 game, made later the same day, stored format 4 and gave the same size, with 2.0 x 6.0 km on the New Game screen ([test-games.md](test-games.md#map-format-tests)). Tiny 1 : 1 gives 4096 x 4096 m (16 x 16 tiles, 16.8 km²), Tiny 1 : 2 gives 2560 x 5120 m (10 x 20 tiles, 13.1 km²) and Tiny 1 : 5 gives 1536 x 7680 m (6 x 30 tiles, 11.8 km²). The New Game screen's own size readout agreed with each save: 4.0 x 4.0 km with 1 : 1 selected, 2.5 x 5.0 km with 1 : 2, 2.0 x 6.0 km with 1 : 3 and 1 : 4, and 1.5 x 7.5 km with 1 : 5, so the shape comes from the game's setup and not from anything a save changes.
 
-- **Tiny 1 : 1 is not an oddity:** our own temperate game (a save made from the New Game screen, [test-games.md](test-games.md#map-format-tests)) and a catalog editor map (mod.io [6449839](https://mod.io/g/transportfever3/m/testupload), dry) both give 4096 x 4096 m. The Tiny areas fall as the format widens (16.8, 13.1, 12.6 and 11.8 km² for 1 : 1, 1 : 2, 1 : 3 and 1 : 5), so the area rule of the section above is loose at Tiny: 1 : 1 is a third above 1 : 5. Why is **Open**.
-- A 1 : 4 map of the 12.6 km² would be about 1792 x 7168 m (7 x 28 tiles), which no save has, new game or catalog. Tiny 1 : 4 comes out as the 1 : 3 shape. Why is **Open**.
+- **Tiny 1 : 1 is not an oddity:** our own temperate game (a save made from the New Game screen, [test-games.md](test-games.md#map-format-tests)) and a catalog editor map (mod.io [6449839](https://mod.io/g/transportfever3/m/testupload), dry) both give 4096 x 4096 m. The Tiny areas fall as the format widens (16.8, 13.1, 12.6 and 11.8 km² for 1 : 1, 1 : 2, 1 : 3 and 1 : 5), but they are the rounding of [the rule above](#the-rule) on one area of about 15.5 km²: the width in 512 m steps is 7.7, 5.4, 4.4 and 3.4, which rounds to 8, 5, 4 and 3. Any area from 14.7 to 15.9 km² gives these four.
+- **Tiny 1 : 4 is the 1 : 3 shape.** The same area gives a 1 : 4 width of 3.8 steps, which rounds to 4 (2048 m), as seen. A 1 : 4 shape would then be 2048 x 8192 m; the save has 2048 x 6144 m. No 512 m multiple lies near 12.6 km² in the 1 : 4 shape (1536 x 6144 is 9.4 km², 2048 x 8192 is 16.8). Why the height is 3 times the width and not 4 is **Open**.
 - 2048 m is not a minimum width: the 1 : 5 map is 1536 m wide. The 1 : 5 area is 6% under the 1 : 3 one, within the tile rounding of the rule above.
 
 ## Saves that disagree with their settings
