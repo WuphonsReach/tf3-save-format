@@ -17,7 +17,7 @@ the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `v
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` (`--stations`, a sublayer per kind), `coverage` (`--coverage`), `industries` (`--industries`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` and `stations-street` (`--stations`, a sublayer per kind), `coverage` (`--coverage`), `industries` (`--industries`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
@@ -142,11 +142,16 @@ game's own palette.
              sublayer per group: `station-water-decks` (wood brown) and `station-water-buildings` (darker brown),
              `station-rail-platforms` (grey) and `station-rail-buildings` (dark grey), `station-street-platforms` (light grey;
              the modular station's platform tiles and the small stops) and `station-street-buildings` (grey); all colours
-             provisional. Each placed piece is the box of its model's `boundingInfo`, placed from the instance's origin and facing as
+             provisional. The street groups, with the border below, are in a `stations-street` layer above the roads, so the
+             border hides the ends of a station's own road lanes. Each placed piece is the box of its model's `boundingInfo`, placed from the instance's origin and facing as
              the depots are (docs/models.md); a deck piece, rail building or other piece with thin `_con_` and `_end_` edge pieces is
              its cell, the box that holds those too (they are not drawn themselves). One
              `<g class="station-piece" data-slot data-model data-x data-y>` each, and in each sublayer `station-outer`, the group's outer
-             edge at an industry's outline width (1.5 m), with no line where two boxes touch. A `station-landings` sublayer stamps an
+             edge at an industry's outline width (1.5 m), with no line where two boxes touch. A bus, tram or cargo (modular) station also gets a `station-street-ground` sublayer (an opaque light grey fill) and a
+             `station-street-borders` sublayer (the black border, 1.5 m): both are the outline of the union of its platform tiles and
+             centre, path and entrance pieces, grown by 3 m and shrunk again so a gap of up to 6 m between pieces leaves no line inside
+             (`STREET_BORDER`, `STREET_BORDER_CLOSE`). The border is a little under the game's own line, which also takes in the road
+             loop round the platforms. A `station-landings` sublayer stamps an
              anchor (tools/icons/anchor_small.svg (11 m) or anchor_large.svg (24 m), very dark grey, no disc, moved out from the nearest deck edge so it does not overlap the outline and turned so its ring points at the deck; the small icon's own 35 degree tilt is taken out) on each landing marker, the
              `tn_small_pier_passenger*` models small and the `tn_medium_pier_passenger*` ones large. The boxes come from
              `stations/*.zip` in the install at run time and are never stored, so without an install nothing is drawn. Railings, roofs,
@@ -194,6 +199,7 @@ are not told apart from the rest. A deleted road can stay in the table for one s
 """
 import argparse
 import base64
+import bisect
 import collections
 import datetime
 import glob
@@ -317,7 +323,7 @@ STATION_KINDS = (
      False, "#8c8c8c", 0.85),
     ("station-street-platforms", "Street stations: platforms and stops",
      tuple(_STREET_STATION + "%spltfrm_%s_%s" % (c, side, part) for c in ("", "cargo_") for side in "lr"
-           for part in ("rep", "btm", "top", "btm_spcl", "top_spcl"))
+           for part in ("rep",))
      + ("street/small_stops/small_old", "street/small_stops/small_mid"),
      False, "#c8c8c8", 0.9),
     ("station-water-buildings", "Water stations: main buildings", ("water/models/main_building_s0", "water/models/main_building_s2"),
@@ -328,6 +334,13 @@ STATION_KINDS = (
     ("station-street-buildings", "Street stations: buildings", (_STREET_STATION.replace("era_a/", "sidebuildings/") + "streetstation_sidebuilding_era_a_s2",),
      False, "#9a9a9a", 0.9),
 )
+# The border of a bus, tram or cargo station (the black line the game draws round it): drawn as the outer edge of the boxes of the
+# modular station's platform tiles and its centre, path and entrance pieces, which fill the polygon the game's script lays out.
+# The thin edge strips, the 5 m ramp ends (`_spcl`), the path extensions and the zero-size markers are not part of it.
+STREET_BORDER = re.compile(r"^street/modular_street_station/models/era_[abc]/"
+                           r"((cargo_)?pltfrm_[lr]_rep|cargo_path_rep|(cntr|entr|path)_(?!.*(spcl|pers)).*)\.mdl$")
+STREET_BORDER_FILL, STREET_BORDER_OPACITY = "#e3e3e3", 1.0
+STREET_BORDER_CLOSE = 3.0                                    # metres: gaps up to twice this between pieces are closed in the border
 # Landings: a `tn_*_pier_passenger*` model is the marker of one landing a ship docks at (docs/station-pieces.md), drawn as an anchor icon
 # from tools/icons/, small or large by the model, upright, centred on the marker. (model name under `stations/water/models/`, size)
 LANDING_MODELS = {"tn_small_pier_passenger": "small", "tn_small_pier_passenger_l": "small", "tn_small_pier_passenger_r": "small",
@@ -382,6 +395,13 @@ def read_station_boxes(content):
             if parts:
                 out["stations/%s.mdl" % name] = (min(q[0] for q in parts), min(q[1] for q in parts),
                                                  max(q[2] for q in parts), max(q[3] for q in parts))
+    if "street" in zips and zips["street"]:
+        zf, members = zips["street"]
+        for m in sorted(members):
+            if STREET_BORDER.match(m):
+                box = {k: (float(a), float(b)) for k, a, b in _BBOX.findall(zf.read(m).decode("utf-8", "replace"))}
+                if "ax" in box and "in" in box and box["ax"] != box["in"]:
+                    out.setdefault("stations/" + m, (box["in"][0], box["in"][1], box["ax"][0], box["ax"][1]))
     return out
 
 
@@ -1026,8 +1046,134 @@ def _clear_of_edge(pt, clearance, polys, outer, reach=40.0):
     return (px + clearance * nx, py + clearance * ny), (px, py)
 
 
+def _closed_outline(polys, g=STREET_BORDER_CLOSE):
+    """Closed loops (lists of points) round the union of the boxes `polys` (four corners each) with every gap up to 2 g metres
+    closed, so the thin gaps between a station's pieces leave no line inside: each box is grown by g, the union is taken and shrunk
+    by g again, in the frame of the boxes' own axes (a station's pieces share one heading, a quarter turn aside at most), on the
+    grid of the boxes' edge coordinates and their multiples of g. Boxes within 2 g of each other are one station."""
+    n = len(polys)
+    parent = list(range(n))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    aabb = [(min(q[0] for q in c) - g, max(q[0] for q in c) + g, min(q[1] for q in c) - g, max(q[1] for q in c) + g) for c in polys]
+    for a in range(n):
+        for b in range(a + 1, n):
+            if aabb[a][0] <= aabb[b][1] and aabb[b][0] <= aabb[a][1] and aabb[a][2] <= aabb[b][3] and aabb[b][2] <= aabb[a][3]:
+                parent[find(a)] = find(b)
+    groups = collections.defaultdict(list)
+    for a in range(n):
+        groups[find(a)].append(a)
+    loops = []
+    for members in groups.values():
+        c0 = polys[members[0]]
+        ang = math.atan2(c0[1][1] - c0[0][1], c0[1][0] - c0[0][0])
+        ca, sa = math.cos(-ang), math.sin(-ang)
+        rects = []
+        for m in members:
+            pts = [(q[0] * ca - q[1] * sa, q[0] * sa + q[1] * ca) for q in polys[m]]
+            rects.append((min(q[0] for q in pts), max(q[0] for q in pts), min(q[1] for q in pts), max(q[1] for q in pts)))
+        axis = [sorted({round(v + k * g, 3) for r in rects for v in (r[idx], r[idx + 1]) for k in (-2, -1, 0, 1, 2)}) for idx in (0, 2)]
+        xs, ys = axis
+        nx_, ny_ = len(xs) - 1, len(ys) - 1
+        grown = [[False] * ny_ for _ in range(nx_)]
+        for r in rects:
+            for ix in range(bisect.bisect_left(xs, round(r[0] - g, 3)), bisect.bisect_left(xs, round(r[1] + g, 3))):
+                col = grown[ix]
+                for iy in range(bisect.bisect_left(ys, round(r[2] - g, 3)), bisect.bisect_left(ys, round(r[3] + g, 3))):
+                    col[iy] = True
+        pre = [[0] * (ny_ + 1) for _ in range(nx_ + 1)]
+        for ix in range(nx_):
+            for iy in range(ny_):
+                pre[ix + 1][iy + 1] = pre[ix][iy + 1] + pre[ix + 1][iy] - pre[ix][iy] + grown[ix][iy]
+        e = [[False] * ny_ for _ in range(nx_)]
+        for ix in range(nx_):
+            ia, ib = max(0, bisect.bisect_right(xs, xs[ix] - g + 1e-6) - 1), bisect.bisect_left(xs, xs[ix + 1] + g - 1e-6)
+            if xs[ix] - g < xs[0] - 1e-6 or xs[ix + 1] + g > xs[-1] + 1e-6:
+                continue
+            for iy in range(ny_):
+                ja, jb = max(0, bisect.bisect_right(ys, ys[iy] - g + 1e-6) - 1), bisect.bisect_left(ys, ys[iy + 1] + g - 1e-6)
+                if ys[iy] - g < ys[0] - 1e-6 or ys[iy + 1] + g > ys[-1] + 1e-6:
+                    continue
+                total = pre[ib][jb] - pre[ia][jb] - pre[ib][ja] + pre[ia][ja]
+                e[ix][iy] = total == (ib - ia) * (jb - ja)
+        edges = {}                                       # directed boundary edges with the filled cell on the left
+        for ix in range(nx_):
+            for iy in range(ny_):
+                if not e[ix][iy]:
+                    continue
+                if iy == 0 or not e[ix][iy - 1]:
+                    edges.setdefault((ix, iy), []).append((ix + 1, iy))
+                if ix == nx_ - 1 or not e[ix + 1][iy]:
+                    edges.setdefault((ix + 1, iy), []).append((ix + 1, iy + 1))
+                if iy == ny_ - 1 or not e[ix][iy + 1]:
+                    edges.setdefault((ix + 1, iy + 1), []).append((ix, iy + 1))
+                if ix == 0 or not e[ix - 1][iy]:
+                    edges.setdefault((ix, iy + 1), []).append((ix, iy))
+        ca, sa = math.cos(ang), math.sin(ang)
+        while edges:
+            start = next(iter(edges))
+            loop, cur = [start], start
+            while True:
+                nxt = edges[cur].pop()
+                if not edges[cur]:
+                    del edges[cur]
+                if nxt == start:
+                    break
+                loop.append(nxt)
+                cur = nxt
+            pts = []
+            for k, v in enumerate(loop):                 # keep only the corners
+                a, b = loop[k - 1], loop[(k + 1) % len(loop)]
+                if (a[0] == v[0] == b[0]) or (a[1] == v[1] == b[1]):
+                    continue
+                pts.append((xs[v[0]] * ca - ys[v[1]] * sa, xs[v[0]] * sa + ys[v[1]] * ca))
+            if len(pts) >= 3:
+                loops.append(pts)
+    return loops
+
+
+def _outer_runs(polys):
+    """The stretches of the boxes' edges that no other box of the group covers just outside, as lists of points: the group's outline,
+    with no line where two boxes touch (every metre of an edge is tested for a box 0.3 m beyond it)."""
+    boxes_xy = [(min(q[0] for q in c), max(q[0] for q in c), min(q[1] for q in c), max(q[1] for q in c)) for c in polys]
+    buckets = collections.defaultdict(list)              # 50 m cells holding the boxes that reach them, so a test looks only nearby
+    for n, (bx0, bx1, by0, by1) in enumerate(boxes_xy):
+        for gx in range(int(bx0 // 50), int(bx1 // 50) + 1):
+            for gy in range(int(by0 // 50), int(by1 // 50) + 1):
+                buckets[gx, gy].append(n)
+    outer = []
+    for me, c in enumerate(polys):
+        cx, cy = sum(q[0] for q in c) / 4, sum(q[1] for q in c) / 4
+        for (x0, y0), (x1, y1) in zip(c, c[1:] + c[:1]):
+            length = math.hypot(x1 - x0, y1 - y0)
+            steps = max(1, int(length))                  # test every metre of the edge
+            nx, ny = (y1 - y0) / (length or 1.0), -(x1 - x0) / (length or 1.0)
+            if nx * (x0 - cx) + ny * (y0 - cy) < 0:
+                nx, ny = -nx, -ny                        # the normal that points away from this box
+            run, last = None, None
+            for st in range(steps):
+                t0, t1 = st / steps, (st + 1) / steps
+                mx, my = x0 + (x1 - x0) * (t0 + t1) / 2 + 0.3 * nx, y0 + (y1 - y0) * (t0 + t1) / 2 + 0.3 * ny
+                inside = any(other != me and boxes_xy[other][0] <= mx <= boxes_xy[other][1]
+                             and boxes_xy[other][2] <= my <= boxes_xy[other][3] and _inside(polys[other], mx, my)
+                             for other in buckets.get((int(mx // 50), int(my // 50)), ()))
+                if run is None or inside != last:
+                    if run and not last:
+                        outer.append(run)
+                    run, last = [(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)], inside
+                run.append((x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1))
+            if run and not last:
+                outer.append(run)
+    return outer
+
+
 def station_layers(mpp, fr, instances, boxes):
-    """SVG lines for the `stations` layer, a sublayer per `STATION_KINDS` entry that has a piece in the picture. Each placed piece is
+    """SVG lines for the `stations` layer (below the roads) and the `stations-street` layer (above them, so the border hides the
+    ends of the station's own road lanes), as (`under`, `over`), a sublayer per `STATION_KINDS` entry that has a piece in the picture. Each placed piece is
     its box in the model's own axes (`boxes`, from `read_station_boxes`), turned by the instance's facing and moved to its origin. A
     sublayer holds the fills (one `<g class="station-piece" data-slot data-model data-x data-y>` each, opaque inside a group that is
     partly transparent as a whole, so overlapping boxes do not darken) and the kind's outline, `station-outer`, at `STATION_OUTLINE`,
@@ -1035,8 +1181,19 @@ def station_layers(mpp, fr, instances, boxes):
     not drawn, so touching boxes show no line between them. `instances` are `read_instances` rows. Units are metres like the other
     layers; kinds are drawn in the table's order, so buildings lie over platforms."""
     k = max(1.0, mpp / 2.0)
-    out = []
+    out, top = [], []
     deck_polys, deck_outer = [], []
+    border_polys = []
+    for i in instances:
+        if i["model"].startswith("stations/street/") and STREET_BORDER.match(i["model"][len("stations/"):]) and i["model"] in boxes:
+            x0, y0, x1, y1 = boxes[i["model"]]
+            h = math.hypot(i["fx"], i["fy"]) or 1.0
+            fx, fy = i["fx"] / h, i["fy"] / h
+            border_polys.append([fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))])
+    border_loops = _closed_outline(border_polys) if border_polys else []
+
+    def loops_d(loops):
+        return "".join("M" + "L".join("%.2f %.2f" % q for q in lp) + "Z" for lp in loops)
     for lid, label, names, _edges, colour, opacity in STATION_KINDS:
         models = {"stations/%s.mdl" % n for n in names}
         polys, rows = [], []
@@ -1049,51 +1206,37 @@ def station_layers(mpp, fr, instances, boxes):
                 rows.append(i)
         if not polys:
             continue
-        if not out:
-            out.append(layer("stations", "Stations", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
-        out.append(layer(lid, label))
-        out.append('<g opacity="%g">' % opacity)
+        out_kind = top if lid.startswith("station-street") else out    # street stations lie over the roads
+        if not out_kind:
+            out_kind.append(layer("stations-street" if out_kind is top else "stations", "Street stations" if out_kind is top else "Stations",
+                                  ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
+        if lid == "station-street-platforms" and border_loops:
+            out_kind.append(layer("station-street-ground", "Street stations: ground inside the border"))
+            out_kind.append('<path class="station-ground" d="%s" fill="%s" fill-rule="evenodd" fill-opacity="%g" stroke="%s" stroke-width="%g"'
+                       ' stroke-opacity="%g"/></g>' % (loops_d(border_loops), STREET_BORDER_FILL, STREET_BORDER_OPACITY, STREET_BORDER_FILL,
+                                                       0.5 * k, STREET_BORDER_OPACITY))
+        out_kind.append(layer(lid, label))
+        out_kind.append('<g opacity="%g">' % opacity)
         for i, c in zip(rows, polys):
-            out.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" '
+            out_kind.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" '
                        'stroke="%s" stroke-width="%g"/></g>'    # a same-colour edge hides the seam between two boxes
                        % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % q for q in c), colour, colour, 0.5 * k))
-        out.append("</g>")
-        boxes_xy = [(min(q[0] for q in c), max(q[0] for q in c), min(q[1] for q in c), max(q[1] for q in c)) for c in polys]
-        buckets = collections.defaultdict(list)              # 50 m cells holding the boxes that reach them, so a test looks only nearby
-        for n, (bx0, bx1, by0, by1) in enumerate(boxes_xy):
-            for gx in range(int(bx0 // 50), int(bx1 // 50) + 1):
-                for gy in range(int(by0 // 50), int(by1 // 50) + 1):
-                    buckets[gx, gy].append(n)
-        outer = []
-        for me, c in enumerate(polys):
-            cx, cy = sum(q[0] for q in c) / 4, sum(q[1] for q in c) / 4
-            for (x0, y0), (x1, y1) in zip(c, c[1:] + c[:1]):
-                length = math.hypot(x1 - x0, y1 - y0)
-                steps = max(1, int(length))                  # test every metre of the edge
-                nx, ny = (y1 - y0) / (length or 1.0), -(x1 - x0) / (length or 1.0)
-                if nx * (x0 - cx) + ny * (y0 - cy) < 0:
-                    nx, ny = -nx, -ny                        # the normal that points away from this box
-                run, last = None, None
-                for st in range(steps):
-                    t0, t1 = st / steps, (st + 1) / steps
-                    mx, my = x0 + (x1 - x0) * (t0 + t1) / 2 + 0.3 * nx, y0 + (y1 - y0) * (t0 + t1) / 2 + 0.3 * ny
-                    inside = any(other != me and boxes_xy[other][0] <= mx <= boxes_xy[other][1]
-                                 and boxes_xy[other][2] <= my <= boxes_xy[other][3] and _inside(polys[other], mx, my)
-                                 for other in buckets.get((int(mx // 50), int(my // 50)), ()))
-                    if run is None or inside != last:
-                        if run and not last:
-                            outer.append(run)
-                        run, last = [(x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0)], inside
-                    run.append((x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1))
-                if run and not last:
-                    outer.append(run)
+        out_kind.append("</g>")
+        if lid == "station-street-platforms" and border_loops:
+            outer = _outer_runs([c for i, c in zip(rows, polys) if "/small_stops/" in i["model"]] or [])
+        else:
+            outer = _outer_runs(polys)
         if lid == "station-water-decks":
             deck_polys, deck_outer = polys, outer
         if outer:
             d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in outer)
-            out.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
+            out_kind.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
                        ' stroke-linejoin="round"/>' % (d, STATION_OUTLINE * k))
-        out.append("</g>")
+        out_kind.append("</g>")
+        if lid == "station-street-platforms" and border_loops:
+            out_kind.append(layer("station-street-borders", "Street stations: border"))
+            out_kind.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
+                       ' stroke-linejoin="round"/></g>' % (loops_d(border_loops), STATION_OUTLINE * k))
     landings = [i for i in instances if i["model"].startswith("stations/water/models/")
                 and LANDING_MODELS.get(i["model"].rsplit("/", 1)[-1][:-4])]
     if landings:
@@ -1118,7 +1261,9 @@ def station_layers(mpp, fr, instances, boxes):
         out.append("</g>")
     if out:
         out.append("</g>")
-    return out
+    if top:
+        top.append("</g>")
+    return out, top
 
 
 def depot_layers(mpp, fr, instances, specs, footprints, coverage):
@@ -1700,7 +1845,9 @@ def main():
             for key in unmatched:
                 print("no edge between %s in the picture" % " and ".join("%x" % n for n in sorted(key)))
             under, over = depot_layers(args.mpp, fr, depot_rows, depot_specs, args.depots, args.coverage)
-            under += station_layers(args.mpp, fr, station_rows, station_boxes)
+            station_under, station_over = station_layers(args.mpp, fr, station_rows, station_boxes)
+            under += station_under
+            over += station_over
             over += industry_layers(args.mpp, fr, industry_rows, args.industry_size, industry_faces)
             open(dest, "w").write(svg_document(png, size, args.mpp, fr, edges, widths, grid_step, meta,
                                                overlay, args.zoom, under, over, terrain, args.min_width,
