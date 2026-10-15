@@ -17,6 +17,14 @@ The save has no camera. The game shows the player no x/y. So the place is found 
 5. **Check the blend** (`...-blend.png`, 4K crop to read it): the shore, docks and bridge stubs should lie on the picture's. Roads and rails on a viaduct or embankment, roofs and hills will be off, by about their height times the tangent of the camera pitch (the fit is a plane at water level), so judge by the coastline and things at the water. The map draws a road end with a round cap where the game ends it flat.
 6. **Use the result.** `--pixel PX,PY` gives the map point under a pixel on the water plane (good to a few metres at the water's edge, worse higher up). The JSON has the view centre, corners, scale and homography. For a zoomed shot of the same place, the establishing shot's view centre is the next shot's hint.
 
+## What the second to fourth trials showed (203448, 203238, 203005; temperate, one game)
+
+- Pair the two named vehicles that are farthest apart (one is not enough baseline: a pair 290 px apart at 4 px/m gave a margin of 48 that was wrong). Name every ship you can read; the later ones are the check (the right fit put them 6 to 65 px from the save's ships, the wrong ones 100 to 360 px).
+- The ranking can put a wrong row first when the camera is strongly tilted: the similarity step is a top-down camera, so the third and later vehicles land far from their ships. A first row with a heading error near 60 degrees or a scale far from the picture's (the depot's size tells it) is wrong; read the second and third rows and use `--pick N`.
+- `--ui` stops ships under the game's window and bars counting as unnamed ships in frame. It helps, it does not fix the tilt problem above.
+- A building's window being open and a pale ring or light column over the ground did not hurt the water mask. Shots of one session often share one camera (diff the pictures: a mean difference under 1 grey level in a shifted-by-zero compare); then one fit serves them all, and `--pixel` maps a point in each.
+- The foot of a ring's light column (centre of the rounded lower end of the pale strip, about half its width above the tip) mapped with `--pixel` gave a ring centre good to about 10 m; the result for ship depots is in `docs/depots.md`.
+
 ## Limits and rules
 
 - The coastline step is tuned on one temperate daytime picture (a dark blue-green water colour). At night, in another climate or with an overlay layer on, check the water mask before trusting the refinement; `--no-refine` keeps the plain similarity from the vehicles.

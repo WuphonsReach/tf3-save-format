@@ -21,6 +21,9 @@ The ranking is printed with the runners-up, so an ambiguous picture shows as clo
                          centre is searched inside this circle; the pairing candidates too
   --class PREFIX         model path prefix of the vehicles named (default vehicle/ship/)
   --in-frame X,Y         a map point that must lie inside the picture (repeatable)
+  --covered X0,Y0,X1,Y1  a picture box (pixels) the game's window hides: a save vehicle there is not
+                         counted as missing from the names (repeatable)
+  --ui                   cover the right-hand building window, the top icon bar and the bottom bar
   --scale-range A,B      pixels per metre at the picture centre for a 3840-wide picture, scaled
                          with the picture's width (default 3.5,11)
   --map PNG              a `terrain_map.py --png --mpp 1` picture that covers the view (its
@@ -111,7 +114,7 @@ class Similarity:
         return (dx * c - dy * sn) * self.s + self.a[0], (dx * sn + dy * c) * self.s + self.a[1]
 
 
-def hypotheses(cands, picks, size, hint, scale_range, in_frame):
+def hypotheses(cands, picks, size, hint, scale_range, in_frame, covered=()):
     """Rank pairings of the first two picks with the save's vehicles `cands` (instance rows)."""
     W, H = size
     k = W / 3840.0
@@ -162,7 +165,11 @@ def hypotheses(cands, picks, size, hint, scale_range, in_frame):
             else:
                 extra += best
                 used.add(bi)
-        unlisted = sum(1 for m, cm in enumerate(cands) if m not in used and inside(cm["x"], cm["y"]))
+        def hidden(x, y):             # under the game's window or bars: the picture cannot show a vehicle there
+            u, v = sim.to_screen(x, y)
+            return any(x0 <= u <= x1 and y0 <= -v <= y1 for x0, y0, x1, y1 in covered)
+        unlisted = sum(1 for m, cm in enumerate(cands)
+                       if m not in used and inside(cm["x"], cm["y"]) and not hidden(cm["x"], cm["y"]))
         score = he + extra / 10.0 + UNLISTED_PENALTY * unlisted
         out.append(dict(score=score, i=i, j=j, heading_err=he, extra_px=extra, unlisted=unlisted,
                         scale=s, rot=math.degrees(th), centre=cen, sim=sim))
@@ -317,6 +324,8 @@ def main():
     ap.add_argument("--hint", required=True, type=lambda t: parse_pt(t, 2))
     ap.add_argument("--class", dest="cls", default="vehicle/ship/")
     ap.add_argument("--in-frame", action="append", default=[], type=lambda t: parse_pt(t, 2))
+    ap.add_argument("--covered", action="append", default=[], type=lambda t: parse_pt(t, 4))
+    ap.add_argument("--ui", action="store_true")
     ap.add_argument("--scale-range", default="3.5,11", type=lambda t: parse_pt(t, 2))
     ap.add_argument("--map")
     ap.add_argument("--pick", type=int, default=1)
@@ -341,7 +350,10 @@ def main():
              if math.hypot(r["x"] - hint[0], r["y"] - hint[1]) <= hint[2] + 1000]
     if len(cands) < 2:
         sys.exit("fewer than two %s instances near the hint" % args.cls)
-    ranked = hypotheses(cands, picks, (W, H), hint, args.scale_range, [tuple(p) for p in args.in_frame])
+    covered = [tuple(c) for c in args.covered]
+    if args.ui:                   # the open building window, top icon bar and bottom bar, as fractions of the frame
+        covered += [(0.75 * W, 0.0, W, 0.68 * H), (0.27 * W, 0.0, 0.73 * W, 0.045 * H), (0.0, 0.915 * H, W, H)]
+    ranked = hypotheses(cands, picks, (W, H), hint, args.scale_range, [tuple(p) for p in args.in_frame], covered)
     if not ranked:
         sys.exit("no pairing fits the scale range, the hint circle and the --in-frame points")
     print("%d vehicles of the class near the hint, %d pairings kept" % (len(cands), len(ranked)))
