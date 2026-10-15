@@ -129,14 +129,14 @@ game's own palette.
              facing), so the caller can pick slots and run again.
 --depots     (SVG only) add eight layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
              `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (the Boathouse
-             mod's `ingo_bootsschuppen`): each building's ground face as a rectangle or polygon, one colour per carrier
-             (road orange, tram purple, rail teal, ship pink; provisional), with a black outline, its origin as a white dot and a red line along the
-             model's x axis, one `<g class="depot KIND" id="depot-SLOT" data-slot data-model data-x data-y data-pool
+             mod's `ingo_bootsschuppen`): each building's ground face as an opaque rectangle or polygon, one grey or brown per carrier
+             (ship dark brown, rail dark grey, road lighter grey, tram lightest grey; a maintenance building a step darker than
+             its depot; provisional), with the stations' black outline and no marks inside, one `<g class="depot KIND" id="depot-SLOT" data-slot data-model data-x data-y data-pool
              data-radius data-modes>` each. The rectangle is the first `ground_face` of the building's script in the
              install (`base/content/depots/road.zip`), placed from the instance's origin and facing as in docs/models.md;
              nothing of it is copied into the tool, so without an install no building is drawn. A road depot's second
              instance (`road_depot_sm`, likewise the rail depot's `rail_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
-             usual mod.io places) and it has no ground face, so only its origin dot and facing line are drawn; the free
+             usual mod.io places) and it has no ground face, so only a dot on its origin is drawn; the free
              decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
 --stations   (SVG only) add a `stations` layer for the platforms and buildings of water, rail and street (bus and tram) stations, a
              sublayer per group: `station-water-decks` (wood brown) and `station-water-buildings` (darker brown),
@@ -281,26 +281,28 @@ def read_profile_widths(content):
 
 
 # maintenance buildings and depots: (layer id, label, archive in the install's depots folder, script path, model path,
-# colour). An archive of None is a mod's building: the script is read from the mod's folder (`find_mod_script`) and
-# its ground face is not drawn (the script's ground faces are a 4 m patch beside the model, not its footprint).
+# fill). An archive of None is a mod's building: the script is read from the mod's folder (`find_mod_script`) and
+# its ground face is not drawn (the script's ground faces are a 4 m patch beside the model, not its footprint); a dot stands for it.
+# The fill reads by carrier, like the stations': ship dark brown (the dock's family), rail dark grey, road lighter grey, tram the
+# lightest grey; a maintenance building is a step darker than the carrier's depot. All are provisional.
 DEPOT_KINDS = (
     ("maintenance-buildings", "Road maintenance buildings", "road.zip", "road/road_maint_station.script.lua",
-     "depots/road/road_maint_station/road_maint_station.mdl", "#f5a300"),
+     "depots/road/road_maint_station/road_maint_station.mdl", "#969696"),
     ("road-depots", "Road depots", "road.zip", "road/road_depot/road_depot.script.lua",
-     "depots/road/road_depot/road_depot.mdl", "#f5a300"),
+     "depots/road/road_depot/road_depot.mdl", "#b4b4b4"),
     ("tram-depots", "Tram depots", "road.zip", "road/tram_depot/tram_depot.script.lua",
-     "depots/road/tram_depot/tram_depot.mdl", "#8e5ea2"),
+     "depots/road/tram_depot/tram_depot.mdl", "#f2f2f2"),
     ("rail-maintenance-buildings", "Rail maintenance buildings", "rail.zip", "rail/rail_maint_station.script.lua",
-     "depots/rail/rail_maint_station/rail_maint_station.mdl", "#2a9d8f"),
+     "depots/rail/rail_maint_station/rail_maint_station.mdl", "#464646"),
     ("rail-depots", "Rail depots", "rail.zip", "rail/rail_depot.script.lua",
-     "depots/rail/rail_depot.mdl", "#2a9d8f"),
+     "depots/rail/rail_depot.mdl", "#646464"),
     ("ship-maintenance-buildings", "Ship maintenance buildings", "water.zip", "water/water_maint_station.script.lua",
-     "depots/water/water_maint_station/water_maint_station.mdl", "#d6336c"),
+     "depots/water/water_maint_station/water_maint_station.mdl", "#4d2d12"),
     ("ship-depots", "Ship depots", "water.zip", "water/water_depot.script.lua",
-     "depots/water/water_depot.mdl", "#d6336c"),
+     "depots/water/water_depot.mdl", "#7b4a24"),
     ("boathouses", "Boathouses (Boathouse mod)", None,
      "content/assets/ingo_bootsschuppen/ingo_bootsschuppen_maint.script.lua",
-     "assets/ingo_bootsschuppen/ingo_bootsschuppen.mdl", "#d6336c"),
+     "assets/ingo_bootsschuppen/ingo_bootsschuppen.mdl", "#7b4a24"),
 )
 MOD_DIRS = ("~/snap/steam/common/mod.io/common/10640/mods", "~/.local/share/mod.io/common/10640/mods")
 DEPOT_PREFIXES = ("depots/", "assets/ingo_bootsschuppen/")
@@ -355,6 +357,8 @@ _BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
 _POINT = re.compile(r"\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
 _RADIUS = re.compile(r"catchmentArea\s*=\s*\{\s*radius\s*=\s*(?:captureParams\.radius or )?(\d+)")
+_COLLIDER = re.compile(r'\["collider"\]\s*=\s*\{(.*?)\n\t\t\t\},', re.S)
+_BOX3D = re.compile(r"\{\s*(?:\{[^{}]*\}\s*,?\s*){8}\}")
 _POOL = re.compile(r"maintenancePool\s*=\s*(\d+)")
 _DEPOT_MODES = re.compile(r"transportModes\s*=\s*\{([^}]*)\}")
 
@@ -419,10 +423,11 @@ def find_mod_script(rel, mods_dir=None):
 
 
 def read_depot_specs(content, mods_dir=None):
-    """{layer id: {"face": [(a, b) ...], "radius", "pool", "modes"}} for every kind in `DEPOT_KINDS`, read when the
+    """{layer id: {"face": [(a, b) ...], "boxes", "radius", "pool", "modes"}} for every kind in `DEPOT_KINDS`, read when the
     script runs from the install's `depots/` archives (`content` is the `infrastructure` folder `find_content`
     returns) or, for a mod's building, from the mod's folder: the first `ground_face` rectangle of the building's
-    script in its own axes (none for a mod's), the `catchmentArea` radius, the `maintenancePool` and the transport
+    script in its own axes (none for a mod's), the boxes of its `collider` curve that reach past the face (`boxes`, each (a0, a1, b0, b1),
+    for the ship depot's quay and water part), the `catchmentArea` radius, the `maintenancePool` and the transport
     modes. A kind whose script or fields are missing is left out. Nothing is stored."""
     out = {}
     zips = {}
@@ -447,7 +452,16 @@ def read_depot_specs(content, mods_dir=None):
                 continue
         face, radius, pool, modes = _FACE.search(text), _RADIUS.search(text), _POOL.search(text), _DEPOT_MODES.search(text)
         if radius and (face or not archive):
-            out[lid] = {"face": [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))] if face else [],
+            pts = [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))] if face else []
+            boxes = []
+            collider = _COLLIDER.search(text)
+            for blk in _BOX3D.findall(collider.group(1)) if collider and pts else ():
+                v = [(float(a), float(b)) for a, b in _POINT.findall(blk)]
+                box = (min(a for a, _ in v), max(a for a, _ in v), min(b for _, b in v), max(b for _, b in v))
+                if (box[0] < min(a for a, _ in pts) - 0.5 or box[1] > max(a for a, _ in pts) + 0.5
+                        or box[2] < min(b for _, b in pts) - 0.5 or box[3] > max(b for _, b in pts) + 0.5):
+                    boxes.append(box)
+            out[lid] = {"face": pts, "boxes": boxes,
                         "radius": int(radius.group(1)), "pool": int(pool.group(1)) if pool else 0,
                         "modes": ",".join(re.findall(r'"(\w+)"', modes.group(1))) if modes else ""}
     return out
@@ -1269,7 +1283,7 @@ def station_layers(mpp, fr, instances, boxes):
 def depot_layers(mpp, fr, instances, specs, footprints, coverage):
     """SVG lines for the depot layers: (`under`, `over`). `under` is the `coverage` layer (one circle per building,
     a sublayer per kind) and `over` the `maintenance-buildings`, `road-depots` and `tram-depots` layers (the
-    ground face placed from the instance's origin and facing, its origin, a line along the model's x axis).
+    ground face placed from the instance's origin and facing, filled and outlined; a kind with no face is a dot).
     `instances` are `read_instances` rows; only the exact model path of each kind is drawn, so a road depot's
     `road_depot_sm` twin is not. Units are metres like the other layers."""
     k = max(1.0, mpp / 2.0)
@@ -1290,24 +1304,31 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
                 fx, fy = i["fx"] / n, i["fy"] / n
                 local = lambda a, b: fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
                 pts = " ".join("%.2f,%.2f" % local(a, b) for a, b in spec["face"])
-                o, tip = local(0, 0), local(10 * k, 0)
                 over.append("<g %s>" % attrs(i))
-                if pts:
-                    over.append('<polygon points="%s" fill="%s" fill-opacity="0.28" stroke="#000" stroke-width="%g"/>'
-                                % (pts, colour, 0.35 * k))
-                over.append('<line x1="%.2f" y1="%.2f" x2="%.2f" y2="%.2f" stroke="#c00" stroke-width="%g"/>'
-                            % (o[0], o[1], tip[0], tip[1], 0.35 * k))
-                over.append('<circle cx="%.2f" cy="%.2f" r="%g" fill="#fff" stroke="#000" stroke-width="%g"/>'
-                            % (o[0], o[1], 0.9 * k, 0.3 * k))
+                if pts and spec["boxes"]:                # a building that reaches into the water: the outline of the face and the boxes together
+                    fa = [a for a, _ in spec["face"]]
+                    fb = [b for _, b in spec["face"]]
+                    parts = [(min(fa), max(fa), min(fb), max(fb))] + list(spec["boxes"])
+                    loops = _closed_outline([[local(a, b) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))] for x0, x1, y0, y1 in parts], 0.05)
+                    over.append('<path d="%s" fill="%s" stroke="#000" stroke-width="%g" stroke-linejoin="round"/>'
+                                % ("".join("M" + "L".join("%.2f %.2f" % q for q in lp) + "Z" for lp in loops), colour, STATION_OUTLINE * k))
+                elif pts:                                  # the ground face: opaque, so it hides the ends of the road lanes under it
+                    over.append('<polygon points="%s" fill="%s" stroke="#000" stroke-width="%g" stroke-linejoin="round"/>'
+                                % (pts, colour, STATION_OUTLINE * k))
+                else:                                    # a mod's building has no face: a dot on its origin
+                    o = local(0, 0)
+                    over.append('<circle cx="%.2f" cy="%.2f" r="%g" fill="%s" stroke="#000" stroke-width="%g"/>'
+                                % (o[0], o[1], 4.0, colour, STATION_OUTLINE * k))
                 over.append("</g>")
             over.append("</g>")
         if coverage:
             cover.append(layer("coverage-" + lid, "Coverage: " + label))
+            ink = "#%02x%02x%02x" % tuple(int(int(colour[c:c + 2], 16) * 0.5) for c in (1, 3, 5))
             for i in rows:
                 cx, cy = fr.pic(i["x"], i["y"])
                 cover.append('<g %s><circle cx="%.2f" cy="%.2f" r="%d" fill="%s" fill-opacity="0.06" stroke="%s"'
                              ' stroke-width="%g" stroke-dasharray="%g %g"/></g>'
-                             % (attrs(i), cx, cy, spec["radius"], colour, colour, 1.5 * mpp, 10 * mpp, 6 * mpp))
+                             % (attrs(i), cx, cy, spec["radius"], ink, ink, 1.5 * mpp, 10 * mpp, 6 * mpp))
             cover.append("</g>")
     if cover:
         under.append(layer("coverage", "Coverage", ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
