@@ -15,6 +15,7 @@ Every command takes `--work local/screenshots`. The screenshot folder and the ga
 - `find TERM [TERM ...]` searches the text read off every shot (window titles, town labels `Name (123)`, dates, figures) and prints id, UTC time and the cluster's label. Small map labels are sometimes missed, so no hit is not proof.
 - `hud` writes `hud.csv` (game date, account, earnings, people delivered and cargo delivered, both totals since the game started, per full-screen shot) when a question is "which shots are from the game at date X".
 - Then open only the PNGs that matter, as a crop to the scratchpad (a window title or a label reads well), not the whole 4K frame.
+- To tie a picture to a place on the map (view centre, heading, the map point under a pixel), use `.claude/skills/shot-place/SKILL.md`.
 
 ## Add new shots
 
