@@ -29,6 +29,11 @@ The ranking is printed with the runners-up, so an ambiguous picture shows as clo
   --pick N               use ranking row N (default 1) for the fit
   --no-refine            keep the similarity transform (a flat top-down camera)
   --pixel PX,PY          print the map point under a picture pixel (repeatable)
+  --badges               read the `n/m` load badges over vehicles (tesseract) and give each one's
+                         picture position; with --project, the save's vehicles nearest each
+  --project PREFIX       project the save's model instances whose path starts with PREFIX (for
+                         example vehicle/) into the picture with the fit and count those in frame
+                         (repeatable); with --badges, name the three nearest to each badge
   --out DIR              write the blend (map over the picture, 50 percent), the list of vehicles
                          projected into the picture and the result as JSON there
   --json                 print the result as JSON
@@ -50,12 +55,16 @@ given. Reads a save, a picture and the map picture; writes only into --out. The 
 fitting functions come from town_centre.py.
 """
 import argparse
+import csv
 import itertools
 import json
 import math
 import os
+import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from tf3save import decompress  # noqa: E402
@@ -243,6 +252,46 @@ def fit_pinned(cv, sh, pins, size, iters=3):
     return pinned_h(pins, best[1], best[2], size), best[0]
 
 
+def read_badges(path):
+    """The `n/m` load badges the game draws over vehicles, read with tesseract from three
+    versions of the picture (as it is, brightness, and brightest channel, the last two doubled in
+    size and limited to digits and the slash, which finds the small or coloured ones the first
+    pass misses). Returns dicts text, px, py (the middle of the text, full-size picture pixels)
+    and conf, strongest first, one per place. A badge's text sits above or beside its vehicle, 40
+    to 120 pixels away, so it is a loose anchor; a coloured one can come out with a digit missing."""
+    if not shutil.which("tesseract"):
+        sys.exit("--badges needs the tesseract program")
+    im = Image.open(path).convert("RGB")
+    arr = np.array(im)
+    big = (im.width * 2, im.height * 2)
+    variants = [("rgb", im, 1, False),
+               ("lum", im.convert("L").resize(big, Image.LANCZOS), 2, True),
+               ("max", Image.fromarray(arr.max(2)).resize(big, Image.LANCZOS), 2, True)]
+    found = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for name, img, k, digits in variants:
+            f = os.path.join(tmp, name + ".png")
+            img.save(f)
+            cmd = ["tesseract", f, os.path.join(tmp, name), "--psm", "11"]
+            if digits:
+                cmd += ["-c", "tessedit_char_whitelist=0123456789/"]
+            subprocess.run(cmd + ["tsv"], capture_output=True)
+            with open(os.path.join(tmp, name + ".tsv"), newline="") as fh:
+                for row in csv.DictReader(fh, delimiter="\t", quoting=csv.QUOTE_NONE):
+                    t = (row.get("text") or "").strip().strip(",.;:")
+                    if not re.fullmatch(r"\d{1,3}/\d{1,3}", t) or float(row["conf"]) < 40:
+                        continue
+                    x, y = int(row["left"]), int(row["top"])
+                    w, h = int(row["width"]), int(row["height"])
+                    found.append(dict(text=t, px=(x + w / 2) / k, py=(y + h / 2) / k, conf=float(row["conf"])))
+    found.sort(key=lambda b: -b["conf"])
+    out = []
+    for b in found:
+        if all(math.hypot(b["px"] - o["px"], b["py"] - o["py"]) > 30 for o in out):
+            out.append(b)
+    return out
+
+
 class Shot:
     """What tc.refine and tc.score read of a picture: the water edge, half size."""
 
@@ -272,6 +321,8 @@ def main():
     ap.add_argument("--map")
     ap.add_argument("--pick", type=int, default=1)
     ap.add_argument("--no-refine", action="store_true")
+    ap.add_argument("--badges", action="store_true")
+    ap.add_argument("--project", action="append", default=[])
     ap.add_argument("--pixel", action="append", default=[], type=lambda t: parse_pt(t, 2))
     ap.add_argument("--top", type=int, default=5)
     ap.add_argument("--out")
@@ -307,6 +358,10 @@ def main():
                   scale_px_per_m=r["scale"], rotation_deg=r["rot"], view_centre=list(r["centre"]),
                   margin=(ranked[1]["score"] - ranked[0]["score"]) if len(ranked) > 1 else None)
     h = None
+
+    def screen_of(x, y):                  # a map point in the picture, similarity until a fit exists
+        u, v = sim.to_screen(x, y)
+        return u, -v
     if args.out or not args.no_refine:
         map_png = args.map or make_map(args.save, args.out or ".", r["centre"])
         ref, view = load_map(map_png)
@@ -366,6 +421,10 @@ def main():
             w = tc.to_world(h, (p[0], p[1]), centre, mpp)
             print("pixel %.0f,%.0f is at map %.0f, %.0f (on the ground plane)" % (p[0], p[1], w[0], w[1]))
             result.setdefault("pixels", []).append(dict(pixel=p[:2], map=[float(w[0]), float(w[1])]))
+
+        def screen_of(x, y):              # noqa: F811 -- the fitted homography replaces the similarity
+            sp = tc.to_screen(h, np.array([x, y]), centre, mpp)
+            return float(sp[0]), float(sp[1])
         if args.out:
             os.makedirs(args.out, exist_ok=True)
             sh2 = Shot(wat, keep)
@@ -376,6 +435,31 @@ def main():
             blend = np.where(valid, 0.5 * col + 0.5 * small, small).astype(np.uint8)
             name = os.path.splitext(os.path.basename(args.shot))[0]
             Image.fromarray(blend).save(os.path.join(args.out, name + "-blend.png"))
+            with open(os.path.join(args.out, name + "-place.json"), "w") as f:
+                json.dump(result, f, indent=1)
+    if args.badges or args.project:
+        badges = read_badges(args.shot) if args.badges else []
+        proj = []
+        for prefix in args.project:
+            for v in read_instances(data, (prefix,)):
+                u, w_ = screen_of(v["x"], v["y"])
+                if 0 <= u < W and 0 <= w_ < H:
+                    proj.append(dict(model=v["model"].rsplit("/", 1)[-1][:-4], slot=v["slot"], px=u, py=w_))
+        for b in badges:
+            near = sorted(proj, key=lambda q: math.hypot(q["px"] - b["px"], q["py"] - b["py"]))[:3]
+            b["nearest"] = [dict(model=q["model"], slot=q["slot"], dx=q["px"] - b["px"], dy=q["py"] - b["py"],
+                                 dist=math.hypot(q["px"] - b["px"], q["py"] - b["py"])) for q in near]
+            b["within_150px"] = sum(1 for q in proj if math.hypot(q["px"] - b["px"], q["py"] - b["py"]) <= 150)
+            print("badge %s at (%.0f, %.0f), conf %.0f: %s" % (
+                b["text"], b["px"], b["py"], b["conf"],
+                "; ".join("%s slot %s %+.0f,%+.0f px" % (q["model"], q["slot"], q["dx"], q["dy"]) for q in b["nearest"])
+                or "no projected vehicle"))
+        if proj:
+            print("%d projected vehicles in the picture" % len(proj))
+        result["badges"] = badges
+        result["projected"] = proj
+        if args.out:
+            name = os.path.splitext(os.path.basename(args.shot))[0]
             with open(os.path.join(args.out, name + "-place.json"), "w") as f:
                 json.dump(result, f, indent=1)
     if args.json:
