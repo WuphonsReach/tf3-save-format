@@ -99,3 +99,15 @@ A scan of one 940 MB stream took about one minute in Python.
 
 - The industry rows of the table also give the output stocks and the stone destroyed at a full quarry, see [industries.md](industries.md#three-periods-clock-3785800).
 - **The bars keep to clock periods when the calendar runs (604, `1707`, 0.25x, Feb 9, 1900 on screen).** The town stop's unloaded list differenced at multiples of 1,461,000 gave 105, 60, 84 and 24 for the last four periods (the last one open), the same four bars the player's chart showed, with three axis labels still reading 1/1/1900. The calendar was started at about clock 17,248,000, so the boundary at 17,532,000 (the start of the 13th period) falls in mid-January, not on a date boundary. So the year bars do not follow the date. A save at clock 19,008,600 (`1709`, 21 April 1900 on screen, 15,600 units past the 13th boundary at 18,993,000, which lies in the last hours of 20 April) showed the 13th bars final (the stop 104 and the warehouse 104 in and 104 out, up from 96, 96 and 96 in `1708`) and no bar for the 14th period yet: a bar appears with the first list entry in its period, not at the boundary. **Observed**, one chart.
+
+## Delivered totals against the lists (604)
+
+**Observed** on 604, three games. The two delivered totals ([script-states.md](script-states.md#counters-and-achievements)) can be set against the lists. For cargo, add the last totals of the per-cargo `itemsAtDestination<c>` lists (cargo id above 0) in groups that also hold the plain `itemsAtDestination` aggregate, the industry-keyed copies described under Groups. For people, add the last totals of every `itemsAtDestination` list for cargo id 0 (passengers).
+
+| Game | Cargo delivered | Cargo lists | People delivered | Passenger lists |
+|---|---|---|---|---|
+| catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), autosave of 18 Feb 1937 | 192,474 | 190,872 | 283,102 | 275,045 |
+| temperate game from 1900, 20,480 x 40,960 m | 10,562 | 10,562 | 64,281 | 63,382 |
+| [Small subarctic game](test-games.md#small-subarctic-game), 1 April 1920 | 16,774 | 16,774 | 41,640 | 41,353 |
+
+The cargo lists add up to the counter exactly in the two smaller games and to 99.2% in the long one. The passenger lists fall short in all three (97.2% to 99.3%). **Open:** the counters or the lists may lag behind each other, an industry or stop that was deleted may take its lists with it, or there is something not understood yet; none of these was tested. The grouping rule is a construction of this note: a stricter one, groups keyed by an industry id only, gave 187,332 for the long game's cargo.

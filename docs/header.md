@@ -85,6 +85,12 @@ The game total on screen is the sum of the first two rows, not one stored number
 
 **A swap in one paused session** (**Observed**, same game, saves `1958` and `1959` at the same clock): seven old horse carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) sold and seven trucks bought. The road vehicle count stayed 83. The first of the six leading `i64` rose by the net spend (1,600,728 to 3,850,045, +2,249,317), the sixth fell by the same (2,446,422 to 197,105) and the header money fell by it. The net is the purchases less the sales ([finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604)). One small number changed by one, the last of the four numbers `save_header.py` prints as `stats3` (11 to 12); nothing else in the header did; what it counts is **Open**.
 
+## The delivered totals in the header
+
+**Observed** on 604, three games (one is catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1)). The header holds the cargo delivered and the people delivered totals ([script-states.md](script-states.md#counters-and-achievements) says what they are) as two consecutive `u64`, cargo first, and the pair appears twice. Each copy equalled the achievements counters in all three saves, which were made with the game paused. Both copies come after the preview image. The first sits in a run of `u64` just before the text rows of the company score points ("%d Point(s) for Company Value" and the rows after it); the second sits just before the mod list and the resources. In the one game where the first run was read, five other `u64` came before the pair and two after it; they were not identified.
+
+Find the pair by searching the header for the 16 bytes of the two numbers (read them from the bottom bar or the achievements state), never by offset.
+
 ## Money in the header
 
 **Observed** on 604: in six saves of one game the header money equalled the Account figure in the game exactly, so the lag below does not always show. In one of them the account was -2,598,471, so a negative header value can be the true balance.
