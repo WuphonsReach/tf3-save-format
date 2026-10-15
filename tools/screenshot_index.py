@@ -13,7 +13,8 @@ Commands:
   find TERM..   shots whose OCR text holds every term (case-insensitive), with the cluster's label
   check         label facts (quoted names, "Name (123)" town labels, dates, dollar figures) that no
                 shot of the cluster shows in its OCR text, and the share found
-  hud           DIR/hud.csv: game date, account, earnings, people and box counter read off each shot
+  hud           DIR/hud.csv: game date, account, earnings, people delivered and cargo delivered (totals
+                since the game started) read off each shot's bottom bar
 
 Options:
   --work DIR      where labels.tsv, INDEX.md, hud.csv and the OCR cache live (or env
@@ -46,7 +47,8 @@ comments.
 OCR needs the tesseract binary and Pillow (imported only by `ocr` and `sheets`, like numpy and Pillow
 in town_centre.py; see tools/README.md). The other commands use the standard library only. The bottom
 bar of a full-screen game frame gives the HUD figures: treat them as OCR reads and look at a picture
-before relying on a number. A load card shows the save's real date, not the game date.
+before relying on a number. A pass that takes over 60 s (textured ground with no text) is skipped and the
+shot's cache entry says `slow`. A load card shows the save's real date, not the game date.
 
 Privacy: shots show company names, install paths and account folders, and saves have names and
 write times. The OCR text is masked on the way in (paths become `<path>`, "<name> Transport" a company
@@ -77,6 +79,7 @@ GAP = 120            # seconds between two shots that start a new cluster
 SAVE_WINDOW = 240    # seconds either side of a cluster in which a save counts as "around"
 OCR_VERSION = 2      # bump to make `ocr` redo cached shots
 CONF = 70            # tesseract word confidence kept on the plain pass; 60 on the upscaled pass
+TIMEOUT = 60         # seconds for one tesseract pass; textured frames without text can take minutes
 
 NAME_PATTERNS = (    # (regex, groups: date, time) -> local time in the file name
     (re.compile(r"Screenshot_(\d{8})_(\d{6})"), lambda m: m.group(1) + m.group(2)),
@@ -207,16 +210,23 @@ TESS_ENV = dict(os.environ, OMP_THREAD_LIMIT="1")   # one thread per call; the p
 
 
 def tesseract(img_path, psm, tsv=False):
+    """The program's text, or None when the pass took longer than TIMEOUT."""
     cmd = ["tesseract", img_path, "-", "--psm", str(psm)] + (["tsv"] if tsv else [])
     try:
-        return subprocess.run(cmd, capture_output=True, text=True, env=TESS_ENV).stdout
+        return subprocess.run(cmd, capture_output=True, text=True, env=TESS_ENV, timeout=TIMEOUT).stdout
     except FileNotFoundError:
         die("the tesseract program is not installed (ocr needs it)")
+    except subprocess.TimeoutExpired:
+        return None
 
 
 def tsv_lines(img_path, psm, min_conf):
+    """Lines of words above min_conf, or None when tesseract timed out."""
+    out = tesseract(img_path, psm, tsv=True)
+    if out is None:
+        return None
     lines = {}
-    for r in csv.DictReader(io.StringIO(tesseract(img_path, psm, tsv=True)), delimiter="\t", quoting=csv.QUOTE_NONE):
+    for r in csv.DictReader(io.StringIO(out), delimiter="\t", quoting=csv.QUOTE_NONE):
         txt = (r.get("text") or "").strip()
         try:
             conf = float(r["conf"])
@@ -232,7 +242,8 @@ def to_int(s):
 
 
 def parse_hud(band_text, text_lines):
-    """The bottom bar of a full-screen game frame: earnings, people, the box counter, account, date."""
+    """The bottom bar of a full-screen game frame: earnings, people delivered, cargo delivered (both totals
+    since the game started), account, date."""
     hud = {}
     m = re.search(r"Earnings\s*(\$\s*-?|-\s*\$)\s*([\d,]+)", band_text)
     if m:
@@ -265,14 +276,19 @@ def ocr_one(path, tmp):
         from PIL import Image, ImageOps
     except ImportError:
         die("ocr needs Pillow (pip install pillow); see tools/README.md")
-    text = [redact(x) for x in tsv_lines(path, 11, CONF)]
+    slow = False
+    first = tsv_lines(path, 11, CONF)
+    slow = first is None
+    text = [redact(x) for x in first or []]
     with Image.open(path) as im:
         w, h = im.size
         g = im.convert("L")
         k = 4 if max(w, h) < 2000 else 3 if max(w, h) < 3000 else 2
         ImageOps.autocontrast(g.resize((w * k, h * k), Image.LANCZOS)).save(tmp)
         seen = {x.lower() for x in text}
-        for ln in tsv_lines(tmp, 11, CONF - 10):
+        second = tsv_lines(tmp, 11, CONF - 10)
+        slow = slow or second is None
+        for ln in second or []:
             ln = redact(ln)
             if ln.lower() not in seen:
                 text.append(ln)
@@ -281,13 +297,13 @@ def ocr_one(path, tmp):
         if w >= 3000 or (w >= 2000 and h >= 1100):
             band = ImageOps.autocontrast(g.crop((0, int(h * .94), w, h)))
             band.resize((band.width * 2, band.height * 2)).save(tmp)
-            band_text = tesseract(tmp, 6)
+            band_text = tesseract(tmp, 6) or ""
             hud = parse_hud(band_text, text)
     date = hud.get("date", "")
     if not date:
         m = DATE_RE.search("\n".join(text))
         date = m.group(0) if m else ""
-    return {"v": OCR_VERSION, "text": text, "date": date, "hud": hud}
+    return {"v": OCR_VERSION, "text": text, "date": date, "hud": hud, **({"slow": True} if slow else {})}
 
 
 def load_ocr(work, sid):
@@ -338,7 +354,7 @@ def ocr_summary(work, ids):
                 if k in ln and 3 < len(ln) < 60 and not re.search(r"\d{3,}", ln):
                     titles[ln] = titles.get(ln, 0) + 1
     out = []
-    names = (("account", "account"), ("earnings", "earnings"), ("people", "people"), ("box", "box counter"))
+    names = (("account", "account"), ("earnings", "earnings"), ("people", "people delivered"), ("box", "cargo delivered"))
     parts = [f"{n} {v[0]:,}" if min(v) == max(v) else f"{n} {min(v):,} to {max(v):,}"
              for k, n in names for v in [hud.get(k)] if v]
     if parts:
@@ -538,7 +554,7 @@ def cmd_hud(work, shots):
     n = 0
     with open(os.path.join(work, "hud.csv"), "w", newline="") as fh:
         w = csv.writer(fh)
-        w.writerow(["id", "utc", "game_date", "account", "earnings", "people", "box_counter"])
+        w.writerow(["id", "utc", "game_date", "account", "earnings", "people_delivered", "cargo_delivered"])
         for s in shots:
             d = load_ocr(work, s.id) or {}
             h = d.get("hud") or {}

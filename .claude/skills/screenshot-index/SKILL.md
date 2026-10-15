@@ -13,7 +13,7 @@ Every command takes `--work local/screenshots`. The screenshot folder and the ga
 
 - `local/screenshots/INDEX.md`: a "Find by topic" table, then one section per cluster (UTC range, game, what it shows, points of interest, saves written within 4 minutes, links to the note that used it, OCR text, per-shot UTC ids).
 - `find TERM [TERM ...]` searches the text read off every shot (window titles, town labels `Name (123)`, dates, figures) and prints id, UTC time and the cluster's label. Small map labels are sometimes missed, so no hit is not proof.
-- `hud` writes `hud.csv` (game date, account, earnings, people and box counter per full-screen shot) when a question is "which shots are from the game at date X".
+- `hud` writes `hud.csv` (game date, account, earnings, people delivered and cargo delivered, both totals since the game started, per full-screen shot) when a question is "which shots are from the game at date X".
 - Then open only the PNGs that matter, as a crop to the scratchpad (a window title or a label reads well), not the whole 4K frame.
 
 ## Add new shots
