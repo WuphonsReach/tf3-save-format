@@ -32,7 +32,7 @@ Two models are fitted to them: a constant distance on the ground (the circle), a
 height above the centre (a distance of height times tan(pitch), the pitch read from the fitted
 transform). Near top-down pictures cannot tell them apart; strongly tilted ones can.
 
-Needs numpy and Pillow, unlike the other scripts here (see tools/README.md). Reads a save and
+Needs numpy and Pillow, unlike most scripts here (see tools/README.md). Reads a save and
 screenshots; writes only into --out. The save's street edges are read as in street_edges.py.
 """
 import argparse
@@ -376,7 +376,7 @@ def main():
     args = ap.parse_args()
     if np is None:
         sys.exit("town_centre.py needs numpy and Pillow (pip install numpy pillow); "
-                 "the other scripts in tools/ need only the standard library")
+                 "most scripts in tools/ need only the standard library")
     edges = read_edges(load(args.save, False))
     if args.list:
         print("%d street edges; town street clusters (edges, bounding-box centre, size in metres):" % len(edges))
