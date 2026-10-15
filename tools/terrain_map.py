@@ -1808,9 +1808,9 @@ def main():
                     mains = main_models(table[0])
                     found = list(read_instances(data, ("industries/",), table))
                     seen = {i["model"] for i in found}
-                    for path, key in list(mains.items()):    # a main model with no instance (the sand excavator's particles): the key's own model stands in
+                    for model_path, key in list(mains.items()):    # a main model with no instance (the sand excavator's particles): the key's own model stands in
                         own = "industries/%s/%s.mdl" % (key, key)
-                        if path not in seen and own in seen:
+                        if model_path not in seen and own in seen:
                             mains[own] = key
                     for i in found:
                         if i["model"] not in mains:
