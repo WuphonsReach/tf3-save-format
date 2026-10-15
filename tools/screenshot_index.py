@@ -6,7 +6,7 @@ Usage:
   screenshot_index.py --work DIR [options] COMMAND
 
 Commands:
-  ocr           read the text off every shot (tesseract) into DIR/ocr/, once per shot
+  ocr           read the text off every shot (tesseract) into DIR/ocr/, once per shot and bar engine
   todo          list the clusters of shots that no label covers yet
   sheets        contact sheets, 12 shots each, into --out (to read a cluster at a glance)
   build         write DIR/INDEX.md from DIR/labels.tsv, the OCR text and the saves
@@ -26,6 +26,7 @@ Options:
                   (app 3493540). With none found the index simply has no save column.
   --date YYYYMMDD limit to shots of that local date; repeatable
   --jobs N        tesseract processes in parallel for `ocr` (default: up to 8)
+  --hud-engine E  tesseract (default) or rapidocr: the engine that reads the bottom bar in `ocr`
   --out DIR       where `sheets` writes
 
 Shot names: Spectacle (`Screenshot_YYYYMMDD_HHMMSS.png`), GNOME (`Screenshot from YYYY-MM-DD
@@ -45,7 +46,12 @@ the picture) or guess (thumbnail only); `links` are `;`-separated notes. Lines s
 comments.
 
 OCR needs the tesseract binary and Pillow (imported only by `ocr` and `sheets`, like numpy and Pillow
-in town_centre.py; see tools/README.md). The other commands use the standard library only. The bottom
+in town_centre.py; see tools/README.md). The other commands use the standard library only.
+`--hud-engine rapidocr` reads the bottom bar with the `rapidocr` and `onnxruntime` packages instead
+(pip install rapidocr onnxruntime; imported only then, and its models ship inside the wheel). On 4K
+frames it read the account, earnings and both totals right where the tesseract bar pass lost the
+account figure. When the account is still missing, a digits-only tesseract read of the crop at the bar's
+left end fills it in; the crop is placed by fractions of the 4K bar and was only checked at 3840x2160. The bottom
 bar of a full-screen game frame gives the HUD figures: treat them as OCR reads and look at a picture
 before relying on a number. A pass that takes over 60 s (textured ground with no text) is skipped and the
 shot's cache entry says `slow`. A load card shows the save's real date, not the game date.
@@ -69,6 +75,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 
 APP_ID = "3493540"
 STEAM_ROOTS = ("~/.steam/steam", "~/.local/share/Steam", "~/snap/steam/common/.local/share/Steam",
@@ -77,7 +84,7 @@ SHOT_DIRS = ("~/Pictures/Screenshots", "~/Pictures")
 UTC = dt.timezone.utc
 GAP = 120            # seconds between two shots that start a new cluster
 SAVE_WINDOW = 240    # seconds either side of a cluster in which a save counts as "around"
-OCR_VERSION = 2      # bump to make `ocr` redo cached shots
+OCR_VERSION = 3      # bump to make `ocr` redo cached shots
 CONF = 70            # tesseract word confidence kept on the plain pass; 60 on the upscaled pass
 TIMEOUT = 60         # seconds for one tesseract pass; textured frames without text can take minutes
 
@@ -241,6 +248,47 @@ def to_int(s):
     return int(s.replace(",", "").replace("$", ""))
 
 
+ACCOUNT_BOX = (0.0, 0.25, 0.14, 0.9)   # the account figure: x as a share of the width, y as a share of the bar
+
+
+def account_crop(g, tmp):
+    """The account figure read alone, digits and commas only, or "" when nothing well-formed comes out.
+    `g` is the grey frame. The coin icon left of the figure reads as a stray digit with a wider box."""
+    from PIL import Image, ImageOps
+    w, h = g.size
+    bar = h * 0.06
+    x0, y0, x1, y1 = ACCOUNT_BOX
+    c = ImageOps.autocontrast(g.crop((int(x0 * w), int(h - bar + y0 * bar), int(x1 * w), int(h - bar + y1 * bar))))
+    c = ImageOps.expand(c.resize((c.width * 4, c.height * 4), Image.LANCZOS), border=20, fill=0)
+    c.save(tmp)
+    cmd = ["tesseract", tmp, "-", "--psm", "7", "-c", "tessedit_char_whitelist=0123456789,"]
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, env=TESS_ENV, timeout=TIMEOUT).stdout.strip()
+    except subprocess.TimeoutExpired:
+        return ""
+    return out if re.fullmatch(r"\d{1,3}(?:,\d{3})*", out) else ""
+
+
+_rapid = None
+_rapid_lock = threading.Lock()
+
+
+def rapidocr_text(img):
+    """The bar's text from RapidOCR, boxes joined by " | " in reading order (empty when it found none).
+    `img` is a PIL image. One engine is shared; its calls are serialised."""
+    global _rapid
+    with _rapid_lock:
+        if _rapid is None:
+            try:
+                from rapidocr import RapidOCR
+            except ImportError:
+                die("--hud-engine rapidocr needs the rapidocr and onnxruntime packages (pip install rapidocr onnxruntime)")
+            _rapid = RapidOCR(params={"Global.log_level": "critical"})
+        import numpy
+        out = _rapid(numpy.asarray(img.convert("RGB")))
+    return " | ".join(out.txts) if out.txts else ""
+
+
 def parse_hud(band_text, text_lines):
     """The bottom bar of a full-screen game frame: earnings, people delivered, cargo delivered (both totals
     since the game started), account, date."""
@@ -270,7 +318,7 @@ def parse_hud(band_text, text_lines):
     return hud
 
 
-def ocr_one(path, tmp):
+def ocr_one(path, tmp, engine="tesseract"):
     """Tesseract on the frame as it is, on the frame upscaled (small label text), and on the bottom bar."""
     try:
         from PIL import Image, ImageOps
@@ -295,15 +343,23 @@ def ocr_one(path, tmp):
                 seen.add(ln.lower())
         hud, band_text = {}, ""
         if w >= 3000 or (w >= 2000 and h >= 1100):
-            band = ImageOps.autocontrast(g.crop((0, int(h * .94), w, h)))
-            band.resize((band.width * 2, band.height * 2)).save(tmp)
-            band_text = tesseract(tmp, 6) or ""
+            if engine == "rapidocr":
+                band_text = rapidocr_text(im.crop((0, int(h * .94), w, h)))
+            else:
+                band = ImageOps.autocontrast(g.crop((0, int(h * .94), w, h)))
+                band.resize((band.width * 2, band.height * 2)).save(tmp)
+                band_text = tesseract(tmp, 6) or ""
             hud = parse_hud(band_text, text)
+            if "earnings" in hud and "account" not in hud:
+                acc = account_crop(g, tmp)
+                if acc:
+                    hud["account"] = to_int(acc)
     date = hud.get("date", "")
     if not date:
         m = DATE_RE.search("\n".join(text))
         date = m.group(0) if m else ""
-    return {"v": OCR_VERSION, "text": text, "date": date, "hud": hud, **({"slow": True} if slow else {})}
+    return {"v": OCR_VERSION, "text": text, "date": date, "hud": hud, "hud_engine": engine,
+            **({"slow": True} if slow else {})}
 
 
 def load_ocr(work, sid):
@@ -316,13 +372,14 @@ def load_ocr(work, sid):
     return d
 
 
-def cmd_ocr(work, shots, jobs):
+def cmd_ocr(work, shots, jobs, engine="tesseract"):
     cache = os.path.join(work, "ocr")
     os.makedirs(cache, exist_ok=True)
-    todo = [s for s in shots if (load_ocr(work, s.id) or {}).get("v", 0) < OCR_VERSION]
+    todo = [s for s in shots if (load_ocr(work, s.id) or {}).get("v", 0) < OCR_VERSION
+            or (load_ocr(work, s.id) or {}).get("hud_engine", "tesseract") != engine]
 
     def work_one(s):
-        d = ocr_one(s.path, os.path.join(cache, f"_tmp_{s.id}.png"))
+        d = ocr_one(s.path, os.path.join(cache, f"_tmp_{s.id}.png"), engine)
         os.remove(os.path.join(cache, f"_tmp_{s.id}.png"))
         with open(os.path.join(cache, s.id + ".json"), "w") as fh:
             json.dump(d, fh)
@@ -599,13 +656,14 @@ def main():
     ap.add_argument("--date", action="append", default=[])
     ap.add_argument("--jobs", type=int, default=min(8, os.cpu_count() or 1))
     ap.add_argument("--out")
+    ap.add_argument("--hud-engine", choices=("tesseract", "rapidocr"), default="tesseract")
     a = ap.parse_args()
     if a.command == "find" and not a.terms:
         die("find needs at least one term")
     work = work_dir(a.work)
     shots = list_shots(shots_dir(a.shots), set(a.date))
     if a.command == "ocr":
-        cmd_ocr(work, shots, a.jobs)
+        cmd_ocr(work, shots, a.jobs, a.hud_engine)
     elif a.command == "todo":
         cmd_todo(work, shots)
     elif a.command == "sheets":

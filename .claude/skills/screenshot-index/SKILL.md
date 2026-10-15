@@ -30,4 +30,4 @@ Every command takes `--work local/screenshots`. The screenshot folder and the ga
 - A load card shows the save's real date, not the game date; the index says "save-card date".
 - Mask company names, account-derived names and install paths in labels (`<name> Transport`). The editor's import/export window shows a Steam path: describe it, do not copy it.
 - Use the game's internal words in labels, as `docs/glossary.md` has them.
-- OCR needs the `tesseract` program and Pillow; the other commands use only the standard library.
+- OCR needs the `tesseract` program and Pillow; the other commands use only the standard library. `--hud-engine rapidocr` (optional, needs `pip install rapidocr onnxruntime`) reads the bottom bar with RapidOCR; a shot's cache entry keeps the engine that read it, and `ocr` redoes shots read by the other one.
