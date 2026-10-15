@@ -252,7 +252,8 @@ ACCOUNT_BOX = (0.0, 0.25, 0.14, 0.9)   # the account figure: x as a share of the
 
 
 def account_crop(g, tmp):
-    """The account figure read alone, digits and commas only, or "" when nothing well-formed comes out.
+    """The account figure read alone, digits and commas only, or "" when nothing grouped like a figure comes
+    out (a bar with no account, such as under a menu, would otherwise give the "?" button as a digit).
     `g` is the grey frame. The coin icon left of the figure reads as a stray digit with a wider box."""
     from PIL import Image, ImageOps
     w, h = g.size
@@ -266,7 +267,7 @@ def account_crop(g, tmp):
         out = subprocess.run(cmd, capture_output=True, text=True, env=TESS_ENV, timeout=TIMEOUT).stdout.strip()
     except subprocess.TimeoutExpired:
         return ""
-    return out if re.fullmatch(r"\d{1,3}(?:,\d{3})*", out) else ""
+    return out if re.fullmatch(r"\d{1,3}(?:,\d{3})+", out) else ""
 
 
 _rapid = None
