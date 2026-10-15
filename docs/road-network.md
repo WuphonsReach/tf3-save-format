@@ -16,9 +16,9 @@ The street-edge table (one record per road segment, with its two end nodes, thei
 | `u32` | 0 |
 | `str` | The base street type, `.../<base>.street` (`town_old.street` for `town_old_small`, `country_old.street` for the barrier road) |
 
-A record starts right after the previous record's last string. Find them by the pattern: a `.street` string, then two ids and four vec3 whose first two have a sensible position and a length between 1 m and a few km, as `read_edges` does. The type is read from the template string that follows the lane data. Offsets move between saves.
+A record starts right after the previous record's last string, except the table's first, which follows a run of small counters. **Observed, 568 to 604, seven saves** (mod.io 6098954, 6386889, 6401182, 6425796, 6436164 and two map editor saves of ours): a reader matching on the previous `.street` misses that first record, one edge per save. `read_edges` finds it from the second record: it starts 250 to 400 bytes earlier and its last string ends where the second begins. In one map it was the north arm of a town's main-street junction, so a four-way crossing read as a T with a separate piece 88 m north of it. Find them by the pattern: a `.street` string, then two ids and four vec3 whose first two have a sensible position and a length between 1 m and a few km, as `read_edges` does. The type is read from the template string that follows the lane data. Offsets move between saves.
 
-- **What the unedited map held.** 358 edges: 334 of `town_old_small` and 24 of `town_old_xsmall`. 274 are 88 m long, the rest 64, 120, 56 or 24 m among others, so the towns' streets are laid out in edges of a fixed length with some shorter ones. The roads reach every part of the map (x from -8,445 to 9,016, y from -18,432 to 18,713), not one town.
+- **What the unedited map held.** 359 edges (358 before the first record was read, see above): 335 of `town_old_small` and 24 of `town_old_xsmall`. 275 are 88 m long, the rest 64, 120, 56 or 24 m among others, so the towns' streets are laid out in edges of a fixed length with some shorter ones. The roads reach every part of the map (x from -8,445 to 9,016, y from -18,432 to 18,713), not one town.
 - **A node's position is the same in every record that names it** (no disagreement over a metre in the first and the last save). The table has no separate node list: a node exists as the end of one or more edges. `street_edges.py --nodes` builds it.
 - **Node and edge ids are entity ids and are reused.** A node id freed in one save became a node of a new road in a later one (see the last save below), and the id of a deleted road's edge became a node.
 - **The type name carries a variant.** `country_old_small_barriers` (label Small Country Road With Noise Barrier) is a street type of its own. Its base type is `country_old`, and the barrier is not an extra record: no separate edge add-on or entity was added with it ([glossary.md](glossary.md#street-types)).
@@ -85,5 +85,5 @@ These were found by comparing the saves; the first two are written up less firml
 
 - What the lane block of the edge record holds (the lane count itself is in the templates, [street-templates.md](street-templates.md)), which leftover records a later edit clears, and whether the 100 m limit depends on the street type (four types were drawn).
 - Why the strip entry of the stub stays (the junction table's open points are in [junctions.md](junctions.md#open)).
-- Why only 161 of 358 edges have a strip entry, and what the other strip entries belong to.
+- Why only 162 of 359 edges have a strip entry, and what the other strip entries belong to.
 - Whether a road drawn over water or on a bridge shows in the same table (a railway does, see above).

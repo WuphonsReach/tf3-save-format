@@ -18,8 +18,8 @@ other ends.
 
 `--ids` adds each edge's own entity id (`e=` in the text output) by matching the edge to an entry
 of the road-surface strip table, which is keyed by that id: the entry's strips have to run along
-the edge's line. It scans the whole stream for that table. Many edges have no such entry (161 of
-358 matched in the map the notes were written from), and they show `e=?`; see docs/road-network.md.
+the edge's line. It scans the whole stream for that table. Many edges have no such entry (162 of
+359 matched in the map the notes were written from), and they show `e=?`; see docs/road-network.md.
 
 `--diff` pairs the edges of two saves by their two node ids and prints those only in the old save
 (`-`), only in the new one (`+`) and those whose end positions or street type changed (`~`).
@@ -100,7 +100,45 @@ def read_edges(data):
                 break
         out.append({"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
                     "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
-    return _largest_cluster(out)
+    out = _largest_cluster(out)
+    first = _record_before(data, out[0]["offset"]) if out else None
+    return [first] + out if first else out
+
+
+def _parse_record(data, start):
+    """The record whose first node id is at `start`, as `read_edges` returns it, or None when the bytes
+    there do not read as one (same checks as `read_edges`, no `.street` needed before it)."""
+    a, b = struct.unpack_from("<II", data, start)
+    p0, p1, t0, t1 = (_vec3(data[start + 8 + 12 * i:start + 20 + 12 * i]) for i in range(4))
+    if not _plausible(a, b, p0, p1, t0, t1):
+        return None
+    t = family = template = None
+    for tm in _TEMPLATE.finditer(data[start:start + TEMPLATE_WINDOW]):
+        if len(tm.group(2)) == tm.group(1)[0] - len(b".street_template"):
+            parts = tm.group(2).decode().split("/")
+            t, family, template = parts[-1], parts[1], "/".join(parts[1:])
+            break
+    return {"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
+            "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}
+
+
+def _record_before(data, offset):
+    """The table's first record. Every other record starts right after the previous record's last
+    `.street`, which is what `read_edges` matches on; the first one follows other bytes (a run of
+    small counters in the 604 save checked), so it is found from the second: a record that reads as
+    one, starts 250 to 400 bytes earlier and whose own last string ends exactly where the second
+    begins. Bytes at the wrong alignment can also pass the plausibility checks, so the candidates are
+    told apart by their tangents: the horizontal length of each is within 20 % of the edge's own
+    length (true of every edge checked, curved ones included). None if no candidate, or if more
+    than one remains."""
+    if data[offset - len(b".street"):offset] != b".street":
+        return None
+    found = []
+    for start in range(max(0, offset - 400), offset - 250):
+        e = _parse_record(data, start)
+        if e and e["type"] and all(abs(math.hypot(t[0], t[1]) - e["length"]) < 0.2 * e["length"] for t in (e["t0"], e["t1"])):
+            found.append(e)
+    return found[0] if len(found) == 1 else None
 
 
 def edge_bezier(e):
