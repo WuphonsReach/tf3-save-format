@@ -75,6 +75,7 @@ The params entry with the empty key is a flat Lua table: one layer, with the dot
 | Field | Value in that save | What it tracks |
 |---|---|---|
 | `i32` index 2 of the 11-`i32` run | 69 | Road vehicles |
+| `i32` index 3 | (not noted) | Aircraft: equal to the aircraft counted from the model instances in three other saves, 3, 0 and 38 (**Observed**, 568 to 604, [vehicle-classes.md](vehicle-classes.md)) |
 | `i32` index 4 | 19 | Ships. 69 + 19 is the 88 the screen shows |
 | `i32` index 5 | 22 | Stations |
 | first `u32` of the two `u32` after the nine `i64` | 11 | Lines |

@@ -26,6 +26,8 @@ What is read:
   calendar speed (millisPerDay) and play speed, the clock and the day table.
 - journal (journal.py, docs/finances.md): the money journal's bookings and how many 1,461,000-unit periods hold
   play (building, buying, upkeep, income); null where no journal was found. It ranks a save by how much it was played.
+- vehicles (vehicle_counts.py, docs/vehicle-classes.md): the count of vehicle units by carrier, power and load; null where
+  the save has no model table. Reads the game install's model metadata at run time when there is one.
 - company, counters, cycles, subsidies, town_states: from the script states
   of the company, achievements, game time, subsidy and town scripts. A save
   without one of them (editor maps) has null there.
@@ -42,6 +44,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from journal import play_summary  # noqa: E402
 from save_header import read_header  # noqa: E402
 from script_commits import closure_commit  # noqa: E402
+from vehicle_counts import INDEX_NAMES, count_vehicles, index_values  # noqa: E402
 from tf3save import (RANKS, calendar_speed_label, cargo_entries, date_of_day, day_table_regular,  # noqa: E402
                      decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label,
                      town_names)
@@ -162,21 +165,21 @@ def catalog_profiles(mods_dir):
 SUMMARY_FILE = "tf3-save-summary.json"
 OLD_SUMMARY_FILE = "summary.json"
 # Any layout change raises the version and adds a new schema file; committed ones are never edited.
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
               f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
 # Every key, in the order written (the schema file of SCHEMA_VERSION).
 FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
           "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
-          "stream_bytes", "calendar", "journal", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
+          "stream_bytes", "calendar", "journal", "vehicles", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
 INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_size", "map_size_name",
               "map_format", "map_ratio", "map_w_m", "map_h_m", "climate",
               "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "journal_bookings", "play_periods", "income_periods",
-              "tools_commit"]
+              *INDEX_NAMES, "tools_commit"]
 
 
 def summarise_save(path, mod_id, mods_dir, kind="savegame"):
@@ -221,6 +224,7 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
             "stream_bytes": h["stream_len"],
             "calendar": summarise_calendar(data),
             "journal": play_summary(data, h["money"]),
+            "vehicles": summarise_vehicles(data),
             **states,
             "town_records": summarise_records(recs := scan_records(data), cargo_names),
             "towns": summarise_towns(data, recs, states["town_states"]),
@@ -233,6 +237,13 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
     except Exception as e:  # truncated download, unknown format, ...
         summary["error"] = f"{type(e).__name__}: {e}"
     return summary
+
+
+def summarise_vehicles(data):
+    try:
+        return count_vehicles(data)
+    except ValueError:        # no model table found (the reader raises ValueError)
+        return None
 
 
 def setting_position_name(settings, key):
@@ -248,7 +259,7 @@ def index_row(sm):
     tr = sm.get("town_records") or {}
     if sm.get("error"):
         return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 15
-                + ["error", sm.get("kind", "savegame")] + [""] * 7 + [sm.get("tools_commit")])
+                + ["error", sm.get("kind", "savegame")] + [""] * (7 + len(INDEX_NAMES)) + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
     jr = sm.get("journal")
     size, fmt = (setting_position_name(sm.get("settings"), k) for k in ("map.size", "map.format"))
@@ -258,7 +269,8 @@ def index_row(sm):
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
             cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
             (sm.get("company") or {}).get("rank_earned"),
-            *((jr[k] if jr else "") for k in ("bookings", "play_periods", "income_periods")), sm.get("tools_commit")]
+            *((jr[k] if jr else "") for k in ("bookings", "play_periods", "income_periods")),
+            *index_values(sm.get("vehicles")), sm.get("tools_commit")]
 
 
 def main():

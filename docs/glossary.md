@@ -98,6 +98,8 @@ The categories are the folders under `vehicle/`: `bus`, `car`, `helicopter`, `pl
 | `tram` | streetcar, trolley | a bus model is labelled Wright StreetCar, yet it is in `bus` |
 | `car` | car, automobile | private cars in the `car` folder (not a train car or tram car) |
 
+The game groups these folders into five carriers (`ROAD`, `TRAM`, `RAIL`, `WATER`, `AIR`): players say road, light rail (`tram`), heavy rail (`train` and `waggon`), water and air ([vehicle-classes.md](vehicle-classes.md)).
+
 A line is a `line`; players also say route. "Car" alone is ambiguous: a private `car`, a tram car (labels such as Box Car, Closed Car) or a train car.
 
 ## Street types

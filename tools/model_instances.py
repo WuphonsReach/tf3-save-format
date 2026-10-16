@@ -32,11 +32,21 @@ _INSTANCE = re.compile(rb"(....)(.{12}\x00\x00\x00\x00.{12}\x00\x00\x00\x00.{12}
                        rb"(.{12})\x00\x00\x80\x3f", re.S)
 
 
+class ModelPaths(list):
+    """The model paths in table order, as a plain list; `ids` holds each entry's stored id and `by_id` maps
+    an id to its path. In a save with many mods the ids skip (docs/models.md), so a list index is not an id."""
+
+    def __init__(self, paths, ids):
+        super().__init__(paths)
+        self.ids = ids
+        self.by_id = dict(zip(ids, paths))
+
+
 def read_model_table(data):
-    """(model paths by id, offset just after the table). The table is the first thing after the
-    header (docs/models.md): a u32 count, then per model a `str` source mod, a `str` path and a
-    u32 id equal to its index. Found by the first `animal/` path, as the base game's table
-    sorts them first."""
+    """(model paths in table order, offset just after the table); the paths are a `ModelPaths`. The table is
+    the first thing after the header (docs/models.md): a u32 count, then per model a `str` source mod, a
+    `str` path and a u32 id that starts at 0 and rises along the table (it equals the index until a mod's
+    models skip ahead). Found by the first `animal/` path, as the base game's table sorts them first."""
     first = data.find(b"animal/")
     if first < 0:
         raise ValueError("no model table found")
@@ -44,7 +54,7 @@ def read_model_table(data):
         n = struct.unpack_from("<I", data, start)[0]
         if not 100 < n < 100000:
             continue
-        p, paths = start + 4, []
+        p, paths, ids = start + 4, [], []
         try:
             for k in range(n):
                 length = struct.unpack_from("<I", data, p)[0]
@@ -52,12 +62,14 @@ def read_model_table(data):
                 length = struct.unpack_from("<I", data, p)[0]
                 path = data[p + 4:p + 4 + length].decode()
                 p += 4 + length
-                if struct.unpack_from("<I", data, p)[0] != k:
+                mid = struct.unpack_from("<I", data, p)[0]
+                if mid < k or (ids and mid <= ids[-1]) or (k == 0 and mid != 0):
                     break
                 p += 4
                 paths.append(path)
+                ids.append(mid)
             else:
-                return paths, p
+                return ModelPaths(paths, ids), p
         except (struct.error, UnicodeDecodeError, MemoryError):
             continue
     raise ValueError("no model table found")
@@ -69,7 +81,8 @@ def read_instances(data, prefixes=("vehicle/",), table=None):
     (the translation), `fx`, `fy` (the first row of the transform: the facing) and `offset`.
     Pass `table=read_model_table(data)` to reuse a table already read."""
     paths, end = table or read_model_table(data)
-    wanted = {i for i, p in enumerate(paths) if p.startswith(tuple(prefixes))}
+    by_id = getattr(paths, "by_id", None) or dict(enumerate(paths))
+    wanted = {i for i, p in by_id.items() if p.startswith(tuple(prefixes))}
     out = []
     for m in _INSTANCE.finditer(data, end):
         mid = struct.unpack("<I", m.group(1))[0]
@@ -79,7 +92,7 @@ def read_instances(data, prefixes=("vehicle/",), table=None):
         fx, fy = struct.unpack_from("<2f", m.group(2))
         if not all(math.isfinite(v) for v in (x, y, z, fx, fy)):
             continue
-        out.append({"slot": len(out), "model": paths[mid], "x": x, "y": y, "z": z,
+        out.append({"slot": len(out), "model": by_id[mid], "x": x, "y": y, "z": z,
                     "fx": fx, "fy": fy, "offset": m.start()})
     return out
 
