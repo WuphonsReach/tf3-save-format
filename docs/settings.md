@@ -100,7 +100,7 @@ The Load Game list shows the loaded save's own values: its Difficulty row read "
 
 ## Open
 
-- Whether the changes act in play: for example whether a higher infrastructure upkeep applies to buildings that already exist, or only to new ones. The in-play effect was not tested.
+- Whether the changes act in play: Cargo Income does (**Observed**, one save: a Normal save re-saved with Cargo Income 50% on the Load Game tab paid half, and the income function received `difficultyFactor` 0.5, [inflation.md](inflation.md#in-a-running-game)). The others are untested: for example whether a higher infrastructure upkeep applies to buildings that already exist, or only to new ones.
 - The questions about mods (a deactivated mod's options, whether mod options follow the position-plus-1 rule) are in [mods.md](mods.md#open).
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.

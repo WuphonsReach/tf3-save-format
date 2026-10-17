@@ -7,6 +7,15 @@ Two separate things move prices in a game, and both get called inflation:
 
 The settings option itself is in [settings.md](settings.md). The rank the cut depends on is in [company.md](company.md).
 
+## In short
+
+- **What drives it.** Two separate mechanisms.
+  - The Inflation option sets how far income falls as the company's rank rises: income is multiplied by 1 + (rank − 1) × (f − 1) / 14, with f = 1, 0.9, 0.75, 0.6 and 0.5 for None to Very High (604). The rank is the one earned (`potentialLevel`), so the multiplier steps once per rank.
+  - The date raises building upkeep (not street upkeep, vehicle costs or the purchase prices checked) by a table that steps every 20 years from 1920 (×1.5 at 1920, ×5.0 at 2000). The Inflation option does not change it.
+- **How the income options fit in.** Cargo Income and Passenger Income reach the pay as `difficultyFactor` inside the income function (0.5 for the 50% setting). The engine applies the rank multiplier after that, so the two multiply. Cargo Income took effect on a save changed on the Load Game tab.
+- **How sure.** The rank formula and f table: Confirmed on 604 in a running game (Very High, rank 3) and Observed on 123 catalog saves at rank 2 or above (High to rank 8, Very High to rank 4). The 1920 step on buildings: Observed in one game; the later steps are untested. That Inflation leaves upkeep alone: Observed, with a weak in-game check.
+- **Not known.** Whether the formula holds at high ranks in play (three large games paid more than it predicts), the passenger side, the other Cargo Income steps, and whether depots take the year table on top of their own era factors. The list is in the [gaps](gaps/economy-and-events.md#inflation).
+
 ## The income multiplier
 
 `ticketPriceMultiplier` in `companyState` is the cut that the Inflation option (`advancedOptions.inflationFactor`, see [settings.md](settings.md)) makes to income. In the game's scripts (604 build) it is applied to every vehicle's ticket price, which covers passengers and cargo alike. Each Inflation level sets the multiplier reached at Tycoon. Between rank 1 (no cut) and rank 15 the multiplier falls in a straight line: 1 + (rank − 1) × (f − 1) / 14, where f is the value at Tycoon. It is computed from `potentialLevel`, the rank earned, not the rank claimed. (Sources: `base/difficulty_util.tl` and `base/mod.script.tl` in `base.zip`, which write f into `game_mechanics/company/company_growth_config.res`; `company_progression_util.tl` and `company_growth.script.tl` in `game_mechanics.zip`.)
@@ -19,12 +28,7 @@ The settings option itself is in [settings.md](settings.md). The rank the cut de
 | High | 0.6 | not seen |
 | Very High | 0.5 | not seen |
 
-- **Observed** in 120 catalog saves (one per catalog entry, 568 to 604), 117 of which hold the state:
-  - **604**: 51 saves hold the key, and every value equals the formula with the 604 values above (Low 13, Normal 33, High 5 saves). No Very High save had reached rank 2.
-  - **599 and 601**: 11 saves hold the key, and every value fits the same straight line with f = 0.6 for Normal (9 saves) and 0.8 for Low (2). So the cut was harsher before 604.
-  - The key is **absent** at rank 1 and when Inflation is None, as the scripts say (the multiplier is then nil, which removes the key). The 568 and 585 saves have no key even at ranks up to 15. Their header settings were not read (see [header.md](header.md)), so whether the mechanism postdates them or Inflation was None in all ten is **Open**.
 - An absent key means no cut, not a missing value.
-- The Inflation option does not touch upkeep (**Observed**, 604, warehouse upkeep in two games). Upkeep that rises with the date is a separate mechanism, see [below](#the-year-cost-table).
 
 ## The year cost table
 
@@ -33,6 +37,28 @@ Warehouse upkeep in two games, 1937 against 2000, differed by a factor that the 
 The game's Lua API definitions (`api/tealdef/api/type.d.tl`, install that writes 604) give each construction a `costsYearProgression` flag and the game config a `treeCostYearMultipliers` table keyed by year. The base game fills that table in `base/mod.script.tl` (in `base/content/base.zip`, 604 build) with one multiplier every 20 years: 1900 ×1.0, 1920 ×1.5, 1940 ×2.2, 1960 ×3.2, 1980 ×4.0, 2000 ×5.0, 2020 ×6.0. If a cost takes the value of the last step reached, 1937 gets ×1.5 and 2000 gets ×5.0, and 5.0 / 1.5 = 3.33, the factor left over above. Which constructions set the flag is not in any readable file. Despite its name, the table evidently scales more than trees. A road depot's own file has era templates with other steps (×3 from 1940, ×9 from 1980); whether a depot takes the table's multiplier on top is **Open** ([running-costs.md](running-costs.md#a-road-depots-upkeep-against-its-window-604)).
 
 Players report the same steps: building upkeep that stays flat for 20 years and jumps at 1960 and 1980, by about a quarter at 1980 (4.0 / 3.2 = 1.25), and by about a fifth at 2000 and 2020 (1.25 and 1.2). Players also report that a new game's prices depend on its start year in the same 20-year steps, and not on the Inflation option. The author of the script mod Inflation (USD) ([6436200](https://mod.io/g/transportfever3/m/inflation-usd)) says the base game charges the same prices every year; the table contradicts that for upkeep, while three port pieces kept their purchase price through 1920 ([below](#upkeep-and-prices-at-the-1920-step)). The same-game test was run at 1920 ([below](#upkeep-and-prices-at-the-1920-step)); the 1940 and later marks are untested.
+
+## Evidence and tests
+
+What the claims above rest on: catalog saves, a running game, then the date test.
+
+### Catalog saves
+
+- **Observed** in 120 catalog saves (one per catalog entry, 568 to 604), 117 of which hold the state:
+  - **604**: 51 saves of the first 120 hold the key, and every value equals the formula with the 604 values above (Low 13, Normal 33, High 5 saves). A later pass over the mined catalog saves at rank 2 or above with Inflation on (124 saves at 604, 123 read) found the stored value equal to the formula in every one. The set includes High up to rank 8 and three Very High saves, at ranks 2, 2 and 4 (0.96429, 0.96429 and 0.89286): the earlier "no Very High save had reached rank 2" no longer holds.
+  - **599 and 601**: 11 saves hold the key, and every value fits the same straight line with f = 0.6 for Normal (9 saves) and 0.8 for Low (2). So the cut was harsher before 604.
+  - The key is **absent** at rank 1 and when Inflation is None, as the scripts say (the multiplier is then nil, which removes the key). The 568 and 585 saves have no key even at ranks up to 15. Their header settings were not read (see [header.md](header.md)), so whether the mechanism postdates them or Inflation was None in all ten is **Open**.
+- The Inflation option does not touch upkeep (**Observed**, 604, warehouse upkeep in two games). Upkeep that rises with the date is a separate mechanism, see [the year cost table](#the-year-cost-table).
+- **Observed** (weak): Inflation adds nothing to running costs. Two runs from one save, one at Normal settings and one with Inflation Very High and all four cost options at 150%, booked running costs per clock unit 1.58 times higher, against the 1.5 that Vehicle Maintenance alone explains. Five options changed together and the fleet grew, so it is no clean test.
+
+### In a running game
+
+**Confirmed** on 604, one game, from a log written while the game ran. The game was the [Very Hard income game](test-games.md#very-hard-income-game): Inflation Very High, rank 3 earned (`potentialLevel` 3) and `level` still 1.
+
+- The game's own function for the rank multiplier returned 0.92857, equal to the stored `ticketPriceMultiplier` on all 15 samples and to 1 + 2 × (0.5 − 1) / 14. So f = 0.5 for Very High holds in play, and the multiplier follows `potentialLevel`, not `level`.
+- It stayed the same while `experience` rose from 2,136 to 2,174 inside rank 3: it steps once per rank and is not interpolated between ranks.
+- **Where it enters the pay.** The income function a script mod can replace gets a `difficultyFactor` parameter. It was 1 on every Normal save and 0.5 here, where the header held Cargo Income and Passenger Income at stored 1 (50%, [settings.md](settings.md#how-a-setting-is-stored)). Its result was incomeFactor × `difficultyFactor` × the 3D distance (3.8 × 0.5 × 5,111 = 9,711, as logged), so the income options arrive there and are already in the result. The rank multiplier is not in it: the engine applies that afterwards.
+- **Observed**: over 30 vehicles' booked pay, pay divided by (income factor × distance × 0.96426) had median and maximum 0.48. The prediction for 0.5 × 0.92857 / 0.96429 is 0.4815. The 0.96429 is the same multiplier at rank 3 on Normal (1 − 2 × 0.25 / 14), so a constant "engine factor of about 0.964" seen in earlier Normal-rank-3 logs is this multiplier.
 
 ### Upkeep and prices at the 1920 step
 

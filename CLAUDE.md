@@ -21,6 +21,8 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 - Tag each claim with the format versions it was checked on (for example "568 to 604" or "604 only").
 - Label how sure a format claim is: Confirmed, Observed or Open (defined in `docs/README.md`). `docs/versions.md` (dated counts) is exempt.
 - Offsets move between saves. Describe how to find a structure by pattern, never by a fixed offset.
+- Lay out each note for a reader who wants the answer first. Near the top (after the intro, before any test detail) put an "In short" section: the key drivers, how we think the thing works, how sure we are (the Confirmed / Observed / Open label for each main claim) and what is still unknown. Then the mechanism and reference material. Test results, saves checked and dated measurements go last, under an "Evidence and tests" heading, each with its version tag. A note that is a test log by nature (`test-games.md`, the `analysis-examples/` files) keeps its conclusion in its first lines. Apply this to every note you create or touch; do not restructure notes you are not editing. When new evidence changes a claim, update "In short" and its label in the same edit.
+- The same order holds for READMEs and index pages: what the thing is and what it tells you first, test results and status tables last.
 
 ## Keeping the indexes current
 

@@ -22,7 +22,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [lua-overview.md](lua-overview.md) | Where Lua sits in the stream, layers and depth of the 28 script states in a 604 game, the markers in the binary middle (named strings, counts, embedded Lua tables) across 568 to 604, what the file labels and what it does not, what the game's script files say about the states (declarations, state types, the `version` key) |
 | [script-states.md](script-states.md) | Script states: how to find one, the list of states seen, weather and time of day, achievements, mod states and the error messages they can hold |
 | [company.md](company.md) | Company experience, the rank earned and claimed, rank thresholds, loans |
-| [inflation.md](inflation.md) | The Inflation option's income cut and the year cost table |
+| [inflation.md](inflation.md) | The Inflation option's income cut (formula, f table, saves checked, the multiplier in a running game) and the year cost table |
 | [notifications.md](notifications.md) | The notifications state: the limit on entries, `history`, entry layout and flags, `ignored.types` (the game's defaults) and `tracked`, params of each type seen, persistent warnings and the bookkeeping tables (`wastedVehicles`, `vehicle2problem` and others), subsidy `uid`, the availability state's `lastYear` |
 | [notifications-in-play.md](notifications-in-play.md) | Notification entries seen in play (604): the "New Vehicles Available" popups and the model years behind them, what dismissing changes, the industry-spawn, industry-closing and stuck-vehicle entries |
 | [subsidies.md](subsidies.md) | Subsidy offers, active and completed subsidies |
@@ -99,6 +99,10 @@ The money journal and the script-state container are documented in [tf3-save-edi
 - `str` is a u32 byte length followed by the bytes (UTF-8 in practice).
 - `vec<T>` is a u32 count followed by that many `T`.
 - The stream has no offset tables or section sizes. Fields follow each other, so finding a structure deep in the stream means scanning for a pattern. Offsets move from save to save.
+
+## How a note is laid out
+
+A note opens with an "In short" section (key drivers, how it works, how sure we are, what is unknown), then the mechanism and reference material, and ends with "Evidence and tests": the saves checked and the dated measurements, each tagged with its versions. Notes written before this rule move over as they are edited. [inflation.md](inflation.md) is the model.
 
 ## Evidence labels
 

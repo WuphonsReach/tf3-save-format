@@ -42,6 +42,10 @@ Format of an entry: see [README.md](README.md).
 ## Inflation
 
 - **Whether the 568 and 585 saves lack the multiplier because the mechanism is newer or Inflation was None** Home: [inflation.md](../inflation.md). Needs: existing saves (read their header settings).
+- **Whether the multiplier fits high ranks** (604) At Normal rank 13 it would be about 0.79, yet on three large Normal games the player's pay ran 1.33 to 1.69 times a prediction that used the rank-3 value (0.96426), and 1.11 to 1.16 on a small one. Those logs did not record the rank. Home: [inflation.md](../inflation.md#in-a-running-game). Needs: new run on a high-rank save with the company state logged.
+- **Passenger income** (604) The scripts apply the multiplier to every ticket, but the logs held cargo arrivals only. Whether Passenger Income has its own factor or shares `difficultyFactor` is open. Home: [inflation.md](../inflation.md#in-a-running-game). Needs: new run with passengers.
+- **Whether `difficultyFactor` follows the other Cargo Income steps** (604) Only 100% (1) and 50% (0.5) were seen, not 75%, 125% or 150%. Home: [settings.md](../settings.md#open). Needs: new save per step.
+- **Whether the Inflation option adds to running costs** (604) The in-game comparison was confounded; a clean test needs per-vehicle running-cost bookings from the money journal, or a save with one setting changed. Home: [inflation.md](../inflation.md#in-a-running-game). Needs: new save pair.
 - **Whether a mod sets a flag or the game applies the year multiplier to every construction's upkeep** (Observed, 604) And whether other buildings' and roads' prices step. Home: [inflation.md](../inflation.md). Needs: new save at a year step.
 
 ## Fun elements

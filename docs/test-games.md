@@ -80,6 +80,12 @@ The towns on the screens matched the saves in all of today's games; the industri
 - Fourteen saves made one after the other in the map editor around the town Hemsworth, one change per save: the baseline, three buildings marked Historic Preservation, a deleted road segment, a new country road, a standalone country road with noise barriers, a load and re-save with no edit, a single house marked Historic Preservation, the town deleted, a load and re-save of that, and a chevron of Large Country Road With Noise Barrier drawn over the old town's ground, and a medium-width country road with noise barriers drawn in three segments to test the cut length, and a curved four-lane town road along the coast, then Save and Play (`0655`, saved in the editor) and a pause and save in the played game (`0656`). Each was saved from the game the one before it was. They are the basis of [road-network.md](road-network.md); the building ticks are in [editor-map-buildings.md](editor-map-buildings.md).
 - Saves are named `2026-10 Giant Temper 1011-<time>`.
 
+## Very Hard income game
+
+- A temperate Giga map, start year 1900, played from a Normal-settings save and re-saved after changing settings on the Load Game tab ([settings.md](settings.md#changing-settings-when-loading)). Stored values in the new save: Cargo Income and Passenger Income 1 (50%), Inflation 5 (Very High), vehicle and infrastructure purchase cost and maintenance 5 (150%), industry productivity 1 (50%), subsidies 1 (Never).
+- Game date January 1900, rank 3 (Engineer), `level` 1.
+- Played with a script mod that logs the income function's inputs and results and the company state every so often. Used for: the multiplier in a running game ([inflation.md](inflation.md#in-a-running-game)).
+
 ## Tiny subarctic bus-line game
 
 - Seed `Uwe7xjTzRZ`, subarctic climate and economy, German names, Tiny 1 : 2 (2560 x 5120 m), start year 1980, a new game with three mods: Deluxe Upgrade, Advanced Track Patterns (mod.io 6436197) and Transit Overlay (mod.io 6449851, [transit-overlay.md](transit-overlay.md)). Two towns, Kenzingen and Kulmbach.
