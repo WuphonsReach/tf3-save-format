@@ -2,6 +2,17 @@
 
 Two structures tie things on the map to 3D models: a table of every model the save can use, and a model instance record for each placed thing that has one. The animals ([animals.md](animals.md)) and the hot air balloon ([fun-elements.md](fun-elements.md#the-model-instance)) use them. The fields match the `ModelInstanceList` component and `ModelInstance` record in `api/tealdef` (a model id, the transform at the previous frame, the transform). **Observed** on 604 in eighteen test saves (the animal test series of [terrain.md](terrain.md#what-was-compared) and others).
 
+## In short
+
+All 604; the layouts were read in eighteen test saves and two catalog saves.
+
+- **The model table follows the header: a `u32` count, then per model `str` source mod (empty for the base game), `str` path, `u32` id (Observed).** Ids rise in table order but skip, depend on the installed models and must be read from the save. An instance carries the stored id, not the index (Observed, a 10,252-entry table).
+- **A placed thing with a model has a 137-byte instance record: the `u32` model id, then two 4 x 4 `f32` matrices one byte apart, translation in floats 12 to 14 (Observed).** Records sit in one run with 9 bytes between them (stride 146). The run mixes animals, vehicles, people and cars. Find a record by a known position, with the model id 52 bytes before it.
+- **The first matrix row is the facing, and its length is the scale (Observed).** A train is one instance per unit, not one record per train.
+- **Trees, rocks and a farm's fences and props are instances too (Observed, one editor map);** a deleted instance stays in the table for one save and its slot is reused. Brush-painted trees are a different 24-byte record in per-cell runs.
+- **Land industries declare a `ground_face` polygon in their script that the Towns layer paints; water industries declare none (Observed, one editor game; 4 of 29 compared with screenshots).**
+- **Open:** why ids skip, the other bytes of an instance, how a generated map's forests are stored, and the list after the last run of brush-painted trees (a `u32` count of 7,073 in one save).
+
 ## The model table
 
 The first thing after the header ([header.md](header.md)): a `u32` count, then per model
@@ -42,7 +53,9 @@ How to find a vehicle's instance, and what a depot, a line, a purchase or a sale
 - **The water industries declare no polygon, yet the layer outlines two (604, Observed, one game, one or two pictures each).** Registered on the corner buoys, a **fishing ground's** outline is a strip about x -40 to 22, y -28 to -12 plus a body about x -40 to 38.5, y -13 to 20.7 with one corner cut, within 1.5 m of its terminal model boxes; a **sand excavator's** is one rectangle about x -18.2 to 45.5, y -43.5 to 65 m (within 2 m of its models). An **oil platform has no outline**, only tinted meshes and round parts: two docking stations at x ±55 m (the orange drums, about 10 m across) and four large buoys at (±20, ±70) (2 to 3 m); all 18 had the same. Its deck is about the `oil_platform_sm` box (x -24.5 to 24.7, y -29.5 to 24.7), with the helipad (an octagon about 21 m across) at a corner and the big crane's boom (4 m wide, to y of about 52) along +y, which show its facing. The pictures are tilted (deck-height parts sit about 13 m toward +x and 8 m toward -y of their plan place), so the boom's tip is good to about 3 m. **Open:** full or `_sm` boxes, a count that follows production, mods' industries.
 - **`terrain_map.py` draws it** under the industry badge from the install at run time, nothing stored ([tools/README.md](../tools/README.md)). The model origin is not the polygon's centre (for the 29 the bounding-box centre is 0 to 56 m from it: 17 within 20 m, the chemical plant, iron ore mine and tire factory 45 to 56 m), so the badge sits on the polygon's centroid, and is 0.4 of its shorter side across.
 
-## Trees, rocks and farm fields are model instances
+## Evidence and tests
+
+### Trees, rocks and farm fields are model instances
 
 **Observed** on 604, one Tiny tropical editor map ([Tiny flat editor game](test-games.md#tiny-flat-editor-game), saves `1952` to `1959`). The instance table of that map held 28,700 to 32,000 instances: about 23,700 that stay put (town props such as hedges, fences, flowers and plants, trees, and the farm's fences, plants and animals standing at 0, 0), the rest people, vehicles and bird flocks, whose positions change from one save to the next, so a diff of two saves has to leave those out (`era_*`, `coach_*`, `bird_*`, `cougar` here).
 

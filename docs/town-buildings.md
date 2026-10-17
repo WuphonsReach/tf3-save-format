@@ -2,6 +2,19 @@
 
 The record of every building in a town (houses, shops, workplaces): its level, parcels, height, build time, owning town and the "Historic Preservation" flag, and how the records change in play. The parcels it names are in [parcels.md](parcels.md). The town's own record (capacities and cargo) is in [town-records.md](town-records.md). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game), against the player's screenshots of the building windows.
 
+
+## In short
+
+All 604, one game (the Small subarctic game), checked against the player's screenshots of building windows.
+
+- **Every building has one record of `41 + 4n` bytes (n = its parcels, 1 to 4), listed by a find-by-pattern scan, not by offset (Confirmed, two ticked buildings among 569 records).** It holds two entity ids, `level`, an id, a flag byte, the parcel ids, `depth`, `height`, the owning `town` and `timeBuilt`. The layout is in [The record and how to list it](#the-record-and-how-to-list-it).
+- **The flag byte is "Historic Preservation" (`blockedDevelopment`, Confirmed from the API and from a one-byte diff).** Ticking a building sets that byte 0 to 1 and nothing else in the record changes; unticking reverses it. The preview of a demolition adds a "Historic Buildings Will Be Removed" line for ticked ones and the same cost and reputation figure (Observed, one stretch).
+- **The `level` in the record is the number the window shows (Observed, restaurant and store).** A level 2 commercial building holds 4 fish and 2 tinned food and 16 customers, a level 1 building half of that. A level can go down and up again within minutes, and houses change level too (Observed).
+- **The second id (`b`) is 0xffffffff for a building without a stock (a house) and equal to the first id for a stocked one (Observed, 1900 game); the first id is not a stable key,** so follow a building by its parcels. Whether a house gets a stock later in a game was not tested.
+- **`timeBuilt` is a clock value, 0, or all ones (Observed);** what all ones means that 0 does not is Open.
+- **The `town` field is the owning town (Confirmed, two buildings),** but the records hold no position, and the buildings a player ticks along one street do not sit together in the table or share a `town` value (Open why).
+- **Open:** what `a`, `b` and `d` point to, what the three small entries near the end of the stream record when a flag changes, and whether the actual demolition costs or loses more with the flag on.
+
 ## The building record and "Historic Preservation" (604)
 
 **Observed** on 604 in the Small subarctic game, saves `1427` (clock 11,239,800), `1428` and `1429` (both 11,324,600), with the player's screenshots of a commercial building in the catchment of the port.
@@ -29,6 +42,14 @@ u64  timeBuilt    a clock value, see calendar.md
 - **What the 569 were.** Three towns (entity ids 17,912, 17,913 and 17,914, with 181, 82 and 306 records), every building of the game, not only commercial ones. `1427` held 566 records and `1428` 569: the three buildings built in the 91st month. The two ticked buildings are both in town 17,914: the 5 of 6 one has height 23.3 and `timeBuilt` 9,936,000, the 8 of 8 one (the larger) height 25.7 and `timeBuilt` 7,440,000. Build times run from 0 to 11,304,000, and several buildings share one value (5,017,600 for example), so they come in batches. What `a`, `b` and `d` point to was not followed.
 - **`timeBuilt` is a clock value, 0, or all ones (Observed, 604, one game).** The first save of the [Small subarctic game](test-games.md#small-subarctic-game) (1 January 1900) held 410 records: 327 with 0, 83 with all 64 bits set, none with a clock value. By 1 April 1920 there were 1,329: 1,170 with a clock value, 144 with 0, 15 with all ones. Of the 83 all-ones records, 74 kept their parcel ids and 59 of those had a clock value by then (a rebuild in place writes a new time); of the 327 zeros, 145 did and 38 lost their parcel set. A level change leaves the value alone (21 zeros went from level 1 to 2). The all-ones records are the larger buildings of the start (2 to 4 parcels wide, mostly depth 4, 19.9 m high on average against 15.3 m); what all ones means that 0 does not is **Open**. A scan that wanted a plausible clock value skips them, so the 569 above may be short.
 
+### The town field and the town boundaries
+
+The `town` field of a building record is the owning town (Confirmed, 604, two buildings), and the boundary between two towns on the map fits the line equidistant from their first crossings (Observed, three games). The evidence, the screenshots and the open questions are in [town-boundaries.md](town-boundaries.md).
+
+The ticks made in the map editor, a building's position and what the record's `town` value is are in [editor-map-buildings.md](editor-map-buildings.md).
+
+## Evidence and tests
+
 ### Ticking buildings, save by save
 
 - **Save `1430` (clock 11,324,600 again, paused) after the player ticked a group of buildings.** The scan paired its 569 records with those of `1429` in order: every field other than the flag was equal, 14 flags went from 0 to 1 and none went back, so 16 were set (the player's count was "a whole bunch more"). Of the 14, 12 were in town 17,914 and 2 in town 17,912; 7 had level 1 and 7 level 2, 1 to 4 parcels, depth 1 to 4, heights 5.5 to 22.1 m, and `timeBuilt` of 0 (three buildings that stood at the start), 1,968,000 to 5,712,000 (eleven), 8,256,000 and 10,464,000. The streams differed in length by about 17,000 bytes, so records were paired by order, not offset. The player confirms 14 and says they were random buildings across the town area, a mix of industrial, commercial and residential, so the ticks are not tied to a street. The whole table of 569 records spans about 32,000 bytes and the 16 set flags span 17,700 of them (341 records between the first and last), which is what a scattered pick over a table that size looks like; the record order was not shown to follow position. **Observed**, one game.
@@ -46,13 +67,7 @@ u64  timeBuilt    a clock value, see calendar.md
 - **What the flag does in the game (screenshot only).** With the bulldozer over a stretch of road beside highlighted buildings, the tooltip read "Costs: $225,000", "Reputation: -4%" and "2 Historic Buildings Will Be Removed". The reputation figure matches the `DemolishedTownBuilding` penalty reason of the town states ([town-states.md](town-states.md)); the road cost includes the buildings. Save `1433` (clock still 11,324,600) is the same stretch after the player unticked those two houses: exactly those two records (the ones ticked in `1432`) went from 1 to 0 and nothing else changed, 21 flags remained, and the same preview read "Costs: $225,000" and "Reputation: -4%" without the historic line. So the flag is reversible with the same byte, the preview cost and reputation were the same with the two buildings historic and not, and the extra line is what the flag adds. Whether the actual demolition then costs or loses more with the flag on was not tried. **Observed**, one stretch.
 - **The bulldozer takes a whole road segment (player's observation, not verified).** The player can remove only a whole segment of the street, not part of it, which would explain why the preview lists the buildings along the full stretch (the highlight in the screenshot runs from one junction to the next). That would make the street segment one entity, with the "Historic Buildings Will Be Removed" count taken over every building beside it.
 
-### The town field and the town boundaries
-
-The `town` field of a building record is the owning town (Confirmed, 604, two buildings), and the boundary between two towns on the map fits the line equidistant from their first crossings (Observed, three games). The evidence, the screenshots and the open questions are in [town-boundaries.md](town-boundaries.md).
-
-The ticks made in the map editor, a building's position and what the record's `town` value is are in [editor-map-buildings.md](editor-map-buildings.md).
-
-## Building records change level during play, and a record's first id is not its identity (604)
+### Building records change level during play, and a record's first id is not its identity (604)
 
 **Observed** on 604 in the Small subarctic game, saves `1700` to `1705` (clock 15.7 to 17.3 million, the player's town growing), listing the records by the pattern above and following each one by its **parcel ids** (the sorted list of the building's parcels).
 

@@ -11,7 +11,7 @@ What a game started with Tutorial On leaves in the save, and the open question o
 
 ## Open: the town and industry counts
 
-The New Game screen shows a Towns and an Industries figure for the map it will make ([industries.md](industries.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604)). In eight games saved at once the Towns figure matched the save every time. The Industries figure matched in three games and was off by one in four, but in the Tutorial On game it read 8 and the save, and the loaded game's Industries tab, held 15.
+The New Game screen shows a Towns and an Industries figure for the map it will make ([industry-lifecycle.md](industry-lifecycle.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604)). In eight games saved at once the Towns figure matched the save every time. The Industries figure matched in three games and was off by one in four, but in the Tutorial On game it read 8 and the save, and the loaded game's Industries tab, held 15.
 
 - **A lead, not a finding.** The tutorial game is the only one with a large gap, and the only one with the tutorial states filled. But the Tutorial Off games differ by one too, so the tutorial cannot be the whole story: the preview may also be built before the game places and flattens the industries.
 - **Not found in the install.** The mission scripts in `base/content/mission.zip` (`mission/tutorial/guide_system/`) were searched for calls that create industries, and none turned up. The search was by guessed name, so this does not rule it out.

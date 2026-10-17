@@ -4,6 +4,16 @@ The header starts the decompressed stream. Fields in order. Checked in full on 5
 
 The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save-editor/blob/main/docs/FORMAT.md). The meanings marked "ours" were worked out here and are being passed upstream. Where a field's name or reading here differs from that file's, [tf3-save-editor.md](tf3-save-editor.md) lists it.
 
+## In short
+
+- **The header starts the decompressed stream:** magic `tf**`, version, start year, map width and height, the date shown, money, the company `experience` counter, an `info` Lua table, the mod list, the preview, statistics blocks, the config (mods, resources, params), mission, a flag, a value and the map seed. Checked in full on 599, 601 and 604; 568 and 585 match up to the preview.
+- **The preview is raw RGB8 640 x 360, bottom row first (Confirmed against the `.jpg` in all 113 catalog saves that have one).** Read it whatever the flag before it says; a crash save has none.
+- **The flag before the preview and the `flag` after `mission, kind` always hold the same value, the save's "achievements can be earned" state (Confirmed, 604).** It is 1 when a force mod is present or when it was already 1 and every mod is cosmetic; a 0 does not come back without a force mod. It says nothing about the preview.
+- **The map seed is the `id` string (Confirmed, 604); the date is a Julian day number equal to the day table's last day (Observed on 120 saves, Confirmed on three).**
+- **The load dialog's counts are stored: road vehicles, ships, stations and lines, and aircraft by the same pattern (Observed, one game).** A purchase shows at once with the game paused, and the first `i64` of the leading six rises by the net spend.
+- **The money copy usually equals the account but can lag, read 0 against a negative balance, or be 0 in a game with no starting capital (Observed).** The real balance is in the money journal ([finances.md](finances.md#finding-the-journal)).
+- **Open:** the meaning of most statistics blocks, what the `stats3` number that rose by one in a vehicle swap counts, why money is stored as 0 in some saves, what sets the flag to 0 besides a non-cosmetic mod, and the editor map whose `value` was 256.
+
 | Field | Type | Meaning |
 |---|---|---|
 | magic | 4 bytes | `tf**` |
@@ -40,6 +50,21 @@ Lua tables are encoded as in [lua-values.md](lua-values.md).
 - To write a save back byte for byte, keep the original flag byte.
 - A crash save has no preview (**Observed**, 604, one save). After an in-game assertion failure the game wrote `crash_<save name>_<date>.sav` in the save folder. Its preview size reads 0 x 0 with an empty preview string, so the header ends after a few KB instead of about 700 KB, and no `.jpg` was written beside it. The Load Game screen lists it as "Recovery Save" and draws a flat blue-violet square in place of the picture. Whether the label comes from the `crash_` prefix or from something in the file is **open**; the rest of the header reads as in any other 604 save. A save made from it in the game, after loading it and pausing two game days later, had the normal 640 x 360 preview and a `.jpg` beside it, so the empty preview is not carried over (**Observed**, 604).
 
+## Settings
+
+The params entry with the empty key is a flat Lua table: one layer, with the dotted names stored as the keys (**Observed** on 599 to 604, 22 catalog saves and ours). Keys include `isMapEditor`, `map.size`, `advancedOptions.*` and `townConfig.*`.
+
+- `isMapEditor` is `true` in map editor saves. See [editor-saves.md](editor-saves.md).
+- How a value is stored (its place in the option list), the option lists, the difficulty presets and how a load rewrites them are in [settings.md](settings.md).
+
+## The delivered totals in the header
+
+**Observed** on 604, three games (one is catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1)). The header holds the cargo delivered and the people delivered totals ([script-states.md](script-states.md#counters-and-achievements) says what they are) as two consecutive `u64`, cargo first, and the pair appears twice. Each copy equalled the achievements counters in all three saves, which were made with the game paused. Both copies come after the preview image. The first sits in a run of `u64` just before the text rows of the company score points ("%d Point(s) for Company Value" and the rows after it); the second sits just before the mod list and the resources. In the one game where the first run was read, five other `u64` came before the pair and two after it; they were not identified.
+
+Find the pair by searching the header for the 16 bytes of the two numbers (read them from the bottom bar or the achievements state), never by offset.
+
+## Evidence and tests
+
 ### The two flags
 
 The flag before the preview and the u8 `flag` after `mission, kind` always hold the same value. **Observed** on 599 to 604 in 182 saves: none differ. Neither says anything about the preview.
@@ -61,14 +86,7 @@ Each installed mod's `mod.json` can carry `cosmetic` (true in 25 of 320 mods ins
 
 **Open:** what else sets it to 0 besides a non-cosmetic mod (a cheat such as a hand-edited balance, for one). Whether a cosmetic mod's name is checked against the installed copy or the saved list at save time was not tested. The tools keep the key `flag_before_preview`, a name from before the meaning was known.
 
-## Settings
-
-The params entry with the empty key is a flat Lua table: one layer, with the dotted names stored as the keys (**Observed** on 599 to 604, 22 catalog saves and ours). Keys include `isMapEditor`, `map.size`, `advancedOptions.*` and `townConfig.*`.
-
-- `isMapEditor` is `true` in map editor saves. See [editor-saves.md](editor-saves.md).
-- How a value is stored (its place in the option list), the option lists, the difficulty presets and how a load rewrites them are in [settings.md](settings.md).
-
-## Counts the load dialog shows
+### Counts the load dialog shows
 
 **Observed** on 604, one game (the [Small subarctic game](test-games.md#small-subarctic-game); five saves, three of them one purchase apart). The Load Game screen showed 22 stations, 11 lines and 88 vehicles for one of them. Positions are in the order the fields are read, counting from 0:
 
@@ -86,13 +104,7 @@ The game total on screen is the sum of the first two rows, not one stored number
 
 **A swap in one paused session** (**Observed**, same game, saves `1958` and `1959` at the same clock): seven old horse carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) sold and seven trucks bought. The road vehicle count stayed 83. The first of the six leading `i64` rose by the net spend (1,600,728 to 3,850,045, +2,249,317), the sixth fell by the same (2,446,422 to 197,105) and the header money fell by it. The net is the purchases less the sales ([vehicle-sale-bookings.md](vehicle-sale-bookings.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604)). One small number changed by one, the last of the four numbers `save_header.py` prints as `stats3` (11 to 12); nothing else in the header did; what it counts is **Open**.
 
-## The delivered totals in the header
-
-**Observed** on 604, three games (one is catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1)). The header holds the cargo delivered and the people delivered totals ([script-states.md](script-states.md#counters-and-achievements) says what they are) as two consecutive `u64`, cargo first, and the pair appears twice. Each copy equalled the achievements counters in all three saves, which were made with the game paused. Both copies come after the preview image. The first sits in a run of `u64` just before the text rows of the company score points ("%d Point(s) for Company Value" and the rows after it); the second sits just before the mod list and the resources. In the one game where the first run was read, five other `u64` came before the pair and two after it; they were not identified.
-
-Find the pair by searching the header for the 16 bytes of the two numbers (read them from the bottom bar or the achievements state), never by offset.
-
-## Money in the header
+### Money in the header
 
 **Observed** on 604: in six saves of one game the header money equalled the Account figure in the game exactly, so the lag below does not always show. In one of them the account was -2,598,471, so a negative header value can be the true balance.
 

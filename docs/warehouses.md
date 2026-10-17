@@ -2,6 +2,17 @@
 
 Each warehouse is a construction record with a list of modules, and each module holds one cargo slot. Checked on 604, one save: catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (subarctic, start year 1900) in a later manual save, compared with the game's warehouse window and build toolbar tooltips. Labels are **Observed** (one save) unless marked.
 
+## In short
+
+All 604; the record was read in two games and a slot filter in a re-save of a third.
+
+- **A warehouse is one construction record (`warehouses/warehouse.con`) with a Lua table of named values, and each module in `modules` is one cargo slot (Observed, 38 and 23 warehouses).** Module types are `wh_bulk`, `wh_flatbed`, `wh_goods`, `wh_liquid` and once `wh_universal`; the window's "Specialization" is the module type, and a record holds 1 to 15 modules.
+- **Capacity is 500 times the module count and the yearly upkeep is the sum over the modules (Observed, four warehouses; the per-module price depends on the date, [inflation.md](inflation.md#upkeep-and-prices-at-the-1920-step)).** A universal module costs half of a specialized one.
+- **Which cargo a module is set to is not always in the record (Observed).** The first game's records had `tagToCargoType`; the second game's records had none. A player-set slot filter adds a pair to `tagToCargoType` (module key to cargo path), in ascending key order, and it survives a load and re-save. A slot the game claimed by use has no tag.
+- **A full set of goods modules blocks another goods cargo (Observed, one game):** plastic filled all three goods modules and the wool lines could not unload; a wool filter on one emptied slot fixed it.
+- **The stock levels and the yearly totals are not in the record;** they are differences of running totals ([statistics-lists.md](statistics-lists.md)). After "Discard All Cargo" the unloaded-minus-loaded stock overstates the real stock by the amount discarded.
+- **Open:** where the cargo a module is set to is kept in a record without `tagToCargoType`, what the module keys encode (packed two-part positions?), what the leading entity-id list holds, what `year` and `upgrade` are, and the claiming rule for an empty goods slot.
+
 ## The construction record
 
 - Each warehouse has a record that starts with the resource path `warehouses/warehouse.con`. The save had 38 of them, and 38 entries named `... Warehouse` in the names table ([entity-names.md](entity-names.md)), so it looks like one record per warehouse.
@@ -29,7 +40,13 @@ Each warehouse is a construction record with a list of modules, and each module 
 - The Warehouses tab (one row per warehouse, towns have several and share names) shows Stored, Capacity, Utilization and Upkeep. For the rows compared with a record, Capacity was 500 times the module count and Upkeep $250,000 times the module count: a one-module record (a bulk coal module) read 500 and $250,000, two flatbed modules (steel and sheet metal) 1,000 and $500,000, six goods and bulk modules 3,000 and $1,500,000, and the 15-module warehouse 7,500 and $3,750,000. **Observed**, four warehouses. Stored is the sum of the slots: a six-slot warehouse with 11, 1, 11, 40, 2 and 52 showed 117.
 - Noise and pollution on the tooltips: Universal 20 and 25, the specialized ones 20 and 50.
 
-## A second game: records without cargo tags
+## Not found
+
+The stock levels in each slot and the yearly incoming and outgoing totals are not in this record. They are not stored as plain numbers elsewhere either: a stock is the difference of two running totals and the yearly bars are differences of the same totals, see [statistics-lists.md](statistics-lists.md). Searches that failed first are in [entity-stats.md](entity-stats.md).
+
+## Evidence and tests
+
+### A second game: records without cargo tags
 
 Checked on 604, catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) (temperate, European names, start year 1900, map 11264 x 22528 m, no mods, shown as 18 February 1937) in a paused re-save, against the whole Warehouses tab (23 rows). **Observed**, one game.
 
@@ -41,11 +58,11 @@ Checked on 604, catalog save [6425796](https://mod.io/g/transportfever3/m/mynews
 - Upkeep per specialized module was $37,500 here (1937) against $250,000 in the first game (2000), a factor of 6.7. The two games' settings differ (see [settings.md](settings.md)): `infrastructureMaintenanceScale` was 1 here (50%) and 3 in the first game (100%), which would account for a factor of 2 if warehouse upkeep follows that setting, leaving 3.3. Inflation was Low here and Normal in the first game, but that option only cuts income by rank ([inflation.md](inflation.md#the-income-multiplier)), so it does not touch upkeep.
 - **The date explains the remaining 3.3** (**Observed**, 604). In a third game the warehouse read $50,000 in 1919 and $75,000 on 1 January 1920, and 50,000 per specialized module makes both figures here exact. The table, the readings and what was not checked are in [inflation.md](inflation.md#upkeep-and-prices-at-the-1920-step).
 
-## A full goods space blocks another goods cargo (604, Observed, one game)
+### A full goods space blocks another goods cargo (604, Observed, one game)
 
 In catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) a warehouse with three goods modules (500 each) held plastic only, 1,500 of 1,500 in the window, and the wool lines that deliver to it could not unload. The warehouse's statistics group ([statistics-lists.md](statistics-lists.md#stock--unloaded-minus-loaded)) showed how it came about: plastic stock cycled between 964 and 1,012 for years (two modules' worth), wool went in and out of the third (stock 0), and a few hundred thousand clock units after the last wool left, plastic passed 1,000 and went on to 1,500. The game then reported, for the wool line, that a cargo "cannot be unloaded anywhere" ([notifications.md](notifications.md#params-by-type)). So a goods module with no stock seems to be claimed by whichever goods cargo arrives next, and a full set of modules leaves other goods nowhere to go. The claiming rule itself is **Open**; the player can stop it with a slot filter, below. The worked reading is in [analysis-examples/clothes-train2-supply-chain-starvation-6425796.md](analysis-examples/clothes-train2-supply-chain-starvation-6425796.md).
 
-## A slot filter is saved as a tag (604, Observed, one game)
+### A slot filter is saved as a tag (604, Observed, one game)
 
 In a re-save of the same game ([6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), loaded in the game and saved the same day) the player used "Discard All Cargo" on one of that warehouse's three full plastic modules, which left an empty goods slot with a filter icon. Clicking the slot opened a row of 13 goods icons to pick one cargo from. The player chose `wool` and saved.
 
@@ -58,7 +75,3 @@ In a re-save of the same game ([6425796](https://mod.io/g/transportfever3/m/myne
 - **After a run of 240,800 clock units from the filter saves (604, Observed, one game).** The warehouse group's wool lists went to 1,377 unloaded and 1,373 loaded: 53 in and 61 out, so wool now passes through the warehouse and the filtered slot holds 4. The plastic lists read 4,944 and 3,444, 1,500 minus the discarded 500 is 1,000, exactly the two plastic slots' capacity, while the wool slot had about 490 free; so plastic did not spill into the filtered slot (the window itself was not read in this save). The tags were unchanged.
 - **A longer run (autosave at clock 95,447,200, 1.05 million units after the filter saves).** Wool lists 1,507 unloaded and 1,489 loaded (stock 18; the window, read a little later, showed 20 of 500, planks 276 as the lists say). Plastic 5,016 and 3,540, so 976 after the 500 discard, and the window showed 1,000 of 1,000 plastic with the wool slot at 20 of 500: plastic filled its two slots and stayed at the cap while about 480 wool-slot places were free. The last plastic unloaded was 227,000 units before the save while plastic loads went on, so plastic stopped entering once full (**Observed**, one game; whether it waited outside is not read).
 - **Line warnings.** Between the catalog save and the first re-save, at the same clock (94,328,800), the stored warning entries for the two wool lines were gone and other entries were stamped at that clock; whether the load, the discard or the filter caused it is not separable ([notifications.md](notifications.md#params-by-type) for the entry layout). The line windows read, at the autosave, "A cargo type cannot be unloaded anywhere, despite being loaded at stop 1" with Cargo Type Planks on Wool Zachod 1 (the entry from clock 80,402,400, cargo 13) and the same text for stop 2 with Cargo Type Meat on the five-cargo wool line (cargo 7, stamped 94,328,800), neither about wool. The player's guess at the planks one (the line was built by someone else): it once delivered planks to a saw mill it still drives past, and now runs only between the warehouse's truck stop and a wool farm, so its stop-1 planks configuration has no unloading stop (the line's stops were not read from the save, [lines.md](line-ids.md); not tested). A truck of the main wool line (Road Vehicle 256) raised a new `cargo_rtc_warning` 82,000 units after the filter save, so an unload problem was not gone for good. The player's reading is that a line's two stops are both unforced ("Force Unload All Cargo On Arrival" off, [lines.md](lines.md#the-stop-configuration-record)), so a problem at either end affects the whole line and its marker can last until every vehicle has run a circuit (not tested).
-
-## Not found
-
-The stock levels in each slot and the yearly incoming and outgoing totals are not in this record. They are not stored as plain numbers elsewhere either: a stock is the difference of two running totals and the yearly bars are differences of the same totals, see [statistics-lists.md](statistics-lists.md). Searches that failed first are in [entity-stats.md](entity-stats.md).
