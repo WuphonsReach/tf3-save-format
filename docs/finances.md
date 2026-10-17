@@ -13,7 +13,7 @@ Versions: 604 throughout (one catalog save and one new game); 585 and 601 were n
 - **Each tab row is the sum of the bookings in a few category bytes (Confirmed for the rows in [the table](#rows-against-the-booking-categories)).** Depots count under Infrastructure and warehouses have their own Investments row (Observed, one build). The tab's split of upkeep into roads and buildings has no field in the booking (Open).
 - **Old bookings are merged, so booking counts do not measure activity (Observed).** Beyond about a year before the save they are summed by month, much older ones by year. Where the cutoffs sit is Open.
 - **A sale is a positive booking in the vehicle acquisition category, one per vehicle (Observed).** The tab's vehicle row shows the net. Detail in [vehicle-sale-bookings.md](vehicle-sale-bookings.md).
-- **Income is booked as one booking per carrier, all at one time per delivery (Observed).** A line's window balance is its income minus its vehicles' running costs only. How a delivery's pay is split between carriers is Open.
+- **Income is booked as one booking per carrier, all at one time per delivery (Observed).** A line's window balance is its income minus its vehicles' running costs only. How a delivery's pay is split between carriers or lines is Open; players report a split by crow-flies distance per line ([leads](#leads-on-the-split-between-lines)).
 - **A new game starts with no bookings** (the catalog save started with a +4,000,000 booking, so this varies; Observed). Anything built or sold while the game is paused is booked at the paused tick (Observed, two sessions).
 - **Not found:** a field for the tab's roads/buildings split, the cause of small price differences for one model, and whether the line-balance rule holds with several lines per carrier.
 
@@ -59,6 +59,16 @@ Versions: 604 throughout (one catalog save and one new game); 585 and 601 were n
 ## The balance history run
 
 **Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.
+
+## Leads on the split between lines
+
+Players on the Transport Fever subreddit (October 2026 thread on a loss-making city distribution line) say a good is paid for only once it reaches its final consumer, and then every line that carried it gets a share. Their guesses at the share, none read from a save (all **Open**):
+
+- **Straight-line distance per line.** The pay is divided in proportion to how far each line moved the good as the crow flies. A line whose leg runs sideways to the overall route moves it almost nowhere and earns almost nothing (one player's reading).
+- **The projection of each leg onto the base line (our reading of the above).** Draw one line from the source to the final consumer; each line's share is how far its leg's displacement reaches along that line, as a part of the base distance. A sideways leg scores near zero, though its own straight-line length is large, and a backwards leg would score negative or zero. Legs chained from source to consumer have projections that sum to the base distance, so the shares need no scaling. The source may be the producer or the first station.
+- **Time on each vehicle**, or **distance driven on each vehicle** along the path.
+
+What a test needs: a delivery that crosses two lines with a known, different crow-flies length and path length for each leg, and a journal read before and after. A third case needs a leg that carries the good away from the consumer (a detour via a station behind the source): its income shows whether the share goes negative, stops at zero or follows length. The 82% water share in [the first delivery](#loan-payments-and-income-over-ten-minutes) is the one measured split so far; checking it against the two legs' straight-line, path and time lengths would separate the guesses. The journal has no line field, so read the split from the line windows' income, with one line per carrier.
 
 ## Evidence and tests
 

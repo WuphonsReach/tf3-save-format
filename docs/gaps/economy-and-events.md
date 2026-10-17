@@ -39,6 +39,8 @@ Format of an entry: see [README.md](README.md).
 - **Which setting gives a start with no capital** (604) Home: [header.md](../header.md). Needs: new save from a game started with each money option.
 - **What the header's `stats` fields count** (604) The first and sixth of six leading `i64` moved by a vehicle swap's net spend; the last of the four small numbers (`stats3`) went from 11 to 12 in the same swap and its meaning is open. Home: [header.md](../header.md). Needs: existing saves, or a new save pair around one purchase.
 
+- **How a delivery's pay is split between lines** (604, one delivery) The one measured split was 82% to the water line; whether it follows straight-line distance, path length or time per leg is untested. Home: [finances.md](../finances.md#leads-on-the-split-between-lines). Needs: new save with a two-line delivery and known leg lengths, and one with a backwards leg.
+
 ## Inflation
 
 - **Whether the 568 and 585 saves lack the multiplier because the mechanism is newer or Inflation was None** Home: [inflation.md](../inflation.md). Needs: existing saves (read their header settings).
