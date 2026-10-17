@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
-Usage: mine_saves.py [--no-maps] OUT_DIR SAVE_OR_MODDIR [...]
+Usage: mine_saves.py [--no-maps] [--no-nice] OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
@@ -25,7 +25,9 @@ vector terrain, the roads and rails, the default grid and compass rose; docs/ter
 script's current defaults. `--no-maps` skips the pictures. A save the script cannot draw (it prints REFUSED or FAILED)
 gets no picture; the reason is kept in .map_state.json beside the summary. Pictures are other people's maps: they
 stay in OUT_DIR, which is never committed. The script needs about 2.5 GB of memory for a Giant map, so keep the
-parallel runs few (xargs -P4) on a small machine.
+parallel runs few (xargs -P4) on a small machine. The script lowers its own priority at start (nice 19, and idle I/O
+when `ionice` is installed; the map-drawing child processes inherit it) so a long run leaves the machine usable;
+`--no-nice` keeps the normal priority.
 
 Two things are rebuilt separately, each when the save changed or its own scripts did:
 - the summary, when the commit of mine_summary.py and the modules it imports (save_header.py, tf3save.py) differs
@@ -173,10 +175,21 @@ def move_to(old, new):
         up = os.path.dirname(up)
 
 
+def lower_priority():
+    """Nice 19 and idle I/O for this process (and the children it starts); best effort."""
+    try:
+        os.nice(19)
+        subprocess.run(["ionice", "-c3", "-p", str(os.getpid())], check=False, stderr=subprocess.DEVNULL)
+    except (OSError, AttributeError):
+        pass
+
+
 def main():
     argv = sys.argv[1:]
     maps = "--no-maps" not in argv
-    argv = [a for a in argv if a != "--no-maps"]
+    if "--no-nice" not in argv:
+        lower_priority()
+    argv = [a for a in argv if a not in ("--no-maps", "--no-nice")]
     out_dir, args = argv[0], argv[1:]
     os.makedirs(out_dir, exist_ok=True)
     done = skipped = failed = drawn = unmapped = 0
