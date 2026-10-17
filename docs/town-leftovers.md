@@ -1,6 +1,6 @@
 # Deleted towns' leftover roads
 
-What a deleted town leaves in a save, and the one marker found for it. Background and the first test (a town deleted in the map editor) are in [road-network.md](road-network.md#deleting-the-town). Labels are as in [README.md](README.md). Everything here is **Observed**, 604, one Giant editor map of 25 live towns; no other map was checked.
+What a deleted town leaves in a save, and the one marker found for it. Background and the first test (a town deleted in the map editor) are in [road-edits.md](road-edits.md#deleting-the-town). Labels are as in [README.md](README.md). Everything here is **Observed**, 604, one Giant editor map of 25 live towns; no other map was checked.
 
 ## What stays after a deletion
 

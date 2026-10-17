@@ -2,6 +2,20 @@
 
 Checked on 604.
 
+## In short
+
+All 604, except the regular-save conversion (checked once on one 34-town save).
+
+- **A map editor save has the same container, header layout and settings keys as a regular save; `isMapEditor` is `true` (Observed).** Header money is 0, the counter is low (or the residents of the towns drawn), the info table is empty, and the set of script states differs.
+- **Setting `isMapEditor` to `true` in a regular save and writing it into `save_maps/` makes the game list it under Load Custom Map and open it in the editor (Confirmed once).** It is one byte, so nothing moves. Money, journal and script states stay in the file.
+- **A blank template holds almost nothing: counter 0, a 5.0 MB stream, no towns, industries, street edges or parcels (Observed, one Tiny map).** The first save after drawing towns and industries is a different file in kind (13.9 MB, 147 edges, 1,474 parcels).
+- **A load and re-save is not a byte copy (Observed, once):** about 2.9 KB longer, with a counter of 8 going to 10 over 1.8 MB of records, 130 small records reordered, 17 ids added to the free-id list and a block of Lua tables added. Compare an edited save with a no-edit re-save first.
+- **A delete reaches the street-edge table only with the next new road that brings edges of its own (Observed, five deletes in two series, a farm counts, a tree, a rock and passing days do not).** The delete itself is recorded at once in a list beside the edge-addon names (a count and 21-byte entries), but what the ids name is Open.
+- **Drawing re-cuts the roads it meets, keeping their total length, and adds a path without taking any away (Observed);** a bypass leaves the old road in place. Tram roads are street types in the same table.
+- **A road drawn beside a farm can remove one of its fields (Observed, once);** find the fields by the string `::/industries/livestock_farm/field.module`.
+- **Editing leaves the strip and parcel tables alone for roads in open ground and deleted town-road pieces (Observed, the editor-map series).**
+- **Open:** what the 4-byte counter near the end of the stream counts, what the three growing lists and the delete-list ids hold, and what the editor does with a converted save's money and journal.
+
 ## Compared with regular saves
 
 - Same container, same header layout, same settings keys.
@@ -25,11 +39,13 @@ The game lists it under Load Custom Map and opens it in the map editor. The Town
 
 tf3-save-editor's CLI can make the change: `tf3se-cli settings SAVE --set isMapEditor=true -o NEW.sav`.
 
-## What editing in the map editor writes
+## Evidence and tests
 
-Observed on 604, one Giant temperate editor map, twelve saves one change apart. Road edits (a deleted segment, a split road, a new road, a new street type) are in the street-edge table and the tables around it: [road-network.md](road-network.md). Ticking Historic Preservation on three buildings changed three flag bytes and nothing else in their records ([town-buildings.md](editor-map-buildings.md)). The animal list was the same in the saves compared, and changed by one bird's height after a town was deleted, so its positions can serve as landmarks. Deleting a town left its roads, buildings and town record in the stream ([road-network.md](road-network.md#deleting-the-town)).
+### What editing in the map editor writes
 
-### Loading an editor save and saving it at once
+Observed on 604, one Giant temperate editor map, twelve saves one change apart. Road edits (a deleted segment, a split road, a new road, a new street type) are in the street-edge table and the tables around it: [road-network.md](road-network.md). Ticking Historic Preservation on three buildings changed three flag bytes and nothing else in their records ([town-buildings.md](editor-map-buildings.md)). The animal list was the same in the saves compared, and changed by one bird's height after a town was deleted, so its positions can serve as landmarks. Deleting a town left its roads, buildings and town record in the stream ([road-edits.md](road-edits.md#deleting-the-town)).
+
+#### Loading an editor save and saving it at once
 
 **Observed** on 604, once: a save loaded in the game and saved with no edit (`0648` from `0647` of the [Giant temperate editor game](test-games.md#giant-temperate-editor-game)). The header was the same in every field read (money 0, counter 1678, the 12 mods, the settings), the street-edge table and the animal list were identical, and the stream was 2,870 bytes longer. The differences were:
 
@@ -42,7 +58,7 @@ So a load and re-save is not a byte copy, and a diff between an edited save and 
 
 Editor maps played as a game (Save and Play, a flag flip): [editor-play.md](editor-play.md).
 
-## A blank template and a road test
+### A blank template and a road test
 
 **Observed** on 604, one Tiny tropical map ([Tiny flat editor game](test-games.md#tiny-flat-editor-game)): the template as the editor saves it, and two saves made from it by hand.
 
@@ -53,9 +69,9 @@ Editor maps played as a game (Save and Play, a flag flip): [editor-play.md](edit
 
 The edge layout and street types are in [road-network.md](road-network.md) and the glossary has the labels ([glossary.md](glossary.md)).
 
-### A delete reaches the edge table with the next new road
+#### A delete reaches the edge table with the next new road
 
-**Observed** on 604, one Tiny tropical editor map, eight saves one step apart after the road test above: a save with no edit, a deleted road piece, a three-edge wide road drawn, its middle edge deleted, a short isolated road drawn, then a save with no edit, a deleted piece (the isolated road) and a save with no edit. (Another map: [road-network.md](road-network.md#what-the-edits-did).)
+**Observed** on 604, one Tiny tropical editor map, eight saves one step apart after the road test above: a save with no edit, a deleted road piece, a three-edge wide road drawn, its middle edge deleted, a short isolated road drawn, then a save with no edit, a deleted piece (the isolated road) and a save with no edit. (Another map: [road-edits.md](road-edits.md#what-the-edits-did).)
 
 - **A no-edit re-save differs from its parent in the preview and about 13 small places.** The stream length was the same; the first 691 KB (the preview picture, 640 x 360 x 3 bytes) changed and under 200 other bytes in about a dozen short runs. The street-edge and parcel tables were identical.
 - **A deleted road piece was still in the street-edge table in the save made seconds after the delete.** Three deletes (a piece of a 90 m town road, one of three 86 m wide-road edges, and the 34 m isolated road) had gone from the screen when the save was made, yet each edge table equalled its parent's. The first two edges went from the table in the save that also held the next new road. After the third delete, two saves (the second with no edit) still held the edge, so a save alone does not clear it; whether the next road drawn anywhere does is the likeliest reading, as both clears came with a road drawn 50 m or more from the deleted piece. A tree and passing days did not clear it, a farm with its own roads did ([below](#a-running-clock-a-tree-a-farm-and-a-rock)).
@@ -68,7 +84,7 @@ The edge layout and street types are in [road-network.md](road-network.md) and t
 - **The parcel table did not change in any of the eight saves.** A deleted piece of a town road and roads in open ground touched no parcel.
 - **Each edit made the stream 56 to 74 KB longer, in three places** (found by matching 48-byte anchors between neighbouring saves; the three saves after the first delete show the same three). First the ground-texture polygon list (`*.gtex` names, [road-network.md](road-network.md#the-other-tables-a-road-edit-touches)), 13.6 to 15.7 KB: a delete added the same 13,559 bytes of records twice, for two different edges (the first at a 90 m piece, the second at an 86 m one), and a drawn road 14.6 to 15.7 KB. Then two unnamed lists of binary floats, one about 7 KB at roughly 40 per cent of the stream and one 37 to 50 KB at 85 to 95 per cent, each growing in every edit. What they hold is **Open**. A save with no edit grew none of them, and the third delete (the isolated road) changed none of the three: its saves held the same polygon records and the same stream length to within 31 bytes.
 
-### Standalone and attached roads, tram types, a road re-cut
+#### Standalone and attached roads, tram types, a road re-cut
 
 **Observed** on 604, the same map, six more saves one step apart (draw an 86 m standalone road, delete it, draw a 153 m road across two roads, draw a 71 m road off it, delete the 71 m road, a save with no edit); the thumbnails of the saves show each step.
 
@@ -80,7 +96,7 @@ The edge layout and street types are in [road-network.md](road-network.md) and t
 - **Stream sizes in these six saves:** +14.8 KB (standalone road), -31 B (its delete), -27.0 KB (the 153 m road drawn, the 86 m road flushed), +54.5 KB (the 71 m road, the largest step so far) and -7.1 KB (its delete), then 0.
 - **Parcels:** none changed in any of the six.
 
-### A running clock, a tree, a farm and a rock
+#### A running clock, a tree, a farm and a rock
 
 **Observed** on 604, the same map, eight more saves (an autosave, then `1953` to `1959`: a delete of a standalone road, an exotic tree, a small livestock farm, a curved road, a rock raised 50 units above the ground, the rock deleted, a fruit tree). The editor map was now running: the autosave after `1952` held play speed 1 and the date 1900-03-15, and each later save had a later day (to 1900-05-17), so the stream differs by the days passed as well as by the edit, and the byte counts below are not clean.
 

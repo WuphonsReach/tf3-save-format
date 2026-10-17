@@ -2,29 +2,16 @@
 
 What a save holds of the generated map, found by comparing saves of one seed. All of it is **Observed** on format 604 (Tiny 1 : 4, a 2 x 6 km map, start year 1900), from one save per case, so none of it is **Confirmed**. Sizes are counted from the end of the header (see [header.md](header.md)) to the end of the stream. The terrain record and the heightmap are described [below](#the-terrain-record). The animals have a note of their own, [animals.md](animals.md).
 
-## What was compared
+## In short
 
-The cases are the [Tiny desert games](test-games.md#tiny-desert-games) of seed `ktb5aEVwZg`.
+All 604, Tiny 1 : 4 (2048 x 6144 m) unless a line says otherwise; one save per case, so nothing here is Confirmed.
 
-| Case | What changed from the one before |
-|---|---|
-| A | New game, seed `ktb5aEVwZg`, Lakes Medium, Rivers Scattered, Mountains Scattered, no mods. Saved at once. |
-| B | The same seed and settings again. The game listed one mod (Deluxe Upgrade), so the mod list differs from A. |
-| C | B with only Mountains moved to Sparse. |
-| D | C with only Mountains moved to Packed. |
-| E | D loaded and run to 12 Jan 1900 (4000 ms per day, 11 days), then saved paused. |
-| F | A new game as in B, but Mountains Dense (between Scattered and Packed on the slider). |
-| G | F again with only Lakes moved from Medium to Packed, saved at once. |
-
-The header differs between cases only in the save counter and, between A and B, the mod list. The sliders do not show up there, so they are not stored in the header.
-
-## Results
-
-- **The same seed and sliders give the same bulk (A against B).** About 92% of the body matches byte for byte, including every large block. It shifts by a few KB at several points, where variable-length data differs.
-- **A moved slider changes nearly all of it (B against C).** The first 283 KB after the header are identical. After that about 88% of the bytes differ over the next 6.2 MB, a stretch that has the same length in both saves. Later stretches shift by +207 KB and +116 KB, so C is 354 KB longer than B.
-- **The body length does not follow the slider (B, C, D, F).** The body is 14.99 MB for Sparse, 14.64 MB for Scattered, 19.31 MB for Dense and 16.96 MB for Packed. F against D, and F against B, differ from byte 282,774 on as well (98% of the 4 KB blocks differ in both). D against C first differs at the same place as B against C (byte 282,774), then shifts by +149 KB near 6.7 MB, -48 KB, -441 KB near 7.1 MB, and +2.0 MB twice from 13.1 MB.
-- **Lakes did nothing on a desert map (F against G).** The headers are identical, the bodies have the same length, and 35 of 4,714 4 KB blocks differ (35,937 bytes in 153 short stretches, 100 KB of them at the very end of the data; none in the four simulation arrays). The terrain, the animals and everything between are identical. The New Game preview showed no lakes at Packed either. One pair, **Observed**.
-- **Time changes only simulation state (D against E).** 258 of 4,140 4 KB blocks differ. They are one stretch of about 800 KB (four arrays of about 200 KB of tiny floats, around 1e-15, with long runs of one value) and six stretches of 16 to 33 KB. The same four arrays are the only large difference between A and B. The rest, terrain included, is identical.
+- **The terrain record has the fields of the API's `Terrain` record in order: `size` in 256 m tiles, `baseLevels` 6, `baseResolution` (4.0, 4.0, 0.05), `highLevels` 8, `offsetZ` -100, `waterLevel` 0 and a vector of named data maps (Observed, 18 saves).** Find it by the resolution bytes `00 00 80 40 00 00 80 40 cd cc 4c 3d`. The maps are named by the climate's generator (`river_mask`, `lakes`, `mountains`, `biome0` to `biome4` and others), one value per 32 m.
+- **The heightmap is a `u16` grid per 256 m tile, 65 x 65 points on a 4 m grid, tiles in rows along x (Observed, 18 saves and 12 catalog saves from 568 to 604).** Neighbouring tiles repeat their shared edge exactly (352 of 352 matches). z = `offsetZ` + v x 0.05 m, so v = 2000 is the water level; grid point (c, r) is at x = -1024 + 4c, y = -3072 + 4r on a Tiny map, the centre being 0, 0, not flipped. The count times the tile size lands on the next structure.
+- **The sliders are not stored in the save;** only their effect in the generated data is (Observed on desert, temperate and subarctic). The same seed and sliders give the same bulk (92% of bytes equal), and a moved slider changes nearly all of it. Mountains Scattered against Sparse changes 45% of the heights.
+- **Lakes did nothing on a desert map and changed 10.8 KB of data on a temperate one (Observed, one pair each);** what the extra bytes are is Open. Time changes only simulation state (four arrays of tiny floats).
+- **Mapzilla's generators add `mz_*` slider keys to the game's user settings, and installing the mod added nothing to the save (Observed, one save).**
+- **Open:** what `baseLevels` and `highLevels` mean, the float-like records 1.5 to 6.1 MB after the header, the list after the heightmap (a 78-byte record, 2 to 38 times), what each data map does, and whether the seed alone at default sliders reproduces the New Game map.
 
 ## The terrain record
 
@@ -72,31 +59,6 @@ Find it by `0e 00 00 00`, 12 zero bytes, the count and the first length, `0e 00 
 
 Formats 3 and 4 give the same grid: tropical saves store `map.format` 3 and the others 4, both 8 x 24 tiles of 2048 x 6144 m (**Observed**, Tiny; a Small 1 : 3 map has 18 x 54 tiles, see [below](#a-small-subarctic-map)). Format 5 differs: 6 x 30 tiles, 1536 x 7680 m ([map-sizes.md](map-sizes.md#tiny)).
 
-## Drawing the map
-
-[tools/terrain_map.py](../tools/terrain_map.py) turns the terrain record and heightmap above into a picture (water below `waterLevel`, coloured height bands and height lines) with the road and rail edges of [road-network.md](road-network.md) on top. The default is an SVG with everything as vector paths in map metres: the terrain as water, bands and height lines, the network a path per edge in a layer per type (with data attributes). Edges with an end node in the save's free-id list, a deleted town's or road's leftovers, are left out unless `--keep-dead` is given ([town-leftovers.md](town-leftovers.md), 604). `--raster` draws the terrain as the shaded PNG it used before (height ramp, hill shading), embedded in the SVG, and `--png` gives one flat shaded PNG. The picture is north up, in the game's own frame (up is +y, right is +x) unless `--north sun` turns the grid a quarter turn ([compass.md](compass.md)). **Observed**: it found the heightmap and gave a sensible picture in one catalog save of each of 568, 585, 599, 601 and 604 (mod.io 6090964, 6187236, 6386889, 6401182, 6415512) and in our own 604 saves. The map sizes seen are in [map-sizes.md](map-sizes.md); the tile count was the metres divided by 256 each time. The test of the frame is the roads: in a 568 map of 14,336 m a side (mod.io 6098954), towns lie on land, roads keep out of the lakes and follow valleys, and the orientation of [the layout above](#the-heightmap) (x right, y up, not flipped) put them there. At the default 4 m per pixel a Small map is 1,153 x 3,457 pixels. In a flat PNG a station yard or turntable is unreadable at 8 m per pixel (a turntable's 20 stalls merge into one red blob), and needs `--crop X,Y,R` with `--mpp 2` or `1`; on a crop `--mpp` below 4 only interpolates the terrain. Each road and track is drawn as wide as its template's profile, in metres ([profile widths](street-templates.md#profile-widths), read from the install when the script runs; a small town street is 16 m, a track 4 m, and 16 and 4 for a type it cannot find). So a close crop shows them at their size, and a picture of a whole map shows a track as a hairline unless `--min-width` raises the floor. The SVG also carries a compass rose in a layer of its own, lower right unless `--rose` says otherwise, whose north arrow follows `--north` ([compass.md](compass.md)). `--grid N` adds a layer of crosses every N metres of map x and y, with a line of dots and a label at each multiple of 1000 m (the map's centre is 0, 0, x to the right and y up), to read a place's coordinates for `--crop`; `--grid-lines dots|faint` also draws the minor lines, `none` leaves out the dotted lines. In the SVG the network is vector and stays sharp at any zoom, so only the terrain behind it blurs. The vector terrain (**Observed**, one catalog save each of 604 and our own, 604) is the water below `waterLevel` as one even-odd shape (rivers included, since the game carves them below the water level, so one cut at the water level draws lakes, sea and rivers, and an island is a ring inside a ring), a filled band for every 20 m above the water (`--contour`), painted from the lowest up with a height ramp's colours, and a height line at each band's edge, every fifth heavier. It has no hill shading, so relief reads from the bands and lines and not from the lit slopes of the PNG, and the file is small: a 14,336 m map at 8 m is 0.18 MB without bands and 0.34 MB with them, and the 20 x 41 km Giant map 0.6 MB, where the raster SVG of that map is 81 MB. The lines are cut from the grid by linear interpolation along the cell edges, so a point on a line is at the stated height to within the thinning tolerance, and on a crop the cut uses the 4 m grid whatever `--mpp` is. The SVG also records its placement in a `<metadata>` element (map size, metres per pixel, the map point at the top-left corner, the covered x and y range, which way north is drawn, the crop), and a flat PNG carries the same record as JSON in a text chunk, so a compass word read off a picture ("the north building") can be tied to its frame, described in [tools/README.md](../tools/README.md). A labelled close-up (save 6425796, 604): [sample SVG](samples/terrain-map-area-labelled-6425796.svg).
-
-A map drawn with only part of its roads and rails, the rest broken into dashes with pieces missing, means the edge reader stopped early: in a 604 map with a 946 MB stream it read 8,043 of 21,154 records until its fixed 16 MiB limit was removed ([road-network.md](road-network.md#the-street-edge-table)).
-
-## A Small subarctic map
-
-One new game on the stock Subarctic generator, **Small** 1 : 3 (4608 x 13824 m), saved at once (the first save of the [Small subarctic game](test-games.md#small-subarctic-game)), format 604, Normal difficulty, seven mods. The sliders were Water Small, Swamps Medium and Mountains Dense, the seed was typed, and every value was read back against the New Game screen. **Observed**, one save, so it adds sizes and names but cannot tie a slider to a map.
-
-- **The sliders are not stored.** The seed occurs once in the stream, in the header. None of the slider keys (`water`, `swamps`, `mountains`) occurs in it as a string of its own (`water` appears only inside longer words, `swamps` and `mountains` not at all). The generator file `climates/subarctic/subarctic.gen.lua` (in `climates.zip`) lists exactly these three, each with five steps and the third as default; Water runs Very Small to Very Large, the other two Sparse to Packed. The picks were steps 2, 3 and 4. Their effect is only in the generated data below, as on the other climates.
-- **The terrain record** has the fields of [the table above](#the-terrain-record), starting 26.7 MB after the header: `size` 18 x 54 (4608 / 256 and 13824 / 256), `baseLevels` 6, the usual resolution, `highLevels` 8, `offsetZ` -100 and `waterLevel` 0. The eight data maps are 144 x 432 (one value per 32 m), as 4608 / 32 by 13824 / 32. Their names, in stored order: `forest_mask`, `biome3`, `biome1`, `biome4`, `biome0`, `mountain_mask`, `swamp_mask`, `biome2`. So this climate has a mask for mountains and one for swamps but none for water.
-- **Their values.** All stay between 0 and 1 (`swamp_mask` up to 1.005). `mountain_mask` is non-zero in 38% of the cells, `swamp_mask` in 9.5%, `forest_mask` in 43%.
-- **The heightmap** follows the layout of [the heightmap section](#the-heightmap) with 972 tiles (18 x 54) of 65 x 65 `u16`. Its count and first length are `cc 03 00 00 81 10 00 00`; it starts 54.4 MB after the header and ends 2.5 MB before the end of the stream. Heights run from -100 m (value 0, deep water) to 299.5 m; the median is 44 m, the 10th percentile -3 m and the 90th 197 m, and 11.7% of the points are below the water level (value 2000).
-- **What the next saves would show.** Which map each slider moves needs three saves with this seed, each changing one slider. The Water slider is the unclear one, since no map carries its name.
-
-## Lakes on a temperate map
-
-Two new games on the stock Temperate generator (see below), seed `ktb5aEVwZg`, Tiny 1 : 4, Rivers Scattered, Mountains Dense, European names, saved at once: one with Lakes Sparse, one with Lakes Packed. **Observed**, 604, one pair.
-
-- The headers are identical, but the body is 10,784 bytes longer with Lakes Packed (13,976,271 against 13,987,055).
-- 257 of 3,412 4 KB blocks differ, against 35 for the same change on a desert map. About 195 of them are the simulation arrays (the stretch near 0.67 to 1.48 MB), which also differ on a desert map when the two saves are made at different moments, so they do not count as an effect of Lakes.
-- The rest: a stretch of about 650 KB (3.48 to 4.12 MB) that starts with one record whose count changes from 2 to 1 and then runs shifted by the length change, so most of its bytes differ, and short differences (55 bytes each, about 150 bytes apart) in the list of 78 animals that starts 283 KB after the header, where an animal's position moved by under a metre and its direction changed.
-- So Lakes does something on a temperate map (it changes how much data the save holds) and nothing on a desert map. The heightmap and the terrain data maps are identical in the two saves (see [below](#the-terrain-record)), so the extra 10.8 KB are not terrain shape; what they are is **Open**.
-
 ## Generators and the Mapzilla mod
 
 On a temperate New Game screen a **Generator** dropdown appears (not on the desert screen). It comes from the Mapzilla mod (mod.io 6423494, source <https://github.com/AmbachtIT/mapzilla>), which ships generator files of its own. Read from the mod's files, not from a save: its `mod.json` has `"cosmetic": true` and `"autoActivate": false`, it adds a generator under `climates/mapzilla/` whose climate is the stock `temperate.clima`, and that generator has sliders keyed `mz_layout` (Layout: Random, Single shore, Island, Inland sea, Isthmus, Strait, Peninsula, Bay), `mz_coast` and others. So the `mz_*` keys that the game's user settings file keeps for the New Game dialog belong to this mod, not to the stock generators. The other mod notes are in [mods.md](mods.md).
@@ -107,6 +69,51 @@ A game made with the stock **Temperate** generator while the mod was installed (
 
 - What `baseLevels` (6) and `highLevels` (8) mean, and whether the heightmap has coarser levels stored elsewhere. 1.5 MB to 6.1 MB after the header is still float-like records (periods of 24, 72 and 73 bytes) of unknown purpose.
 - The list that follows the heightmap. It starts with the tile count and a small `u32`, then (2 to 38 times, in a few saves none) a 78-byte record: `f32 f32`, three `u32` from 0 to 360, four `f32` near 1.0, fixed bytes; the rest is mixed. **Observed**, 568 to 604, a pattern scan. It is not one fixed record per tile. That it is the API's `TerrainTileBrush` is a guess.
-- Whether the tile count is always the map's metres divided by 256 on sizes not seen (it held on every size in [Drawing the map](#drawing-the-map)).
+- Whether the tile count is always the map's metres divided by 256 on sizes not seen (it held on every size in [Drawing the map](terrain-drawing.md#drawing-the-map)).
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
 - Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.
+
+## Evidence and tests
+
+### What was compared
+
+The cases are the [Tiny desert games](test-games.md#tiny-desert-games) of seed `ktb5aEVwZg`.
+
+| Case | What changed from the one before |
+|---|---|
+| A | New game, seed `ktb5aEVwZg`, Lakes Medium, Rivers Scattered, Mountains Scattered, no mods. Saved at once. |
+| B | The same seed and settings again. The game listed one mod (Deluxe Upgrade), so the mod list differs from A. |
+| C | B with only Mountains moved to Sparse. |
+| D | C with only Mountains moved to Packed. |
+| E | D loaded and run to 12 Jan 1900 (4000 ms per day, 11 days), then saved paused. |
+| F | A new game as in B, but Mountains Dense (between Scattered and Packed on the slider). |
+| G | F again with only Lakes moved from Medium to Packed, saved at once. |
+
+The header differs between cases only in the save counter and, between A and B, the mod list. The sliders do not show up there, so they are not stored in the header.
+
+### Results
+
+- **The same seed and sliders give the same bulk (A against B).** About 92% of the body matches byte for byte, including every large block. It shifts by a few KB at several points, where variable-length data differs.
+- **A moved slider changes nearly all of it (B against C).** The first 283 KB after the header are identical. After that about 88% of the bytes differ over the next 6.2 MB, a stretch that has the same length in both saves. Later stretches shift by +207 KB and +116 KB, so C is 354 KB longer than B.
+- **The body length does not follow the slider (B, C, D, F).** The body is 14.99 MB for Sparse, 14.64 MB for Scattered, 19.31 MB for Dense and 16.96 MB for Packed. F against D, and F against B, differ from byte 282,774 on as well (98% of the 4 KB blocks differ in both). D against C first differs at the same place as B against C (byte 282,774), then shifts by +149 KB near 6.7 MB, -48 KB, -441 KB near 7.1 MB, and +2.0 MB twice from 13.1 MB.
+- **Lakes did nothing on a desert map (F against G).** The headers are identical, the bodies have the same length, and 35 of 4,714 4 KB blocks differ (35,937 bytes in 153 short stretches, 100 KB of them at the very end of the data; none in the four simulation arrays). The terrain, the animals and everything between are identical. The New Game preview showed no lakes at Packed either. One pair, **Observed**.
+- **Time changes only simulation state (D against E).** 258 of 4,140 4 KB blocks differ. They are one stretch of about 800 KB (four arrays of about 200 KB of tiny floats, around 1e-15, with long runs of one value) and six stretches of 16 to 33 KB. The same four arrays are the only large difference between A and B. The rest, terrain included, is identical.
+
+### A Small subarctic map
+
+One new game on the stock Subarctic generator, **Small** 1 : 3 (4608 x 13824 m), saved at once (the first save of the [Small subarctic game](test-games.md#small-subarctic-game)), format 604, Normal difficulty, seven mods. The sliders were Water Small, Swamps Medium and Mountains Dense, the seed was typed, and every value was read back against the New Game screen. **Observed**, one save, so it adds sizes and names but cannot tie a slider to a map.
+
+- **The sliders are not stored.** The seed occurs once in the stream, in the header. None of the slider keys (`water`, `swamps`, `mountains`) occurs in it as a string of its own (`water` appears only inside longer words, `swamps` and `mountains` not at all). The generator file `climates/subarctic/subarctic.gen.lua` (in `climates.zip`) lists exactly these three, each with five steps and the third as default; Water runs Very Small to Very Large, the other two Sparse to Packed. The picks were steps 2, 3 and 4. Their effect is only in the generated data below, as on the other climates.
+- **The terrain record** has the fields of [the table above](#the-terrain-record), starting 26.7 MB after the header: `size` 18 x 54 (4608 / 256 and 13824 / 256), `baseLevels` 6, the usual resolution, `highLevels` 8, `offsetZ` -100 and `waterLevel` 0. The eight data maps are 144 x 432 (one value per 32 m), as 4608 / 32 by 13824 / 32. Their names, in stored order: `forest_mask`, `biome3`, `biome1`, `biome4`, `biome0`, `mountain_mask`, `swamp_mask`, `biome2`. So this climate has a mask for mountains and one for swamps but none for water.
+- **Their values.** All stay between 0 and 1 (`swamp_mask` up to 1.005). `mountain_mask` is non-zero in 38% of the cells, `swamp_mask` in 9.5%, `forest_mask` in 43%.
+- **The heightmap** follows the layout of [the heightmap section](#the-heightmap) with 972 tiles (18 x 54) of 65 x 65 `u16`. Its count and first length are `cc 03 00 00 81 10 00 00`; it starts 54.4 MB after the header and ends 2.5 MB before the end of the stream. Heights run from -100 m (value 0, deep water) to 299.5 m; the median is 44 m, the 10th percentile -3 m and the 90th 197 m, and 11.7% of the points are below the water level (value 2000).
+- **What the next saves would show.** Which map each slider moves needs three saves with this seed, each changing one slider. The Water slider is the unclear one, since no map carries its name.
+
+### Lakes on a temperate map
+
+Two new games on the stock Temperate generator (see below), seed `ktb5aEVwZg`, Tiny 1 : 4, Rivers Scattered, Mountains Dense, European names, saved at once: one with Lakes Sparse, one with Lakes Packed. **Observed**, 604, one pair.
+
+- The headers are identical, but the body is 10,784 bytes longer with Lakes Packed (13,976,271 against 13,987,055).
+- 257 of 3,412 4 KB blocks differ, against 35 for the same change on a desert map. About 195 of them are the simulation arrays (the stretch near 0.67 to 1.48 MB), which also differ on a desert map when the two saves are made at different moments, so they do not count as an effect of Lakes.
+- The rest: a stretch of about 650 KB (3.48 to 4.12 MB) that starts with one record whose count changes from 2 to 1 and then runs shifted by the length change, so most of its bytes differ, and short differences (55 bytes each, about 150 bytes apart) in the list of 78 animals that starts 283 KB after the header, where an animal's position moved by under a metre and its direction changed.
+- So Lakes does something on a temperate map (it changes how much data the save holds) and nothing on a desert map. The heightmap and the terrain data maps are identical in the two saves (see [below](#the-terrain-record)), so the extra 10.8 KB are not terrain shape; what they are is **Open**.

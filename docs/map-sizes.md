@@ -2,6 +2,18 @@
 
 How the Map Size and Map Format options set the map's width and height in a save. Read from the header's width and height and the stored `map.size` and `map.format` of the mod.io catalog saves and our own. **Observed**, 599 to 604 for the settings; the sizes alone also fit on 568 and 585 (no settings stored there). Labels are defined in [README.md](README.md).
 
+## In short
+
+Versions: 599 to 604 for the settings; the sizes alone also fit 568 and 585.
+
+- **Each Map Size is a set area, and Map Format only changes the shape (Observed, 599 to 604).** Every side is a multiple of 512 m (so a whole number of 2-tile steps), and one area per size reproduces 28 of the 29 seen combinations when the width is `sqrt(area / n)` rounded to 512 m and the height is n times the width. This is a fit, not a read field.
+- **The areas that fit are about 15.5 km² for Tiny, 63 to 69 for Small, 126 to 133 for Medium, 199 to 213 for Large, 260 to 265 for Very Large, 409 to 426 for Huge and 818 to 831 for Gigantomaniac;** Megalomaniac has no single area (Open).
+- **The settings are 1-based positions in the lists of [settings.md](settings.md#the-options), and the header's width and height are in metres.** For a map's real size trust the header and the terrain record: 11 catalog played saves store a size or format that does not match their dimensions (Observed, 604, 601; why is Open).
+- **The Load Game dialog's "experimental" notice is drawn from the stored settings alone, not from the header (Confirmed, 604):** `map.size` 1 or 6 to 8, or `map.format` 4 or 5.
+- **Tiny 1 : 4 gives the 1 : 3 shape (2048 x 6144 m) and Tiny 1 : 5 follows the area rule (Observed);** why is Open.
+- **A save's file size follows the area class, about 28% of the decompressed stream.**
+- **Open:** the blank rows of the table (Small to Huge at 1 : 4 and 1 : 5, Megalomaniac 1 : 4), Megalomaniac's rounding, and why the saves above disagree with their settings.
+
 ## The rule
 
 **Observed (599 to 604):** each Map Size is a set area in km², and Map Format only changes the shape of that area. Take the 1:1 map of a size: its 1:2 and 1:3 maps hold about the same area, as a longer, narrower rectangle. The two are not exactly equal, because every side is a whole number of 256 m terrain tiles ([terrain.md](terrain.md#the-terrain-record)), so the area of one size differs by up to a few percent between formats.
@@ -69,7 +81,9 @@ All 40 combinations, in the order of the stored settings. [tools/map_size_tables
 
 Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578 km², 601, mod.io [6386596](https://mod.io/g/transportfever3/m/cargo-transfer)), Gigantomaniac, 12800 x 64000 m (819 km², 604, mod.io [6436516](https://mod.io/g/transportfever3/m/funnntimes)), and the Tiny one, 1536 x 7680 m ([below](#tiny)). The Tiny 1 : 4 row repeats the 1 : 3 shape, and Tiny 1 : 1 is the largest Tiny size ([below](#tiny)). The default Map Size is Medium and the default format 1 : 1 ([settings.md](settings.md#the-options)), which is 11264 x 11264 m.
 
-## Tiny
+## Evidence and tests
+
+### Tiny
 
 **Observed (604):** Tiny 1 : 3 and Tiny 1 : 4 both give 2048 x 6144 m (8 x 24 tiles), see [the terrain note](terrain.md#the-terrain-record); a second Tiny 1 : 4 game, made later the same day, stored format 4 and gave the same size, with 2.0 x 6.0 km on the New Game screen ([test-games.md](test-games.md#map-format-tests)). Tiny 1 : 1 gives 4096 x 4096 m (16 x 16 tiles, 16.8 km²), Tiny 1 : 2 gives 2560 x 5120 m (10 x 20 tiles, 13.1 km²) and Tiny 1 : 5 gives 1536 x 7680 m (6 x 30 tiles, 11.8 km²). The New Game screen's own size readout agreed with each save: 4.0 x 4.0 km with 1 : 1 selected, 2.5 x 5.0 km with 1 : 2, 2.0 x 6.0 km with 1 : 3 and 1 : 4, and 1.5 x 7.5 km with 1 : 5, so the shape comes from the game's setup and not from anything a save changes.
 
@@ -77,7 +91,7 @@ Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578
 - **Tiny 1 : 4 is the 1 : 3 shape.** The same area gives a 1 : 4 width of 3.8 steps, which rounds to 4 (2048 m), as seen. A 1 : 4 shape would then be 2048 x 8192 m; the save has 2048 x 6144 m. No 512 m multiple lies near 12.6 km² in the 1 : 4 shape (1536 x 6144 is 9.4 km², 2048 x 8192 is 16.8). Why the height is 3 times the width and not 4 is **Open**.
 - 2048 m is not a minimum width: the 1 : 5 map is 1536 m wide. The 1 : 5 area is 6% under the 1 : 3 one, within the tile rounding of the rule above.
 
-## Saves that disagree with their settings
+### Saves that disagree with their settings
 
 **Observed (604, 601):** Some catalog saves store a size or format that does not match their real dimensions. Every one so far is a played save: no catalog editor map disagrees with its settings. Each row below has the same columns as the table above up to the area, with the settings as stored and the dimensions as in the header. The next column names the table row that has those dimensions. In every case that row exists in the table above, so the dimensions are a normal size and the stored settings are the odd part. Mostly the stored size is smaller than the real one; in a few only the format differs. Whether these were made in the map editor, edited by hand, or had their settings rewritten on a load is **Open**. For a map's size, trust the header and the terrain record, not the stored settings.
 
@@ -95,18 +109,12 @@ Three 1 : 5 maps were seen apart from Tiny's: Megalomaniac, 10752 x 53760 m (578
 | 5 | 2 | Very Large | 1 : 2 | 16384 x 16384 | 268.4 | Very Large 1 : 1 | [Deutschland Map](https://mod.io/g/transportfever3/m/deutschland-map) (6440867) |
 | 8 | 2 | Gigantomaniac | 1 : 2 | 28672 x 28672 | 822.1 | Gigantomaniac 1 : 1 | [MAPA BRASIL](https://mod.io/g/transportfever3/m/mapa-brasil) (6433003) |
 
-## The experimental notice in the load dialog
+### The experimental notice in the load dialog
 
 **Confirmed (604):** the Load Game dialog shows a yellow line, "The map size is experimental.", for a save whose stored `map.size` is 1 (Tiny) or 6 to 8 (Huge, Megalomaniac, Gigantomaniac). It shows "The map format is experimental." for `map.format` 4 or 5, and one line naming both when both are out of range. It is not a separate flag in the header and not tied to the map editor: the game script that draws it (`gui/menu/savegame_react_util.tl` in `base/content/gui.zip`) compares the two stored settings with the range the desktop New Game options allow without the experimental map features: `map.size` 2 to 5 (Small to Very Large) and `map.format` 1 to 3. `base/mod.json` lists those two parameter sets, one without the tag `experimentalMapFeatures` and one with it. The header's width and height are not read.
 
 Eleven saves seen in the dialog agree with that rule: notice on Tiny 1 : 3 (a converted editor map, see [editor-saves.md](editor-play.md#a-converted-editor-map-loaded-as-a-played-game)) and Gigantomaniac 1 : 2; none on Small 1 : 3 (two saves), Medium 1 : 3 (two), Medium 1 : 1, Large 1 : 2, Very Large 1 : 1 and a Very Large 1 : 1 save with missing mods. **Open:** a save with `map.size` rewritten to 2 and a Tiny-sized terrain was not loaded, which would show that the width and height really are ignored; no 1 : 4 or 1 : 5 save was in the screenshots (the Tiny 1 : 5 save of the [map-format tests](test-games.md#map-format-tests) is kept, with a Tiny 1 : 2; a 1 : 4 one was made later: see the test games).
 
-## File size
+### File size
 
 A save's file size follows the area class (a log-log correlation of 0.88 between area and file size over all the saves read), then what is built. The file is about 28% of the decompressed stream (median; 9% to 46%). Within one size the spread is wide: 14336 x 14336 m saves run from 26 to 297 MB. A Tiny save is 4 to 6 MB, a Small one 14 to 41 MB (median 28), and the largest sizes 100 to 350 MB.
-
-## Open
-
-- The blank rows of the table above.
-- Why the saves above disagree with their settings.
-- Why Tiny 1 : 4 gives the 1 : 3 shape while Tiny 1 : 5 follows the area rule.
