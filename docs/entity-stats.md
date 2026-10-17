@@ -2,6 +2,17 @@
 
 What was looked for in the entity data and not found. Checked on 604, catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (paused on 17 April 2000, **A**) and a later manual save of the same game, still paused when screenshots of the game were taken (**B**). A failed search shows how the values are not stored, not where they are; the items that did show something carry a label. The figures were later found as differences of running totals, see [statistics-lists.md](statistics-lists.md); this note keeps what was tried before that.
 
+## In short
+
+This note is a log of searches that found nothing (Observed, 604, two saves of one game and later ones), kept so they are not repeated.
+
+- **Yearly figures, stocks and a ship's income are not stored as plain numbers** in any width or scale searched (u16 to u64, f32, f64, scaled by 10 to 1,000, forwards and reversed). The hits were chance, in dense runs of ids and counters.
+- **What they are instead (Confirmed elsewhere).** Yearly bars are differences of the running totals in the statistics lists, and a warehouse's stock is per cargo, not per module: [statistics-lists.md](statistics-lists.md).
+- **Method lessons.** Search for rare values (a large money figure) or several that must agree; small numbers and entity ids give many false hits.
+- **Open / not tried.** A map with one warehouse and nothing else, which would isolate the entity's data. Which entity a statistics list group belongs to is also open.
+
+## Searches and results
+
 Numbers read from the game's windows, then searched for in the decompressed stream:
 
 | Value shown | Where | Searched as |

@@ -4,6 +4,15 @@ What the game keeps in script states, and how to find them. The container is des
 
 Checked on 604 ([one game](test-games.md#the-2061-game) played into 2061, and catalog saves [6417707](https://mod.io/g/transportfever3/m/333151), [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) and [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) compared with the game's windows) and 585 (two saves). 568 was not read for this note, apart from the counter keys under Counters and achievements.
 
+## In short
+
+- **Where a state is (Observed, 585 to 604).** A script's path string is followed by its state table without the tag byte. Search for the path, not for a key name, because key names repeat across scripts.
+- **Times (Observed).** Times in the states are game-clock milliseconds, 4000 a day at calendar speed 1.00x; no Lua number holds the current date or the speed.
+- **Weather and time of day (Observed, 585 and 604).** `game_time.gs` holds the modes, targets and next change as a snapshot at save time. The settings table keeps only the starting settings, so read the state for the mode.
+- **Counters (Confirmed, 604).** `passengerTransportedCount` and `cargoDeliveredCount` match the bottom bar when the game is paused. Achievement Done marks are not in the save.
+- **Mods (Observed, 601 and 604).** A mod's id sits just before its script path, and a mod can keep a Lua error whose chunk name is a full local path. Check a save for `[string "` before sharing it.
+- **Open.** See the end of the note.
+
 ## Finding a table
 
 - In the saves checked, a script's path string (for example `game_mechanics/game_time/game_time.gs`) is followed by that script's state table. **Observed**.
@@ -52,8 +61,6 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 | `currentTimeOfDayState`, `currentWeatherState` | Small whole numbers |
 | `nextChange`, `nextTimeOfDayChange` | Times (game clock). `nextTimeOfDayChange` was 0 with `Automatic` |
 
-- The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
-- A save with both cycles on Dynamic (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), 604, and a paused re-save of it a day of stored time later, **Observed**): `timeOfDayTarget` 33,736 (0.39 of a day) and the time slider sat at 0.39 on the Weather and Time window, but `cloudCoverageTarget` 0.26 (speed 0.001) with the weather slider at about 0.54, so only the time slider matched. `nextChange` 94,691,800 and `nextTimeOfDayChange` 94,542,400 were 363,000 and 213,600 units after the newest list timestamp (94,328,800). The state was identical in the two saves.
 - The Calendar Speed row of the same window is covered in [calendar.md](calendar-speed.md#calendar-speed-in-the-games-windows).
 - The settings table (see [settings.md](settings.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
 
@@ -69,9 +76,6 @@ State of `game_mechanics/achievements/achievements.gs`. **Observed** on 585 and 
 | `totalIncome`, `subventionSuccess`, `subventionSuccessStreak`, `townLevelUpCount`, `placedTrees`, `vehiclesUsed` | More counters in the same area (not all present in every save) |
 | `townExcellentDeliveryRatingCount`, `townLowRatingCount`, `townNewCargoTypeDemandCount`, `shipsUsed` | Present in the catalog saves and maps summarised by [tools/mine_saves.py](../tools/mine_saves.py) (568 to 604). Not compared with the game. `shipsUsed`, like `vehiclesUsed` and `cargoTypesDelivered`, is a table |
 
-- **Confirmed** on one 604 save: the game's bottom bar showed the same passenger and cargo totals as `passengerTransportedCount` and `cargoDeliveredCount`. In a second save the cargo total on screen was one higher than in the file; the screenshot was taken with the game running again, which fits a delivery after the save. In a third, screenshotted while still paused, both totals matched exactly.
-- **Confirmed** on three more paused 604 saves (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) and two other games): both counters matched the bottom bar again (cargo and people 192,474 and 283,102; 10,562 and 64,281; 16,774 and 41,640). The bar shows people delivered beside the person icon and all cargo delivered beside the box icon, both since the game started. The same two numbers are stored twice in the header ([header.md](header.md#the-delivered-totals-in-the-header)).
-- **Confirmed** on a paused re-save (604, catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) saved again with the game paused): `passengerTransportedCount` 444,636 and `cargoDeliveredCount` 1,016,977 matched the bottom bar exactly, and the original catalog save's counts (444,627 and 1,016,962) were a little lower, from play between its save and the pause.
 - The game's Done marks for achievements are **not** in the save: no achievement names or flags were found, and two saves with very different counters (zero deliveries and thousands) showed the same seven achievements as Done. So completion looks account-wide, not per save. **Observed** on two 585 saves (an inference from the screens).
 
 ## The music player state
@@ -90,7 +94,29 @@ Mods with scripts keep state the same way the game's scripts do: the script's pa
 A mod can keep a Lua error message there, and that message can include a local path from the player's machine:
 
 - The message has Lua's usual form, `[string "<chunk>"]:<line>: <message>`. The chunk name is the full path of the mod's script file on disk: `<path>/mod.io/10640/mods/<mod id>/content/<file>.lua`. In a Windows save the path ran through a user folder, so it held that Windows account's name. In an Xbox save it started `R:/`. **Observed**, two saves.
-- In both cases the message was kept by the mod and not by the game. They are in the state of `camera_bridge.gs` from the mod "Auto Passenger Cameras" (`dome_wagon_cameras`, mod.io id 6422630). That state has `version` (2) and a `models` table keyed by a number written as a string (`4393`, `4398`, `4430`), and each entry holds only `error`, with the same message (an index of a nil `metadata` field at line 55). The mod seems to catch a failure for each model and keep the message.
-- Catalog saves [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) and [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601). All 244 catalog saves and maps of [versions.md](versions.md) were searched (2026-10-10) for `[string "`, `attempt to`, `.lua"]:` and `.lua:` followed by a line number, and for absolute paths (`C:/Users/`, `/home/`, `/Users/`). These two were the only hits. None of 70 of our own saves (604) had any. **Observed**, 568 to 604.
+- In the two saves where it was found ([search below](#search-for-stored-error-messages)) the message was kept by the mod and not by the game. They are in the state of `camera_bridge.gs` from the mod "Auto Passenger Cameras" (`dome_wagon_cameras`, mod.io id 6422630). That state has `version` (2) and a `models` table keyed by a number written as a string (`4393`, `4398`, `4430`), and each entry holds only `error`, with the same message (an index of a nil `metadata` field at line 55). The mod seems to catch a failure for each model and keep the message.
 - No error log of the game's own was found in the stream. A table key `error` is not a fixed name, so a mod could also keep messages under another key. **Open**.
 - To check a save before sharing it, decompress it and search for `[string "`. The path follows. Don't copy these paths or names into notes.
+
+## Open
+
+- Whether `Local` in `timeOfDayMode` is the Local Time entry of the option list (seen only in catalog saves), and a Continuous weather option (not tried).
+- Which keys of the music player state change while music plays.
+- Whether mods keep error messages under keys other than `error`; the game keeps no error log of its own in the stream.
+
+## Evidence and tests
+
+### Weather sliders against the stored targets
+
+- The state is a snapshot at save time. With the cycles set to Custom and Continuous, the sliders matched the stored targets: `cloudCoverageTarget` 0.29 sat at 0.29 of the weather slider, and `timeOfDayTarget` 26,357 sat at 0.31 of the time slider (26,357 / 86,400 = 0.305), which supports seconds of the day. With both cycles on Dynamic the sliders were close but not equal, because the game moves them while it runs.
+- A save with both cycles on Dynamic (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1), 604, and a paused re-save of it a day of stored time later, **Observed**): `timeOfDayTarget` 33,736 (0.39 of a day) and the time slider sat at 0.39 on the Weather and Time window, but `cloudCoverageTarget` 0.26 (speed 0.001) with the weather slider at about 0.54, so only the time slider matched. `nextChange` 94,691,800 and `nextTimeOfDayChange` 94,542,400 were 363,000 and 213,600 units after the newest list timestamp (94,328,800). The state was identical in the two saves.
+
+### Counters against the bottom bar
+
+- **Confirmed** on one 604 save: the game's bottom bar showed the same passenger and cargo totals as `passengerTransportedCount` and `cargoDeliveredCount`. In a second save the cargo total on screen was one higher than in the file; the screenshot was taken with the game running again, which fits a delivery after the save. In a third, screenshotted while still paused, both totals matched exactly.
+- **Confirmed** on three more paused 604 saves (catalog save [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) and two other games): both counters matched the bottom bar again (cargo and people 192,474 and 283,102; 10,562 and 64,281; 16,774 and 41,640). The bar shows people delivered beside the person icon and all cargo delivered beside the box icon, both since the game started. The same two numbers are stored twice in the header ([header.md](header.md#the-delivered-totals-in-the-header)).
+- **Confirmed** on a paused re-save (604, catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) saved again with the game paused): `passengerTransportedCount` 444,636 and `cargoDeliveredCount` 1,016,977 matched the bottom bar exactly, and the original catalog save's counts (444,627 and 1,016,962) were a little lower, from play between its save and the pause.
+
+### Search for stored error messages
+
+Catalog saves [6429325](https://mod.io/g/transportfever3/m/my-rail-network) (Windows, 604) and [6431316](https://mod.io/g/transportfever3/m/1990-2) (Xbox, 601). All 244 catalog saves and maps of [versions.md](versions.md) were searched (2026-10-10) for `[string "`, `attempt to`, `.lua"]:` and `.lua:` followed by a line number, and for absolute paths (`C:/Users/`, `/home/`, `/Users/`). These two were the only hits. None of 70 of our own saves (604) had any. **Observed**, 568 to 604.

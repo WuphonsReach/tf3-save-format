@@ -2,6 +2,17 @@
 
 Notification entries seen in our [test games](test-games.md) and what they show about the game, all on 604. The state, the entry layout and the bookkeeping tables they use are in [notifications.md](notifications.md).
 
+## In short
+
+This note is a log by nature, one section per kind of notification, all Observed on 604 in single games. The conclusions:
+
+- **New Vehicles Available.** One entry per release, stamped at 1 January of the model's `yearFrom` (read from the model's own `.mdl` data); models sharing a `notificationGroup` make one popup. Infrastructure has its own entry type.
+- **Dismissing** sets `dismissed` and nothing else; a dismissed subsidy offer is still on offer.
+- **Industry spawn.** Every industry that appeared in play has an entry, stamped a little after the half-year boundary at which the industry exists. A rename changes the name the entry shows.
+- **Industry closing.** The entry names the industry but holds no countdown; the deadline is a field of the industry's own record.
+- **Stuck vehicle.** `params.entity` is `{entity, revision}`; the entry gives when the warning was raised, not how long the vehicle stood.
+- **Open.** Whether `yearTo` ends anything, what a skipped year does to the releases, whether mod vehicles get entries, when the two secondary industries were created, why a vehicle-condition entry expired.
+
 ## "New Vehicles Available" popups (604)
 
 **Observed** on 604, one game (the Small subarctic game, start year 1900, saves a year apart and one made nine game days after 1 January 1912, with the popup on screen).

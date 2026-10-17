@@ -4,7 +4,7 @@ Where a line's stops keep their load and departure settings, and what a new line
 
 ## In short
 
-- **The stop record (Confirmed, 604).** Every stop on a line has a record found by pattern: 37 floats of 1.0, three flag bytes, then minimum stop time, maximum stop time and maximum additional wait in seconds. The first flag is "Force Unload All Cargo On Arrival". Defaults are 0, 600, 30 for a road stop and 0, 600, 60 for a ship stop.
+- **The stop record (Confirmed, 604).** Every stop on a line has a record found by pattern: 37 floats of 1.0, three flag bytes, then minimum stop time, maximum stop time and maximum additional wait in seconds. The first flag is "Force Unload All Cargo On Arrival". Defaults are 0, 600, 30 for a road stop and 0, 600, 60 for the stops of a ship line.
 - **Departure option and terminals (Confirmed in the game, one stop each).** The departure option is a byte before the record (0, 1 or 2 for the three icons); terminal use (Preferred, Alternative, Don't Use) is a list in the tail after the floats.
 - **Rate (Observed, 34 readings, 604).** The Lines window's Rate is capacity x 1,461 / (vehicles x Frequency in seconds). Frequency is the line's round trip divided by its vehicle count and follows trips actually completed. Load is the cargo aboard the line's vehicles.
 - **Open.** What the 37 floats and the load list mean, what the counter after the floats counts, and whether the Frequency column leaves out waiting time at a stop. Only 604 and a few games were read.

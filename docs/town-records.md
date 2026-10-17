@@ -4,6 +4,14 @@ Each town has a record in the entity data, far into the stream (about 390 MB int
 
 The record has no name, id or position. To tie a record to a town, match its capacities and cargo ids against the map editor's Towns export of the same save. Two towns can share capacities, but in every case seen their cargo told them apart. Records are in entity order, not alphabetical.
 
+## In short
+
+- **Layout (Observed, 604).** Town records sit in one run after four `u32`s whose last is the town count. A starting record is 78 bytes: three target capacities (residential, commercial, industrial), four floats, a commercial and an industrial cargo list of `(id, weight)` pairs, and 17 trailing bytes. A longer cargo list makes a longer record.
+- **No name, id or position.** A record is tied to a town by its capacities and cargo ids against the editor's Towns export.
+- **Editing (Confirmed, one editor map).** Changing the cargo ids and weights in place changes the towns' starting cargo, but not the buildings that already exist ([building-stocks.md](building-stocks.md)).
+- **Live values (Observed, three towns).** Capacities are fixed targets; the second float follows population over the first residential capacity (floor 1.0). A town that gains a commercial cargo grows its record.
+- **Open.** The first three table header values, the other floats, the last 8 bytes of the record, and the Towns tab columns.
+
 ## Table header
 
 The records sit in one contiguous run, after four u32s. The last is the town count:
@@ -56,7 +64,23 @@ Loosening the floats further (any value) gave 24,872 false hits in a 618 MB stre
 
 In that 34-town save one town (the player's starting town) had runtime values: a first float of 1.06 and capacities 424 / 667 / 475 where the editor showed 449 / 668 / 476. The other 33 matched the export exactly. So capacities and floats are live state in a played save.
 
-## A new game's three towns against the town window
+## Town buildings
+
+Each building in a town has a record of its own, separate from the town record: [town-buildings.md](town-buildings.md).
+
+
+## Open
+
+- The first three values of the table header, the `u32` at offset 57, and the 17 trailing bytes in played saves.
+- What the third and fourth floats (offsets 12 to 27) and the two floats at offsets 70 and 74 measure.
+- Where the supplies panel's demand figures come from.
+- The Towns tab columns against the record (leads only, see the evidence).
+- The record shapes with 110-byte gaps in played saves.
+
+
+## Evidence and tests
+
+### A new game's three towns against the town window
 
 **Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game) when new, paused at 1 January 1900 with almost nothing built. `scan_records` found three records, 78 bytes apart, with capacities 396 / 418 / 268 (fish and cement), 164 / 98 / 115 (meat and planks) and 282 / 209 / 275 (fish and fuel).
 
@@ -66,7 +90,7 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 - The two floats in the last 8 bytes of the 78 (offsets 70 and 74) differed between the towns: 66.9 and 181.2, 63.0 and 138.3, and 66.1 and 3,555.6. The third town's window said 3,367 points to go, so 3,555.6 less 3,367 is 188.6, but nothing shows that this subtraction is meaningful. **Open**.
 - Supply figures 68 (fish) and 97 (fuel) did not equal the commercial and industrial capacities (209 and 275) or any simple ratio of them (68 / 209 = 0.33, 97 / 275 = 0.35). Where they come from is **Open**.
 
-## The same three towns after play (604)
+### The same three towns after play (604)
 
 **Observed** on 604 in the same game at clock 5,997,000 (save `1246`), against the three town windows.
 
@@ -75,14 +99,10 @@ In that 34-town save one town (the player's starting town) had runtime values: a
 - **The second float is the population over the first residential capacity.** The record's four floats were 1.0, 1.2025, 1.0669, 1.1203 for the first town (475 people, capacity 396), 1.0 four times for the second (161 people, capacity 164) and 1.0, 1.7057, 2.3288, 1.2277 for the third (482 people, capacity 282). The window populations divided by the capacities are 1.1995, 0.98 and 1.709, so the second float follows the population (to about 0.3%), with a floor of 1.0 for the stagnant town. **Observed**, three towns. The first float stayed 1.0 in all three, and what the third (2.33) and fourth floats measure is **Open**: the supplies panel's demand figures (fish 146, cement 99 in the first town, fish 177, tin 88 and fuel 122 in the third) are 0.33 to 0.36 of the capacity times the float for the commercial cargo (fish) and the industrial one, but not exactly, so no formula is claimed.
 - **The last 8 bytes of the 78 kept growing.** The pairs (offset 70 and 74) were 72.7 and 3,251.0 for the first town, 67.1 and 5,642.1 for the second and 71.0 and 10,614.5 for the third, up from 66.9 and 181.2, 63.0 and 138.3, and 66.1 and 3,555.6 in the new game. The second town's window said "No Experience Earned Last Year" and showed 2,250 points to the next level, yet its second float rose by about 5,500, so the second float is not the experience earned. The windows' experience to go (Retford 2,471, Bromsgrove 2,250) matches none of the figures by a plain difference. **Open**.
 
-## The Towns tab columns against the record
+### The Towns tab columns against the record
 
 **Open**, 604. These figures are from earlier working notes, read off a Towns tab, and are not rechecked. They are said to come from catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) (day 1 of 1900, paused), but the file does not fit them in two ways: it holds 32 town records, all in the starting layout with floats of 1.0 and capacities of 125 to 568, and none has capacities of 1600 / 1600 / 1600 (that town is in the record list of [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods), above). Treat the figures below as leads until the columns are read again against one save.
 
 - **Population** is 0 to 4 below the record's residential capacity in 22 of the 24 towns (one town is 1 above, one 11 below, probably edited by hand). So the record's capacity is a target and the tab shows the current value, as in [the new-game comparison above](#a-new-games-three-towns-against-the-town-window).
 - **The car-icon column** (meaning **Open**) is about half the sum of the commercial and industrial capacities: correlation 0.96 over the 24 towns, typical error 20, outliers up to 90. It is not population. A town with capacities 1600 / 1600 / 1600 and no industrial cargo shows 1,473.
 - **Demand** is about 0.68 times the car-icon column (range 0.64 to 0.73), so it follows the commercial and industrial capacities and not population. Compare the 0.33 to 0.36 per cargo in the new-game window above.
-
-## Town buildings
-
-Each building in a town has a record of its own, separate from the town record: [town-buildings.md](town-buildings.md).

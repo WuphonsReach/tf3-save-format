@@ -6,6 +6,14 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 - A new game (**Observed**, 604, eight of our games saved at once, 2 to 5 towns): the table holds one entry for 2 towns, two for 3 towns and two for 5 towns, while the town records, the names run of [entity-names.md](entity-names.md#town-names-604) and the `townState` entries of the `town_cargo.gs` state all give the town count, and the count on the New Game screen is the same ([industry-lifecycle.md](industry-lifecycle.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604)). The count to trust for a new game is the town records, not this table.
 - Played saves: one entry per town that has state, so not every town is in it. 34 in a 34-town save of ours; 13 in catalog save [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods) and 11 in [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet).
 
+## In short
+
+- **What it holds (Observed, 604).** `townStates` has one entry per town that has state: the town's entity id, `authorityScore`, six cached ratings plus `growth_level`, and the penalties behind the Reputation. Editor saves hold none, and a new game holds fewer entries than towns, so count towns from the town records.
+- **The numbers (Observed, 58 entries).** `authorityScore` is the lowest of the cached ratings; `urban_care` follows `eventFactors.score`, which falls as penalties rise.
+- **The window's Reputation is `eventFactors.score` (Observed, one town).** Its Demolished Buildings row is the `DemolishedTownBuilding` penalty, and the penalty recovers with the game clock, about 5e-7 per clock unit, whatever the calendar speed. The Reputation chart's history is not a record of past scores.
+- **Terraforming near a town can take its Reputation to zero (Confirmed, one catalog save).**
+- **Open.** `constructionBoni`, why the score is not always one minus the penalties, the window's noise sources, what `growth_level` 2 is, and the chart's merge rule.
+
 ## Fields per town
 
 | Key | Holds |
@@ -28,7 +36,9 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 
 Town size, cargo demand and positions are not in the script states. They are in the entity data, see [town-records.md](town-records.md). The industries' script state is just as bare, see [industries.md](industries.md#the-industries-script-state).
 
-## A new game's three towns against their windows (604)
+## Evidence and tests
+
+### A new game's three towns against their windows (604)
 
 **Observed** on 604 in the [Small subarctic game](test-games.md#small-subarctic-game), paused at clock 5,997,000 (save `1246`), with the three town windows read right after. The table has three entries.
 
@@ -37,7 +47,7 @@ Town size, cargo demand and positions are not in the script states. They are in 
 - **`noise` matches the window's noise chart.** Retford's `noise` is 0.486 and the noise chart in its window ended just under 50%; its Noise rating read "Mediocre" and it is the lowest rating, so its `authorityScore` is 0.486 too (Town Authority "Mediocre"). Todmorden's noise is 0.633 and Bromsgrove's 0.859. Bromsgrove's Town Authority read "None" in the window while its state holds a score of 0.859, so that label is not the score alone. **Open**.
 - **The window's noise sources** (Retford: company vehicles 79%, residents' vehicles 18%, stations 2%) were not found in the state.
 
-## The window's Reputation and how it recovers (604)
+### The window's Reputation and how it recovers (604)
 
 **Observed** on 604 in one Medium dry game, one town, after the player demolished many of its buildings and then watched it with the game paused. Its entity id is the fourth of five consecutive ids and the town is the fourth in the names table's town order; it is the only one of the five entries with penalties.
 

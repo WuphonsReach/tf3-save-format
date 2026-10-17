@@ -2,6 +2,15 @@
 
 Which town owns a building, and where the dashed town boundary on the bulldozer map runs. The building record itself is in [town-buildings.md](town-buildings.md); the town's own record is in [town-records.md](town-records.md). The open questions are in [gaps/towns-and-buildings.md](gaps/towns-and-buildings.md).
 
+## In short
+
+This note is a log by nature: screenshots read against saves, Observed on 604 in a few games. The conclusions:
+
+- **The town field is the owning town (Confirmed, one game, two buildings).** Its ids follow the names table's town slots (company id plus slot).
+- **The dashed boundary is the line equidistant from the two towns' centres (Observed, five pairs in three games).** Across a 34-town Giant map it fits to within 2% of the label distance and 1 degree of lean; three-way vertices fit the same rule (four vertices, the last more loosely).
+- **Not from the save yet.** Centres taken from street clusters do not reproduce the vertices; the name labels, which sit on the centre, are the only measure that has worked ([town-centre.md](town-centre.md)).
+- **Open.** Whether the boundary is stored or worked out at load, what marks a town's centre in a grown town's streets, and the six buildings that carry the other town's id (the connecting-road idea is unchecked).
+
 ## The town field
 
 - **Save `1437` (clock still 11,324,600) settles the town field: it is the owning town, and the ids follow the names table (Confirmed on 604, one game, two buildings).** The player ticked an industrial building in Retford and a house in Bromsgrove. Two flags went 0 to 1 (28 set): record 48 (stocked, level 1, 3 parcels, depth 4, 12.9 m, built 0) with town **17,912**, and record 166 (no stock, level 1, 2 parcels, depth 2, 9.5 m, built 0) with town **17,913**. With Todmorden's 17,914 from the earlier buildings, the three ids are Retford 17,912, Bromsgrove 17,913 and Todmorden 17,914, which is the order of the towns in the names table (slots 1 to 3, company id plus slot, see [entity-names.md](entity-names.md)). Then the 6 earlier ticks that carried 17,912 (three of the five houses of `1431`, two buildings of `1430` and one commercial building of `1436`) are Retford buildings by their record, and the 20 with 17,914 are Todmorden's. The player had taken all of them for Todmorden, and says a single road joins the two towns and that each town has a clear boundary on the map (it decides whose area pollution falls in, and removing something on the boundary affects both towns). So the six are not explained by streets crossing at several places; one possibility is that the street of the five houses is that connecting road, with the boundary on it (three of the five were Retford's, two Todmorden's), which the player has not checked. **Open**. The screenshots: an industrial building window with level 1, one input stock (0 of 2 of a cargo shown as a sack), workers 8 of 8, 0% supply and the box ticked; a residential building with level 1, noise Excellent and residents 1 of 1.

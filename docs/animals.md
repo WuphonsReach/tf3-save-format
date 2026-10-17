@@ -2,6 +2,16 @@
 
 The list of the map's animals, which animals they are, and how many. Cases A to G are the test saves of [terrain.md](terrain.md#what-was-compared). All of it is **Observed** on 604 unless marked.
 
+## In short
+
+- **The animal list (Observed, 604, five saves and a Giant editor map).** About 283 KB after the header, behind the resource-name tables, sits a `u32` count followed by one record per animal: 15 four-byte values in the order of the game's `Animal` record, then a flock of offsets. Find it by the prefix `01 00 00 00 ff ff ff ff ?? 00 00 00 00 00 00 00`.
+- **Which animals (Observed, 18 saves).** The animal's model is not in its record but in its model instance, the `u32` 52 bytes before the position. Birds hover at the model's `heightOffset`; ground animals stand on the heightmap.
+- **How many (Observed, Tiny maps only).** A species reaches its density per km² times the map area (13 on a Tiny map) where the habitat allows it, whatever the seed; water animals fall short.
+- **Positions are not fixed by the seed.** Animals move in play, so a map drawn from the list shows where they were at the save.
+- **Open.** The second list after the animals, the `??` prefix byte, how the count scales with map size, and which species a climate picks.
+
+## The animal list
+
 About 283 KB after the header, after the tables of resource names (models, cargos, edge add-ons; the last name is an edge add-on such as `barrier_track_b.edge`), there is a list of the map's **animals**. This was found by comparing saves and then matching the layout to the `Animal` record in the game's `api/tealdef/api/engine.d.tl`; the field order and the values agree. **Observed** on 604 in three desert saves (B, D, E) and two temperate ones.
 
 Layout, all little-endian:
@@ -29,17 +39,9 @@ The trailing `vec<vec3>` is the `flock`: an offset for each further animal of a 
 
 The list parses cleanly with this layout in all five (39 animals on the desert map, 78 on the temperate one; the other desert saves have the same count prefix), and another component with the same count follows it.
 
-What this explains:
-
-- The positions move: 17 of 39 desert animals were more than 50 m away after the 11-day run (D against E), and a save made a few seconds after another differs by a few metres. So the animals' places are not fixed by the seed, and the "feature points" I first took them for were animals.
-- z follows the terrain. Checked against the [heightmap](terrain.md#the-heightmap) in nine saves: every animal after the first 13 stands on the ground (within 0.4 m of a straight interpolation between grid points), and the first 13 sit at a fixed height above it, 60 m on the desert map and 40 m on the temperate one (one of them is 1 m off in three saves). The first 13 are also the ones with a speed and a turn rate in a fresh save; the others start at speed 0 and only move after time has run (E). The first 13 are birds (see [which animals](#which-animals-they-are)), and the height above the ground is the bird model's `heightOffset`. The first animal's z followed the Mountains slider (123 m on Sparse, 154 on Scattered, 226 on Dense, 227 on Packed) because the ground under it did.
-- Save A, the one without the mod, has 26 animals (13 and 13) where B to G have 39. The extra 13 are bison from the Deluxe Upgrade mod (see [which animals](#which-animals-they-are)).
-- On the temperate map, Lakes Packed against Lakes Sparse moved some animals by under a metre and changed their direction, which fits animals being put somewhere slightly different, not a change of the animals themselves.
-- The animal list is not the heightmap; that is a separate grid, described in [terrain.md](terrain.md#the-heightmap).
-
 Find it by the prefix `01 00 00 00 ff ff ff ff ?? 00 00 00 00 00 00 00`, then the count, at the end of the name tables; the first match after the model table is the one. The `??` byte was 50 (`32`) in every save of seed `ktb5aEVwZg`, desert and temperate, 49 (`31`) in a desert save of seed `sJn73SmfYh` and 51 (`33`) in the tropical saves of seed `RaazVnK55w`; what it holds is **Open**. What the second list of `u32` after the animals holds (it starts with the same count, then 16 and a short list of numbers up to about 3,100) is **Open**.
 
-### Which animals they are
+## Which animals they are
 
 The `Animal` record has no model. Each animal also has a model instance ([models.md](models.md#the-model-instance-record)), and its model id indexes the model table at the start of the stream. **Observed** on 604 in eighteen test saves: A to G, a desert save of another seed, the temperate pair and eight tropical saves of one seed.
 
@@ -60,7 +62,7 @@ The 26 temperate animals with flock offsets are the cranes and the boars.
 
 The model files' metadata matches the values in the animal list (`base/content/animal.zip`, read for these facts only): `bird_eagle.mdl` has `heightOffset` 60 and a flying speed of 4.5 at 80 degrees per second, `bird_crane.mdl` has `heightOffset` 40, speed 4 at 40 degrees and a flock name, and the base game's ground animals (`cougar`, `wildlife_bear`, `wildlife_deer`, `wildlife_fox`, `wolf`) have `heightOffset` 0; the mod's model files were not read. The water animals in the archive (`fish_salmon`, `cr_fish_01` to `_04`) have `heightOffset` -1.6. Only the tropical saves hold fish. Which species a climate picks is **Open**.
 
-### How many animals
+## How many animals
 
 The count follows a density per km², not the seed. Facts from the game's files: `base/mod.script.tl` in `base/content/base.zip` sets `baseConfig.animal` with `populationDensityMultiplier = 1`, `useLocalSpawning = true` and `localTileSize = 1000`. The `BaseConfig.Animal` record in `api/tealdef/api/type.d.tl` describes the multiplier as applying to each animal's density in exemplars per km², and local spawning as filling boxes of `localTileSize` squared. In `animal.zip` every land and bird model above has `density` 1, `cr_fish_01` to `_04` have 2 each, and `fish_salmon` has 4.
 
@@ -77,3 +79,16 @@ To confirm, a Small or Medium game saved at once should hold about its area in k
 - What the second list of `u32` after the animals holds.
 - How the animal count scales with map size. Only Tiny was checked, see [how many animals](#how-many-animals).
 - Which species a climate picks.
+
+
+## Evidence and tests
+
+### What the compared saves showed
+
+What this explains:
+
+- The positions move: 17 of 39 desert animals were more than 50 m away after the 11-day run (D against E), and a save made a few seconds after another differs by a few metres. So the animals' places are not fixed by the seed, and the "feature points" I first took them for were animals.
+- z follows the terrain. Checked against the [heightmap](terrain.md#the-heightmap) in nine saves: every animal after the first 13 stands on the ground (within 0.4 m of a straight interpolation between grid points), and the first 13 sit at a fixed height above it, 60 m on the desert map and 40 m on the temperate one (one of them is 1 m off in three saves). The first 13 are also the ones with a speed and a turn rate in a fresh save; the others start at speed 0 and only move after time has run (E). The first 13 are birds (see [which animals](#which-animals-they-are)), and the height above the ground is the bird model's `heightOffset`. The first animal's z followed the Mountains slider (123 m on Sparse, 154 on Scattered, 226 on Dense, 227 on Packed) because the ground under it did.
+- Save A, the one without the mod, has 26 animals (13 and 13) where B to G have 39. The extra 13 are bison from the Deluxe Upgrade mod (see [which animals](#which-animals-they-are)).
+- On the temperate map, Lakes Packed against Lakes Sparse moved some animals by under a metre and changed their direction, which fits animals being put somewhere slightly different, not a change of the animals themselves.
+- The animal list is not the heightmap; that is a separate grid, described in [terrain.md](terrain.md#the-heightmap).

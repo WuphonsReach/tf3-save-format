@@ -4,6 +4,13 @@ Where a town's centre is. The save does not store it ([town-records.md](town-rec
 
 Everything here is **Observed** (seen in test pictures, not confirmed by a second route; the labels are defined in [README.md](README.md)) and was seen on 604.
 
+## In short
+
+- **The label hangs above the centre (Observed, 604, four towns in three games).** A town's name label is the only measure of its centre that has worked. Its bottom edge sits about 15 to 17 m from the centre, in the direction that is up in the picture, on the ground plane. The centre is found from a series of near-top-down pictures registered to the street edges, whose anchor points lie on a circle ([town_centre.py](../tools/town_centre.py)).
+- **Street clusters do not track it (Observed).** The mean of the street nodes lies 45 to 56 m from these centres, the four-edge nodes 100 to 124 m.
+- **Strong tilt moves the label's ground position 20 to 50 m (Observed),** which a label hanging at a height above the centre explains; near-top-down pictures are good to about 3 to 5 m.
+- **Open.** Whether the point is the game's own town centre, the label's height, the camera's lowest tilt, and any stored position.
+
 ## The label hangs a fixed distance above the centre (Observed, 604, four towns in three games)
 
 **Method.** Take a series of pictures of one town with the camera turned round it, looking nearly straight down, the label visible in each. In every picture find the label's box (a dark rounded rectangle with the name, the population and cargo icons) and register the picture to the save's street edges: rotation, scale, shift, and a small perspective term for the camera's tilt. Carry the label's anchor point into map metres. The anchors of one series lie on a circle, and the circle's centre is the town's centre. The street edges place each picture on the map without knowing the camera's heading, so the series needs no fixed north. [town_centre.py](../tools/town_centre.py) does this (it needs numpy and Pillow); the numbers below are from its first, hand-assembled version, and a rerun with the script is noted where it differs.
@@ -29,17 +36,19 @@ Inside the NTC series the zoom changed from 2.1 to 1.8 pixels per metre part-way
 
 **Against the streets.** Using the town streets within 500 m, the mean of the street-node positions lies 45 to 56 m from these centres, the middle of the streets' bounding box 45 to 86 m, and the mean of the four-edge nodes 100 to 124 m. None of the three tracks the label point.
 
-## Tilt and camera slips (Observed, 604)
-
-The camera tilts a little as it turns and was sometimes nudged. The registration fits a perspective term per picture, and the pitch it implies was 3 to 22 degrees in the three near-top-down series. There the distance stays constant to within a metre or two, and a first fit that ignored tilt put Chagford's centre 3 m from the fit with tilt.
-
-Strongly tilted pictures break the constant distance. Nagoya's pictures run from about 16 to 43 degrees of pitch (read from the fitted transform, so rough), and there the label's ground position moves 20 to 50 m from the centre. A label hanging at a height above the centre explains it: the ground position of a point at height h seen at pitch p is shifted by about h times tan p in the picture's up direction. A fit with a constant ground offset of about 8 m plus 37 m times the tangent of the pitch put all four towns within 2 to 4 m rms, against 14 m for Nagoya with a constant distance alone. The script's rerun of Nagoya (10 of 14 pictures placed) gave the same picture: a constant distance 10 m rms, the height model 4.5 m rms with the centre at (-429, 358) and a height of 51 m. The two numbers are loose because the pitch is noisy. In near-top-down pictures the label's height cannot be told from a flat offset, and the two models agree on the centres to about 3 m for the flat towns and 5 m for Nagoya.
-
-The box also shrinks as the camera moves away: 18 to 43 px tall in Nagoya's pictures against 34 to 40 in the others, so pixel figures taken from it hold only for the sizes seen here.
-
 ## Open
 
 - **Is it the game's own town centre?** The label hangs above some point. Whether that point is the one the name compass ([compass.md](compass.md)), town growth or the dashed boundary ([town-boundaries.md](town-boundaries.md)) use is untested. A direct test: a boundary line should be the perpendicular bisector of two centres from this method. The Aylsham and Chagford boundary needs Aylsham's centre the same way.
 - **The label's height, and the box's size with distance.** Needs a series at several fixed pitches and zoom levels, one change at a time.
 - **How close to straight down the camera goes (604, Observed, one Tiny flat editor map, two whole-map pictures with the camera as far down as it goes), and its field of view (Open).** The map is a 2,048 by 6,144 m rectangle on plain ground, so the four corners of its outline fix the camera except for the field of view. The long sides converge by about 7 percent from the far edge to the near one (3,237 and 3,491 px wide in one picture, 2,793 and 2,969 in the other), and the short sides were fitted to 0.2 px. For a window 3,840 by 2,160 px (the size of the uncropped pictures), a vertical field of view of 40, 50, 60, 70 and 80 degrees gives a lowest pitch from vertical of 11.5, 9.0, 7.2, 6.0 and 5.0 degrees (the second picture 0.3 to 0.7 degrees lower at each value). The principal point falls inside both crops from about 30 degrees up. So the camera does not go to 0 degrees, the lowest tilt is somewhere between 5 and 12 degrees, and the pictures cannot say which, since the screenshots are crops of unknown position. Near-top-down pictures should be read with that tilt. The 3 to 22 degrees the fits above implied, and the 16 to 36 of the speed-limit pictures in [transit-overlay.md](transit-overlay.md#station-catchment), are probably the fits' error as much as the camera's (a guess). The game's Lua API has `getCameraData` on the GUI (centre, distance, angle and pitch; `api/tealdef/api/gui.d.tl`) and the mission camera frames have a `fovY` (`base/tealdef/mission/tasks/mission_dialogue_data.d.tl`); reading the pitch in the game with the camera at its lowest would settle it (untried; how to call it from the console is not known).
 - **A stored position.** A town record has none. A save with a town renamed to a typed string, searched for in the stream, could still find the town entity and its position.
+
+## Evidence and tests
+
+### Tilt and camera slips (Observed, 604)
+
+The camera tilts a little as it turns and was sometimes nudged. The registration fits a perspective term per picture, and the pitch it implies was 3 to 22 degrees in the three near-top-down series. There the distance stays constant to within a metre or two, and a first fit that ignored tilt put Chagford's centre 3 m from the fit with tilt.
+
+Strongly tilted pictures break the constant distance. Nagoya's pictures run from about 16 to 43 degrees of pitch (read from the fitted transform, so rough), and there the label's ground position moves 20 to 50 m from the centre. A label hanging at a height above the centre explains it: the ground position of a point at height h seen at pitch p is shifted by about h times tan p in the picture's up direction. A fit with a constant ground offset of about 8 m plus 37 m times the tangent of the pitch put all four towns within 2 to 4 m rms, against 14 m for Nagoya with a constant distance alone. The script's rerun of Nagoya (10 of 14 pictures placed) gave the same picture: a constant distance 10 m rms, the height model 4.5 m rms with the centre at (-429, 358) and a height of 51 m. The two numbers are loose because the pitch is noisy. In near-top-down pictures the label's height cannot be told from a flat offset, and the two models agree on the centres to about 3 m for the flat towns and 5 m for Nagoya.
+
+The box also shrinks as the camera moves away: 18 to 43 px tall in Nagoya's pictures against 34 to 40 in the others, so pixel figures taken from it hold only for the sizes seen here.
