@@ -39,7 +39,7 @@ The second game, the four surest names of each of its three towns (of 24 names; 
 
 ![The surest compass names of six towns of a third game](images/compass-8sTfdrefpL-temperate-11264x22528-1to2-towns-scattered-industry-packed-easy-1937-02.png)
 
-The third game, six of its 11 towns with a compass name, the four surest names of each (31 names in all; 14 more end in a word but name a station, port or train depot, kinds the script does not list). Every one of the 31 has a candidate in its quarter. This game's depots and maintenance buildings stand close to their towns, so their labels crowd the street map.
+The third game, six of its 11 towns with a compass name, the four surest names of each (31 names in all; 14 more end in a word but name a station, port or `rail_depot`, kinds the script does not list). Every one of the 31 has a candidate in its quarter. This game's depots and maintenance buildings stand close to their towns, so their labels crowd the street map.
 
 What the words do not settle:
 

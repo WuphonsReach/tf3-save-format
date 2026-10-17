@@ -2,6 +2,14 @@
 
 The subsidy offers, active and finished subsidies, and what they pay. A subsidy shows up in two places: as a notification entry ([notifications.md](notifications.md)) and in the state of `game_mechanics/subventions/subventions.gs`, described here. The game's own word for them is "subventions".
 
+## In short
+
+- **Where it lives.** A subsidy is a notification entry (`subvention_notification.script`, Observed, 585 and 604) and an entry in one of the tables of `game_mechanics/subventions/subventions.gs`: `proposedSubventions` while it is an offer, `activeSubventions` once accepted, `completedSubventions` when done (Observed, 604, one catalog save and one new game).
+- **Payments are fixed at spawn.** `upfront`, `failure` and `complete` do not change on acceptance, and the popup amounts match the stored ones to the dollar (Observed, 604). Acceptance books `upfront` at once; completion books no money when the rewards are town experience and a timed effect.
+- **Timing.** Durations are game-clock units, shown divided by 4000 (days) and then by the calendar speed. An offer expires at `spawnTime` + `expireDurationProposed`; an accepted subsidy's deadline is `acceptedTime` + `expireDuration` (Observed, 604, one game). Offers are spawned a whole number of 365,400 units apart, plausibly (Open).
+- **After a miss.** The amounts are gone from the tables; only the notification entries remain (Observed, 604). Missing an offer costs nothing in the journal.
+- **Not known.** The `data` keys of each kind, `failedSubventions`, `usedUids` `true`, what completes a Connect Towns subsidy, the journal effect of "2x income", whether a failed subsidy books a charge, and whether an option level scales the money. The list is in the [gaps](gaps/economy-and-events.md).
+
 ## The notification entry
 
 A subsidy is a notification entry of type `subvention_notification.script`. Its `params` hold a resource path under `::/game_mechanics/subventions/` (for example `deliver_cargo/deliver_cargo.res`), `stockListEntity`, and `simParams.mapping` with the name of the industry or town. The other fields are in [notifications.md](notifications.md#entry-layout). **Observed** on 585 and 604.
@@ -27,7 +35,11 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 - Durations shown in the offer window equalled the stored numbers divided by 4000 (days) and then multiplied by the calendar speed, 0.50x at the time: `expireDuration` 4,626,500 showed as "1 Year 7 Months" and `effectDuration` 7,305,000 as "2 Years 6 Months". That is the rule for durations in [calendar.md](calendar.md#the-game-clock).
 - The `advancedOptions.*` settings are stored as small level numbers (1 to 5 seen in the catalog saves, not multipliers): the option's position in the list plus 1, see [settings.md](settings.md#how-a-setting-is-stored). Whether a level scales the stored money amounts was not shown: at the levels in the save checked (`subventionRisk` 2, `subventionMode` 3) the shown money equalled the stored money. Across a few other 604 saves with the default levels the fine against the payment varied from offer to offer, so the fine is not a fixed multiple of the payment. **Open**.
 
-## A new game: an offer, its expiry and an accepted subsidy (604)
+## Evidence and tests
+
+The two sections above were read from catalog save 6417707 and one offer window. The rest is one new game, saved step by step.
+
+### A new game: an offer, its expiry and an accepted subsidy (604)
 
 **Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game), three saves with the calendar stopped (date 1 January 1900, so only the game clock moves).
 
@@ -39,7 +51,7 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 - **The deadline is `acceptedTime` + `expireDuration`, counted on the game clock.** The "Subsidy in Progress" popup showed 22m 49s left in a screenshot taken 3 minutes of play after the save at clock 1,121,000. With the deadline at 2,678,150 that puts the clock at about 1,309,150, which is 188 s later, so the clock ran at 1.0 s per second and the popup's remaining time is deadline minus clock. **Observed**, one reading.
 - **The popup, the towns and their ids.** The game's popup for it read "A subsidy to transport passengers between Todmorden and Retford without transfer is currently running", so the offer's `name` ("Connect Towns", the `deliver_passengers` type) is the title and "without transfer" is part of the rule (the player confirmed the match). `from` was entity 17,914 and `to` 17,912. In the names table the three towns sit in slots 1 to 3 (Retford, Bromsgrove, Todmorden), and an early entity's id is the company's id plus its slot ([entity-names.md](entity-names.md#layout); the company is 17,911 here), so the towns are 17,912, 17,913 and 17,914, `from` is Todmorden and `to` is Retford. **Observed**, one game; the building records confirm the three ids ([town-buildings.md](town-buildings.md#the-building-record-and-historic-preservation-604)). The same ids appear in the town states ([town-states.md](town-states.md)), which is how a subsidy's towns can be matched to a town's state.
 
-### Completion (604)
+#### Completion (604)
 
 **Observed** in a save at clock 2,246,600 (the same game, 1,150,000 units after acceptance), compared with the subsidy's window and the town windows.
 
@@ -50,15 +62,15 @@ State of `game_mechanics/subventions/subventions.gs`. **Observed** on 604, one s
 - **Two towns' states rose together.** Between the earlier saves and this one the `growth_level` of the two connected towns went from 2 to 4 (Todmorden) and from 0 to 2 (Retford), while the third town stayed at 0, and Todmorden's population in its window rose from 281 to 292 ("Growing Fast"; Retford read 412, with no earlier reading). Whether the reward set the rise cannot be told from one save. **Open**.
 - `spawnIntervalModifier` was 0.5 in this save (1 before) and a new offer had been spawned at 1,887,600. Whether completing a subsidy halves the interval is **Open**.
 
-### A second offer while the first was finished (604)
+#### A second offer while the first was finished (604)
 
 **Observed** in the save 46,400 units after the completion save. A new proposal had been spawned at 2,253,000 (`lastSpawnTime`): a "Supply Industry" offer (`deliver_cargo`, uid 138,650,000) for a saw mill, 55 to deliver, `upfront` 2,850,000, `failure` of 2,850,000 and 5,400,000, `expireDurationProposed` 772,000 and `expireDuration` 8,522,500 (the first offer's was 4,626,500, so it is not a constant). `spawnIntervalModifier` had gone back from 0.5 to 1. The player dismissed its notification, and the offer stayed in `proposedSubventions` ([notifications.md](notifications-in-play.md#dismissing-a-notification-and-what-else-changes-604)). The spawn times seen so far are worked through in [the next section](#an-offer-that-expires-unaccepted-604).
 
-### An offer that expires unaccepted (604)
+#### An offer that expires unaccepted (604)
 
 **Observed** in the save at clock 3,785,800. An offer's missed-notice came at its spawn time plus its `expireDurationProposed` (plus 200): the saw mill offer spawned at 2,253,000 with 772,000 gave a `subvention_missed` notification at 3,025,200. A worker-transport offer for a quarry (notification at 2,984,600, missed notice at 3,728,000, "has become unavailable") and a "Supply Town" offer for Retford (`deliver_cargo_town`, spawned at 3,715,000, notification 3,715,800, "requires a skilled logistics firm") followed. The spawn times seen are 61,000, 791,600, 1,887,600, 2,253,000, about 2,984,000 and 3,715,000: gaps of 730,600, 1,096,000, 365,400, about 731,000 and about 731,000, so each is a whole number (1 to 3) of 365,400 within a few hundred, which makes a fixed step of that size plausible. **Open**. Missing an offer costs nothing in the journal.
 
-### What a missed offer leaves behind, and what an autosave catches (604)
+#### What a missed offer leaves behind, and what an autosave catches (604)
 
 **Observed** on 604, one new game.
 

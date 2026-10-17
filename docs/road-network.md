@@ -36,7 +36,7 @@ One change per save, on the same stretch of the main road of the town Hemsworth.
 | `0643` | Baseline | The stub below, node `2a78f` at (-3423.8, 12371.1) to dead end `85be` at (-3467.8, 12294.9), 88 m, is one record |
 | `0644` | Three buildings marked Historic Preservation | Unchanged. Three flag bytes went 0 to 1 in town building records ([town-buildings.md](town-buildings.md)) and nothing else in them changed |
 | `0645` | Deleted the stub, a road segment ending in a dead end off a T-junction | **Unchanged**: the stub's record is still there, as is its dead-end node |
-| `0646` | A small country road from the main road, 58 m | The stub's record and the T-junction node are gone. The two 88 m edges beside the junction became three edges of 55, 55 and 66 m, with a new node `85bf` at (-3442.9, 12382.0). The country road is `85bf` to a dead end `7e56` at (-3414.4, 12432.3), 57.9 m |
+| `0646` | A `country_old_small` road from the main road, 58 m | The stub's record and the T-junction node are gone. The two 88 m edges beside the junction became three edges of 55, 55 and 66 m, with a new node `85bf` at (-3442.9, 12382.0). The country road is `85bf` to a dead end `7e56` at (-3414.4, 12432.3), 57.9 m |
 | `0647` | A standalone country road with noise barriers, about 118 m | Two new edges of 59.4 m: `7de1` at (-3466.5, 12442.2), `85be` (-3431.8, 12490.4), `85dc` (-3397.0, 12538.7); 118.9 m in all. The game cut the road in two at its middle |
 | `0648` | Loaded `0647` and saved at once | Unchanged, all 361 edges (see below) |
 | `0649`, `0650`, `0651` | A house ticked; the town deleted; a load and re-save | Unchanged, all 361 edges, in all three ([the deletion](#deleting-the-town)) |
