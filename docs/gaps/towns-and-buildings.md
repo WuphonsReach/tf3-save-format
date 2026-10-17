@@ -2,6 +2,17 @@
 
 Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**, seen on 604, mostly in one game.
+
+- A building record has no position. Its parcel ids cannot be placed because the parcel table has no ids, and that blocks the map of lots by zone and level (the "Plotting lots" section lists the steps in order).
+- Town boundary: the `town` field is the owning town (Confirmed on two buildings), but whether the boundary is stored or worked out on load is open.
+- Town figures: record floats, the Towns tab figures and the Authority label are not reproduced from the save.
+- Stock records: which building a block belongs to is open.
+- Roads: leftover records of deleted towns, the junction and road tables' remaining fields.
+- Cheapest: entries marked "existing saves". The parcel-id question needs a Town Builder save pair.
+
 ## Town records
 
 - **A town's position and population in the entity data, and an editor map's town names** (604) The town record has neither, and the names table of the Giant editor map held no town names. The Towns / Industries export of the map editor lists both. Home: [town-records.md](../town-records.md), [entity-names.md](../entity-names.md#town-names-604). Needs: an editor save with a typed town name, searched for in the stream.

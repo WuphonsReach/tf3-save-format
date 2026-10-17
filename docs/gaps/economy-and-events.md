@@ -2,6 +2,16 @@
 
 Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**, seen on 604 and often in one game.
+
+- Most entries need a new save pair around one event: an offer's lifetime, a closure, a rank claim, a calendar-speed change, a year step in the cost table.
+- Inflation: the multiplier does not fit high ranks, and passenger income, the Cargo Income steps and running costs under the Inflation option are untested.
+- Subsidies, industry spawning and company offers: what decides them is not read, only observed once.
+- A few close from saves we hold or the game's base files: the closing record's third value, `revision.num`, notification layouts, why `level` lags `potentialLevel`.
+- The balloon and the UFO need unpaused saves a few seconds apart.
+
 ## Subsidies
 
 - **What `usedUids` `true` means** (604) Two uids sat at `true` in none of the offer tables. Home: [subsidies.md](../subsidies.md). Needs: new save pair around an offer's lifetime.

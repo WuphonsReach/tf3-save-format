@@ -2,6 +2,16 @@
 
 Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**, seen on 604 unless a range is given.
+
+- The biggest block is the seed, terrain and map size: whether the seed alone rebuilds a map, what the width and height rule does outside the sizes seen, and what the water sliders change. Each needs a pair of New Game saves taken at once.
+- The sun against the compass is a quarter turn off, and the town centre the name words use is not stored anywhere found.
+- Calendar: the mapping from year to clock units at any speed other than 1.00x is untested, and what the autosave interval counts is unclear.
+- Settings and mods: whether a change acts on what already exists, and what happens to a removed mod's options.
+- Script states, animals and platform: mostly reading work on saves we hold.
+
 ## Seed, terrain and the map
 
 - **Why a Tutorial On game's industry count differs from the New Game screen** (604) The Small tropical game read 8 industries on the screen and held 15 in the save and in the loaded Industries tab; the Tutorial Off games differ by 0 or 1. Whether the tutorial adds industries or the preview is simply built before placement is untested. Home: [tutorial.md](../tutorial.md#open-the-town-and-industry-counts), [industry-lifecycle.md](../industry-lifecycle.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604). Needs: new save pair (two New Games, same seed and sliders, Tutorial On and Off), each saved at once.

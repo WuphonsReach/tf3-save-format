@@ -2,6 +2,16 @@
 
 Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**, seen on 604 and often in one game.
+
+- The largest gap: counters that do not reconcile (delivered totals against the lists, and the clothes chain of 6425796 that the worked example rests on). The lead is what `itemsLost` counts.
+- Spoilage: no field for the spoiled count was found, and whether warehouses or buildings discard or refuse spoiled cargo is untested.
+- Warehouses: where a module's cargo assignment lives and the rule by which a full module is claimed by another cargo, both read from timing only.
+- Cargo ids: the order of steel and sheet metal, and ids in games with a cargo mod.
+- Cheapest first: the "Counters" entries and several fish-chain leftovers need only saves we already hold. Spoilage and warehouse tests need a new save pair; recipe and `cargoNeedsPerTown` questions need game files.
+
 ## Spoilage
 
 - **Where the spoiled count is kept** (604) The windows show a spoiled counter, but no field was found: per unit or per delivery batch is argued both ways by the player. Home: [spoilage.md](../spoilage.md). Needs: new save made while late fish sit in a warehouse, then another after they are carried out.

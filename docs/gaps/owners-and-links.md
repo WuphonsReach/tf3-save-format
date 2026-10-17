@@ -2,6 +2,16 @@
 
 Questions of the form "which record belongs to which thing". Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**: which record belongs to which thing. Seen on 604, mostly in one game.
+
+- Statistics groups: an industry's id was found on a keyed copy of its lists, but for stations, stops and warehouses no owner id has been found. Methods tried are listed in the entry.
+- Lines: a line's stops and vehicles are readable only through warnings and loaded cargo-unit records. A vehicle's own line assignment and a stop record's id are not found.
+- People: a person's own record (home, work, route) is not found.
+- Entity ids to model instances, and a road or rail segment to a line or vehicle, are not linked in the save. A small test game (one rail stretch, one line, one vehicle, one change per save) is the suggested route.
+- Cheapest: the entries marked "existing saves".
+
 ## Statistics groups
 
 - **Which station, stop, ship or warehouse a group belongs to** (604) The `items*` lists sit in groups, and an industry's id was found on a keyed copy of its Transported lists (three industries in catalog save 6425796, matched by unique totals). For stations, stops and warehouses no owner id has been found, and what puts a stop's lists into a group is unknown. Home: [statistics-lists.md](../statistics-lists.md#groups). Needs: existing saves (ground truth for 6425796: a warehouse's stock of 1,500 plastic, four cotton farms told apart by shipment, a train's two stops told apart by its 210-unit loads); a pair of groups 30 KB apart in a second game carry the same totals, and only one of them holds the Loaded list that gives the stock.

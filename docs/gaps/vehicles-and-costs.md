@@ -2,6 +2,16 @@
 
 Format of an entry: see [README.md](README.md).
 
+## In short
+
+Everything here is **Open**, seen on 604, mostly in one game.
+
+- A vehicle's speed, condition, yearly income and running cost are shown in the game windows but the stored values are not found.
+- The save does not link a vehicle's name or entity id to its model instance; maps name vehicles with the player's number supplied by hand.
+- Running costs: the depot and maintenance building's accumulated cost, the by-position rule's exceptions, and the Infrastructure Upkeep setting in play.
+- A depot's catchment ring is measured in a few cases only; ship depots are off from the origin by up to 66 m.
+- Most entries need a paused save pair with one change and a game window reading.
+
 ## Stored vehicle state
 
 - **Which instance is `Train 18` or `Road Vehicle 40`** (604) Maps drawn with `terrain_map.py --vehicles` name a vehicle by model and slot, and the caller supplies the player's number from a screenshot and a position (in the one case tried, Train 18 and two trucks of one model 80 m apart, the order along the road and the trucks' facings in three in-game screenshots told them apart, by eye; three private cars (two `v8` and a `duesenberg`, the player's named ones) on a `country_old_medium` road next to it were matched the same way, by order along the road, lane side and facing). The save does not link a vehicle's name or entity id to its instance. Home: [vehicles.md](../vehicles.md), [entity-names.md](../entity-names.md#vehicles-model-name-slot-and-entity-id). Needs: a paused save with one vehicle selected and named in the game window, moved between two saves, to match by position.

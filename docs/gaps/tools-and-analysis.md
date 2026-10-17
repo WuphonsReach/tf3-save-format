@@ -2,6 +2,14 @@
 
 Format of an entry: see [README.md](README.md). These are gaps in what the repo's tools and worked examples can do, not in the format.
 
+## In short
+
+These are gaps in the repo's tools and worked examples, not in the format.
+
+- Missing tools: a reader for the entity-name table, the trip array, cargo-unit records, and town and stock records (each was read with a throwaway script), and a way to tie a statistics group to a stop or station.
+- Defect: `KNOWN_IDS` in `tools/tf3save.py` labels cargo ids wrongly in games with a cargo mod. The fix is to read each caller and switch it to the save's own cargo list, keeping function names and return shapes.
+- Saves not yet compared: the catalog game of 6425796 re-saved at several play speeds.
+
 ## Steps that still need a private script
 
 - **Searching the entity-name table** The notification reader was promoted to `tools/notifications.py`; a reader for the name table (find a name, list consecutive slots) is not in `tools/`. Home: [entity-names.md](../entity-names.md), [tools/README.md](../../tools/README.md). Needs: a script, with a row in `tools/README.md`.
