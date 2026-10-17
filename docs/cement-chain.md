@@ -2,7 +2,22 @@
 
 The cement chain of the [Small subarctic game](test-games.md#small-subarctic-game), from a quarry to the town buildings, read with the `items*` lists of [statistics-lists.md](statistics-lists.md) as the [fish chain](fish-chain.md) was (how to read a list's total at an earlier clock is [there](fish-chain.md#the-fish-chain-read-through-the-statistics-lists)). 604, one game, so every label is **Observed** unless marked.
 
-## Quarry, plant, warehouse, town (604)
+## In short
+
+All 604, one game (the Small subarctic game, from a quarry to the town buildings), so every label is **Observed**.
+
+- **Each window of the chain matches a statistics group, and the lists put in transit equal the Lines window's Load (Observed).** The plant turns 2 stone into 1 cement and keeps neither (the recipe in [industry-chains.md](industry-chains.md)).
+- **The stone line is the bottleneck.** It carries 4 stone a trip with carts and 12 with the later trucks; the quarry sits at its cap and destroys the surplus, and destroys none once the trucks run.
+- **The `itemsAtEdge*` totals of a line show a bunch on the road, and the last times of one direction's groups lie in route order, town end first (Observed, one line in one save).** That tells which edge group is where, which [the fish queue](fish-chain.md#a-stuck-vehicle-the-totals-along-the-route-show-the-queue) could not.
+- **The small keyed `itemsTransported15` groups are the consumer buildings' tallies (Observed).** 23 totals equal the 23 buildings' `itemsUnloaded15` one for one; the key is probably the building's id (not checked against [town-buildings.md](town-buildings.md)).
+- **A vehicle's loop can be timed from the arrival list, and a jam makes the vehicles run as a bunch that keeps its shape for several loops (Observed).** The delivery line ran as two convoys, one per batch of trucks, and most of a convoy's trucks left empty.
+- **Cargo on a vehicle that is sold leaves no trace in the lists (Observed, two lines):** the lists keep counting it in transit while the window's Load does not.
+- **Building lists lose cargo between saves (Observed):** the gap between the town stop and the buildings was 246 and later 276 to 287; where the rest went is Open, as is whether buildings that were replaced took their lists with them.
+- **Open:** that the trucks without a load entry leave empty is inferred (an empty departure adds no entry), not read.
+
+## Evidence and tests
+
+### Quarry, plant, warehouse, town (604)
 
 **Observed** in the autosave at clock 54,600,400 (6 December 1916 on screen, calendar 0.25x). Stone is cargo 24 and cement 15 in this save ([cargo-ids.md](cargo-ids.md)). Two road lines carry the chain. The first runs quarry, cement plant, warehouse: it brings stone to the plant and takes the plant's cement on to the warehouse. The second runs from the warehouse to a stop in Retford. The player's Lines window from about the same time showed the first line with 9 vehicles of two models (capacity 36 in all) and the second with 23 trucks (capacity 138). The player had not changed either line since the first months of the game.
 
@@ -25,9 +40,9 @@ The cement chain of the [Small subarctic game](test-games.md#small-subarctic-gam
 - **The small keyed `itemsTransported15` groups are the consumer buildings' tallies.** 23 groups hold only an `itemsTransported15` list under a 5-digit key, and their 23 totals (1 to 89) equal the 23 consumer buildings' `itemsUnloaded15` totals one for one. The key is probably the building's id. That was not checked against the [town building records](town-buildings.md).
 - **The buildings' lists hold 246 fewer cement than the town stop unloaded.** The difference read 52, 144, 206, 240 and 246 at clock 10, 20, 30, 40 and 46.2 million, and 246 at every later reading. It grew while the town was young and then stopped. Whether buildings that were replaced took their lists with them was not checked (**Open**). Later saves read it differently ([below](#town-buildings-in-the-later-saves)).
 
-## Replacing both lines' vehicles (604)
+### Replacing both lines' vehicles (604)
 
-**Observed** in the same game from August 1917 to May 1918 (clock 58.4 to 63.2 million, calendar 0.25x), in three manual saves and two autosaves, with the player's screenshots of the line, depot and buy windows up to July 1918. The player replaced the stone line's nine carts (`horsewagon_1850_usa_v2` and `horse_cart_small`) with seven Benz 3-Ton Bulk trucks (capacity 12), then the delivery line's 23 trucks with 14 and later 27 of the same model. The bookings of the purchases and sales are in [finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604), and what the line windows showed in [lines.md](lines.md#the-lines-windows-frequency-rate-and-load-columns-604).
+**Observed** in the same game from August 1917 to May 1918 (clock 58.4 to 63.2 million, calendar 0.25x), in three manual saves and two autosaves, with the player's screenshots of the line, depot and buy windows up to July 1918. The player replaced the stone line's nine carts (`horsewagon_1850_usa_v2` and `horse_cart_small`) with seven Benz 3-Ton Bulk trucks (capacity 12), then the delivery line's 23 trucks with 14 and later 27 of the same model. The bookings of the purchases and sales are in [vehicle-sale-bookings.md](vehicle-sale-bookings.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604), and what the line windows showed in [lines.md](lines.md#the-lines-windows-frequency-rate-and-load-columns-604).
 
 **The stone line.**
 
@@ -46,7 +61,7 @@ The cement chain of the [Small subarctic game](test-games.md#small-subarctic-gam
 - Both lines use the same station by the warehouse, and the road into it is also the way out of the depot where the new trucks were bought. Each time a batch of new trucks left the depot together, the player saw them queue on that road, and the stone trucks waited behind them.
 - **The lists show each jam as a gap in the stone trucks' cement drop-offs at the station**, followed by several trucks unloading together. The drop-offs came every 90,000 to 100,000 units until 61,264,000, then none until 61,600,000, when an entry of 18 (three trucks) arrived; the loop of the truck caught in it took 861,000 units against 628,000 to 659,000 for the six before. After the second batch of 13 trucks (bought at 62,722,000) there was a drop-off on 21 April 1918, a single one on 6 May, and then an entry of 12 (two trucks) on 22 May, when the player saw the road clear. The plant's arrival list shows the first holdup a little later, as a gap of 327,000 units. Two more gaps of about the same size, in the drop-offs from 7 to 27 March 1918 and in the plant's arrivals from 6 to 23 April, came with no new trucks: they are the first jam's bunch coming round again ([below](#two-convoys-and-a-stone-line-that-spreads-out-again-604)).
 
-## Two convoys and a stone line that spreads out again (604)
+### Two convoys and a stone line that spreads out again (604)
 
 **Observed** in four later saves of the same game (clock 64.4 to 68.5 million, August 1918 to April 1919, calendar 0.25x): an autosave of 10 August 1918, a paused save of 4 March 1919 and two autosaves of 25 April 1919 written at the same paused clock, with the player's Lines tab on 16 August 1918 and 4 March 1919. The player changed nothing on either line. The windows' figures are in [lines.md](lines.md#the-lines-windows-frequency-rate-and-load-columns-604).
 
@@ -61,7 +76,7 @@ The cement chain of the [Small subarctic game](test-games.md#small-subarctic-gam
 - **The first jam did the same.** Gaps begin in the plant's arrivals at 61.70 and 62.40 million (697,000 apart, about one loop) and in the station's cement drop-offs at 61.90 and 62.62 million (721,000 apart), the March and April gaps [above](#replacing-both-lines-vehicles-604). So a bunch made by a jam keeps its shape for several loops.
 - **The chain's flow.** In each 1,461,000-unit period from 61.4 to 67.2 million the quarry loaded 168 to 192 stone and the plant made 90 to 96 cement. The quarry destroyed none after 58.7 million.
 
-### Town buildings in the later saves
+#### Town buildings in the later saves
 
 - **Eleven buildings got cement for the first time** when the new trucks' first loads arrived: their keyed groups begin at 62.70 to 62.82 million. There were 32 such groups in the August 1918 save and 33 in April 1919, against 23 in December 1916.
 - **Building lists lose cargo between saves.** One 1916 group (13 cement) is missing from the later saves. Read from the August 1918 save, the gap between the town stop and the buildings is 276 at clock 54.6 million (246 in the 1916 save), 287 by 62 million and 283 to 287 up to 64.4 million, the small changes being cement between the stop and a building. Where the other 17 went is **Open**.

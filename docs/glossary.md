@@ -61,8 +61,11 @@ The game has no separate truck stop, bus stop or bus station building. There are
 | `small_*` | Road Stop | truck stop, bus stop, cargo stop, stop (ambiguous) |
 | `modular_terminal`, `STATIONS_STREET_PASSENGER` | Bus/Tram Station | bus station, bus terminal |
 | `modular_terminal`, `STATIONS_STREET_CARGO_UNIVERSAL` (or `_BULK`, `_FLATBED`, `_GOODS`, `_LIQUID`) | Universal (Bulk, Flatbed, Goods, Liquid) Cargo Station | truck station, cargo station, cargo terminal, truck terminal, loading station |
-| `harbor_modular`, `HARBOR_SMALL`, `HARBOR_LARGE` | Small or Large Passenger/Cargo Port | harbor, harbour, dock (ambiguous), quay, ship stop |
+| `harbor_modular`, `HARBOR_SMALL`, `HARBOR_LARGE` | Small or Large Passenger/Cargo Port | harbor, harbour, dock (ambiguous), quay (ambiguous), ship stop |
 | `STATIONS_WATER_SMALL_PIER`, `STATIONS_WATER_MEDIUM_PIER` | Small Landing, Large Landing | pier, jetty |
+| `passenger_dock_50_12`, `passenger_dock_100_25` | Small Dock, Large Dock | dock (ambiguous), quay (ambiguous) |
+| `passenger_dock_50_50_2`, `passenger_dock_100_50_2` | Main Platform | quay (ambiguous), main quay (ambiguous), wharf |
+| `passenger_dock_25_25`, `passenger_dock_50_50`, `passenger_dock_100_50` | Small Building, Large Building, Large Main Building | port building, terminal building |
 | `modular_station` (`rail/`) | rail station build | train station, railway station |
 | `road_depot` | Road Depot | bus garage, truck depot, garage |
 | `water_depot` (string `DEPOTS_WATER_SHIPYARD`) | Ship Depot | shipyard, boat depot, dock (ambiguous) |
@@ -130,7 +133,8 @@ Do not pick a key for these without context:
 - **carriage, coach, wagon, cart**: a horse-drawn passenger `bus`, a horse-drawn cargo `truck`, the horse tram (`tram` model `double_horse`), a rail `waggon` or a tram car; "coach" can also be a motor `bus` (a motor coach) or a private `car` (the early `car` models `coach_01` to `coach_06` are horse coaches). The words overlap in English (a cart has two wheels, a carriage carries people, a coach is large and enclosed, a wagon is a utility vehicle), and the game's labels do not follow them; a player may call any horse-drawn vehicle a cart. Mods add more horse-drawn models (the Early Road Vehicles `truck` models `horsewagon_1850_v2` and `horsewagon_1850_usa_v2`). In a note, name the model key at the first mention in a section; "cart" or "coach" may follow for the same vehicles.
 - **car**: a private `car`, a tram car or a train car.
 - **cargo platform**: a module of `modular_terminal`, not a separate station.
-- **dock**: `harbor_modular` or `water_depot`.
+- **dock**: `harbor_modular`, `water_depot`, or a dock module of a port (`passenger_dock_50_12` Small Dock, `passenger_dock_100_25` Large Dock; the module keys carry the footprint in metres).
+- **quay, main quay**: the game's text has no such word. A player may mean the Main Platform module (`passenger_dock_50_50_2`, `passenger_dock_100_50_2`), a dock module, or the whole shore side of a `harbor_modular` port. Ships tie up at the landings (`STATIONS_WATER_SMALL_PIER`, `STATIONS_WATER_MEDIUM_PIER`; module files `small_pier`, `medium_pier`), not at a quay. Name the module; in a note on station pieces, say what the word covers where it is used.
 
 If a message uses a word you cannot place, say so rather than guessing, and add the word to this note once the user has answered.
 

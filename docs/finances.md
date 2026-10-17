@@ -4,6 +4,19 @@ How the company window's Finances tab (Earnings Details and Summary) lines up wi
 
 Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever3/m/emerald-shores3) saved again with the game paused (calendar speed 0.50x, no mods, no loan taken at the time). 585 and 601 were not looked at.
 
+## In short
+
+Versions: 604 throughout (one catalog save and one new game); 585 and 601 were not looked at.
+
+- **The money journal is what the game's windows read (Confirmed).** Setting the balance with the editor added one `OTHER` booking, and the Finances tab, the Overview chart and the bottom bar all followed with no other copy changed. The journal's bookings sum to the balance, which equals the header money (Confirmed, [Finding the journal](#finding-the-journal)).
+- **A tab column is one period of 1,461,000 clock units (Confirmed)** and its Earnings is the sum of every booking except type `LOAN`. The bottom bar's Earnings is the current period's sum, not a running total (Observed, one save).
+- **Each tab row is the sum of the bookings in a few category bytes (Confirmed for the rows in [the table](#rows-against-the-booking-categories)).** Depots count under Infrastructure and warehouses have their own Investments row (Observed, one build). The tab's split of upkeep into roads and buildings has no field in the booking (Open).
+- **Old bookings are merged, so booking counts do not measure activity (Observed).** Beyond about a year before the save they are summed by month, much older ones by year. Where the cutoffs sit is Open.
+- **A sale is a positive booking in the vehicle acquisition category, one per vehicle (Observed).** The tab's vehicle row shows the net. Detail in [vehicle-sale-bookings.md](vehicle-sale-bookings.md).
+- **Income is booked as one booking per carrier, all at one time per delivery (Observed).** A line's window balance is its income minus its vehicles' running costs only. How a delivery's pay is split between carriers is Open.
+- **A new game starts with no bookings** (the catalog save started with a +4,000,000 booking, so this varies; Observed). Anything built or sold while the game is paused is booked at the paused tick (Observed, two sessions).
+- **Not found:** a field for the tab's roads/buildings split, the cause of small price differences for one model, and whether the line-balance rule holds with several lines per carrier.
+
 ## Finding the journal
 
 - **Confirmed**: the journal in this save has 25,570 bookings, and their amounts sum to the balance, which equals the header money. That matches FORMAT.md, and the 21-byte booking (`i64` time, `i64` amount, five `u8` categories) read as described there.
@@ -41,9 +54,15 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - The tab splits the infrastructure upkeep into roads and buildings (or tracks and buildings). The booking has no field that does that, so the split is not in the five category bytes. Only the sum was checked. **Open**.
 - The bookings in an old period are far fewer than in a recent one: about 220 in each of the two earliest periods above against about 10,000 in each of the last two. Older bookings are merged (next bullet). **Observed**, so do not use the booking count as a measure of activity.
 - **Old bookings are merged by month** (604, the new game below, save `1246` at clock 5,997,000). Before 4,560,000 the journal holds four infrastructure bookings per 121,750 units, one per carrier, each the sum of what two 60,000-unit batches booked (a warehouse is -4,106 a month, two are -8,212). 121,750 is a twelfth of the 1,461,000-unit year. The first batch kept in full is at 4,560,000, so bookings more than one year (1,461,000 units) older than the save are merged. Later in the same game, 13 truck purchases booked separately at 62,722,000 were still apart in a save at clock 63,198,000 and had become one booking (-4,791,163) at 62,701,250, which is 515 x 121,750, in a save at 64,397,200. **Observed** in these saves: where exactly the cutoff sits (a year before the clock, or a fixed count) is **Open**.
-- **Much older bookings are merged by year.** In saves of the same game at clock 58.6 to 63.2 million (1917 and 1918, calendar at 0.25x) the old vehicle purchase bookings sit at multiples of 1,461,000 (39,447,000, 40,908,000, 42,369,000), the start of the 1,461,000-unit period they fall in, one per category and period: the 42,369,000 booking of -2,249,317 is the net of the seven trucks bought and seven carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) sold at 43,361,200 ([below](#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604)). So merging goes on past the monthly step. Where the yearly step begins was not read. **Observed**, one game.
+- **Much older bookings are merged by year.** In saves of the same game at clock 58.6 to 63.2 million (1917 and 1918, calendar at 0.25x) the old vehicle purchase bookings sit at multiples of 1,461,000 (39,447,000, 40,908,000, 42,369,000), the start of the 1,461,000-unit period they fall in, one per category and period: the 42,369,000 booking of -2,249,317 is the net of the seven trucks bought and seven carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) sold at 43,361,200 ([vehicle-sale-bookings.md](vehicle-sale-bookings.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604)). So merging goes on past the monthly step. Where the yearly step begins was not read. **Observed**, one game.
 
-## A new game's journal
+## The balance history run
+
+**Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.
+
+## Evidence and tests
+
+### A new game's journal
 
 **Observed** on 604, the [Small subarctic game](test-games.md#small-subarctic-game) when new (paused at 1900-01-01), saved four times:
 
@@ -63,7 +82,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 
   The Overview chart "Revenue" bar read 2,493,270,050 (the `OTHER` booking counts as revenue) and "Debt + Cash" 2,493,188,193, the balance less the 18,000,000 debt. Header money was not checked in the game.
 
-### A first build-out, row by row
+#### A first build-out, row by row
 
 **Observed** on 604, the same game after buying two small ports, two ship depots, a road depot, a specialised fish warehouse, a road stop (`small_*`), three road vehicles and four ships, and building a short road (calendar paused at 1 January 1900, so every booking carries the same time, 1000). The journal grew from 3 to 20 bookings (editor labels in quotes), and every figure on the company window's Finances tab matched the bookings in its category to the dollar:
 
@@ -81,7 +100,7 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - Investments, Warehouses is a row the table above lacks. It held one booking (305,973), for the one warehouse the player bought, a specialised fish warehouse (so the row is not limited to the general warehouse). **Observed**, one build.
 - The header money after saving (2,507,507,336) equalled the Account figure.
 
-### Loan payments and income over ten minutes
+#### Loan payments and income over ten minutes
 
 **Observed** on 604, the same game after about 570 seconds of play (the header's clock at 569,800, the date still 1 January 1900 with the date stopped, see [calendar.md](calendar.md)): the journal held 210 bookings. The loan of 18,000,000 and the first build-out were still in it. The upkeep and running-cost batches of the same journal are in [running-costs.md](running-costs.md#upkeep-and-running-costs-are-booked-in-batches-604). Then:
 
@@ -92,11 +111,11 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - Vehicle age in the line window (9m 28s) is the time since purchase in clock units read as seconds: 569,800 - 1,000 units is 568.8 s. **Observed**.
 - The header money (2,506,375,464) equalled the journal balance, which equals the previous balance less these bookings.
 
-### The bottom bar's Earnings is the current period's
+#### The bottom bar's Earnings is the current period's
 
 **Observed** on 604, the same game at clock 2,246,600 (journal 1,718 bookings, balance 2,495,976,310, the same figure as the Account on the bottom bar). The bar's Earnings read -4,938,203 although the all-time sum of bookings other than `LOAN` was 2,481,833,458. The sum of those bookings from 1,461,000 (the start of the period the clock is in, see [Periods](#periods)) was exactly -4,938,203. So the bar shows the current period, and in the first game of this series (clock below 1,461,000) it showed what looked like a total. The bar's cargo figure (124) was `cargoDeliveredCount` and its passenger figure (0) `passengerTransportedCount` ([script-states.md](script-states.md#counters-and-achievements)). 18 loan payments (3,857,148 in all) had been made, so the loan sum stood at 14,142,852.
 
-### A new game's first batch of bookings while paused
+#### A new game's first batch of bookings while paused
 
 **Observed** on 604, the same game a quarter of an hour of play later (save at clock 1,121,000, the calendar stopped, 477 bookings, money 2,503,056,661). The player added vehicles to the fish lines, bought the first buses and trucks, built a line from a `quarry` to the `cement_plant` and took a subsidy:
 
@@ -106,19 +125,3 @@ Checked on 604, one game: catalog save [6428935](https://mod.io/g/transportfever
 - **A subsidy accepted adds a `Subsidy` booking** at the acceptance tick, +2,610,000 here, see [subsidies.md](subsidies.md#a-new-game-an-offer-its-expiry-and-an-accepted-subsidy-604). Its category is its own, not `Income`.
 - **The loan payment kept its schedule**: at 975,400 and 1,097,200 (121,800 apart), -214,286 and -19,286 each.
 - **Income keeps coming as one pair of bookings per delivery** (Road and Water at one time), now at 635,400, 719,400 (three bookings), 825,200, 915,800, 1,013,200 and 1,099,000, each pair about 24,500 to 25,100 in total.
-
-### Selling a vehicle is a positive booking in the purchase category (604)
-
-**Observed** on 604, one game (the Small subarctic game, saves `1958` and `1959`, paused at clock 43,361,200, 1 January 1912 plus ten days). The player sold seven old horse carts (`horsewagon_1850_v2` and `horsewagon_1850_usa_v2`) and bought seven `benz1912_box` trucks at the Todmorden road depot ("Buy 7 Vehicles for $2,580,102", $368,586 each in the buy window).
-
-- The journal gained 14 bookings, all at the paused clock and with the same five category bytes as the purchases (3, 6, 2, 0, 0, the `ACQUISITION` / road bookings of the vehicle purchases above). Seven were -368,586, the buy button's per-vehicle price. Seven were **positive**: +48,309, +48,286 and five of +46,838. Their sum, 330,785, is what separates the 2,580,102 bought from the fall of 2,249,317 in the account (2,500,026,265 to 2,497,776,948).
-- So the game books a sale as money in, in the vehicles' own acquisition category, one booking per vehicle, not as a negative purchase. The Finances tab's "Investments, Vehicles" row therefore shows the net. These were the first positive bookings of that kind in the whole journal (5,955 bookings). The sale prices differ a little between vehicles (two at about 48.3 thousand, five at 46,838), which fits a value that depends on age or condition (**Open**: not tested against the vehicle windows).
-- Buying and selling in one go shows in the header counts too, see [header.md](header.md#counts-the-load-dialog-shows).
-- **Later purchases and sales in the same game (clock 58.4 to 62.7 million, 1917 and 1918)** kept the pattern: one booking per vehicle, same category bytes, sales positive.
-  - **The booked price was $35 below the buy window's.** Three batches of the same model, 7, 14 and 13 Benz 3-Ton Bulk, were bought with the window showing $368,586 each (7 for $2,580,102, 13 for $4,791,618), and each vehicle was booked at -368,551 (at 58,426,800, 61,148,400 and 62,722,000). In 1912 the same window price had been booked in full. Prices of one model also differed slightly in the first months of the game (carts at 60,903 and 60,912, ships at 438,891 and 438,912). What sets the booked price is **Open**.
-  - **Sale prices are per model.** Nine horse carts of two models sold for +2,712 each (four of one model) and +1,210 each (five of the other): 4 x 2,712 + 2 x 1,210 = +13,268 at 58,811,600, the change in the bottom bar's Earnings across the sale (-187,412 to -174,144, paused), and 3 x 1,210 later. Sixteen old trucks of one model sold for +593 each, in batches of 7 and 9.
-  - **Read a sale's time from the journal, not from a screenshot.** Twice, with the game running, the booking came about two game days after the player's screenshot of the confirm dialog. At 0.25x and play speed 4 a game day is about 4 real seconds, so that is the few seconds before the button was clicked, not a delay in the game.
-
-## The balance history run
-
-**Observed** on 604, catalog save 6428935 (account 3,382,382,812 in the game) loaded, paused at once and saved again. In the stream, far in front of the Lua states, there is a long run of i64 values that each sit within a few percent of the one before and read as a balance history. Three of them, 12 entries apart, equalled the Bank Account row for the last three finished periods on the Finances tab (3,302,688,957, 3,330,544,108, 3,363,416,724). The tab shows six-month periods, so that is about two entries a month. The last entry of the run was 3,382,379,554, which is the header money of the original save and not the re-save's, so the history is sampled and the live balance is not appended to it. It is not the money journal that FORMAT.md describes: that is a separate run of 21-byte bookings ([above](#finding-the-journal)). Find it by searching for one of the period-end figures as 8 little-endian bytes. **Observed**, one save.

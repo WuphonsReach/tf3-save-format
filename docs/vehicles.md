@@ -6,7 +6,7 @@ Other notes hold the rest of a vehicle's trail:
 
 - Its name slot and entity id, and how the two relate within one purchase: [entity-names.md](entity-names.md#vehicles-model-name-slot-and-entity-id).
 - Its count in the load dialog: [header.md](header.md#counts-the-load-dialog-shows).
-- Purchase and sale bookings: [finances.md](finances.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604); running costs, the parked rate and condition steps: [running-costs.md](running-costs.md).
+- Purchase and sale bookings: [vehicle-sale-bookings.md](vehicle-sale-bookings.md#selling-a-vehicle-is-a-positive-booking-in-the-purchase-category-604); running costs, the parked rate and condition steps: [running-costs.md](running-costs.md).
 - Passenger trip records that name a vehicle: [lines.md](trip-plans.md#trip-plans-line-stops-and-vehicle-or-a-building-604).
 - Vehicle-condition and stuck-vehicle warnings: [notifications.md](notifications-in-play.md#stuck-vehicle-notifications-604).
 

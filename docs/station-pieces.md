@@ -2,6 +2,13 @@
 
 A station (a port, a rail station, a bus or tram stop; the keys are in the [glossary](glossary.md)) is made of many placed pieces, and each piece is a model instance ([models.md](models.md#the-model-instance-record)). This note says which models make up the platforms and buildings and how a picture can draw them. The station's own record (modules, terminals, owner) is not read here.
 
+## In short
+
+- **A station is a pile of placed model instances, not one object (Observed, 604, one game: mod.io 6425796).** Decks, platforms, buildings, railings, clocks, roofs and invisible path markers each have a model under the install's `stations/`. Sizes come from the model file's `boundingInfo` (Confirmed that the file lists them; a box from an instance's origin and facing matched top-down screenshots of one port and its rail yard, **Observed**).
+- **A ship docks at a landing, and the game marks each landing with a `tn_*_pier_passenger*` model (Observed, one port).** The build menu's Small Landing and Large Landing are `STATIONS_WATER_SMALL_PIER` and `STATIONS_WATER_MEDIUM_PIER`. The decks that carry a port's capacity are the dock modules (`passenger_dock_50_12` Small Dock, `passenger_dock_100_25` Large Dock) and the Main Platform ones; the game has no "quay" ([glossary.md](glossary.md#ambiguous-words)).
+- **The black border round a `modular_terminal` station is a ground face built by the station script from the platform columns (Observed, two stations).** Whether the save stores the polygon is Open. A picture can rebuild it a little under the game's size from the placed pieces.
+- **Open:** whether a piece's box overlaps its neighbours' beyond its edge pieces, whether the `_con_*` and `_end_*` edge pieces mean a joint and a closed end, and the small landing's markers against a picture.
+
 ## Water stations
 
 - **The pieces are models under `stations/water/models/` (604, Observed, one game, mod.io 6425796).** In a save with five clusters of station pieces the instances were deck pieces `dock_100_25` and `dock_50_12`, `platform_100` and `platform_25`, main buildings `main_building_s0` and `main_building_s2`, railings (`safeguard_metal*`, `safeguard_wood*`, hundreds of them), clocks (`harbour_size0_clock`, `harbour_size2_clock`) and invisible path markers (`*_network_person`, `pedestrian_entrance_network_person`). The `tn_*_pier_passenger*` models are 2 m markers, one per landing a ship docks at (see below).
@@ -22,5 +29,11 @@ A station (a port, a rail station, a bus or tram stop; the keys are in the [glos
 
 ## Sizes and drawing
 
-- **Sizes come from the model's `boundingInfo`.** The model file (`.mdl`, text) in the install's `stations/*.zip` lists `bbMin` and `bbMax` in the model's own axes. A box (for a piece with edge pieces, the union with their boxes, its cell) placed from the instance's origin and facing (as for [depots](depots.md)) matched the piers, quays, sheds, rail platforms and bus platforms in top-down screenshots of one port and its rail yard: a main quay along the shore with arms of two to four deck pieces, and three rail platforms with a station building beside the tracks. **Observed**: one port, boxes only; whether a piece's box overlaps its neighbours' beyond the edge pieces is **Open**.
+- **Sizes come from the model's `boundingInfo`.** The model file (`.mdl`, text) in the install's `stations/*.zip` lists `bbMin` and `bbMax` in the model's own axes. A box (for a piece with edge pieces, the union with their boxes, its cell) placed from the instance's origin and facing (as for [depots](depots.md)) matched the landings, docks, sheds, rail platforms and bus platforms in the screenshots described under [Evidence and tests](#evidence-and-tests). Whether a piece's box overlaps its neighbours' beyond the edge pieces is **Open**.
 - **Drawing.** `tools/terrain_map.py --stations` draws the boxes in a `stations` layer, a sublayer per kind and one of landing anchors ([tools/README.md](../tools/README.md)): water brown, rail grey, street lighter grey, platforms lighter than buildings, the street groups and the border above the roads so the border hides the ends of the station's own lanes, each group's outer edge at an industry's outline width with no line where two boxes touch (found by testing each metre of an edge for a box just outside it). The edge pieces are not drawn on their own: as separate boxes their outlines ran 1 to 2 m inside every cell.
+
+## Evidence and tests
+
+- **Boxes against top-down screenshots (604, Observed, mod.io 6425796, one port and its rail yard).** Boxes placed from each instance's origin and facing matched a main deck along the shore with arms of two to four deck pieces, and three rail platforms with a station building beside the tracks. One port, boxes only.
+
+The landing anchors and the border shapes were checked against the player's screenshots too; those checks are in their own bullets above.

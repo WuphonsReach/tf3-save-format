@@ -18,7 +18,7 @@ Format of an entry: see [README.md](README.md).
 - **Cement missing from building lists** (604, one game) A town's buildings hold fewer cement than its stop unloaded, and the figure changes between saves. Home: [cement-chain.md](../cement-chain.md). Needs: existing saves.
 - **The station's Loaded list is two per period above the warehouse's outgoing list** (604, one game, 236 against 232 fish). Home: [fish-chain.md](../fish-chain.md). Needs: existing saves.
 - **Fish that leave the port without entering a warehouse that has room** (604, one game) Twelve fish in all; either a building takes fish first or the two lists' stamps are offset. Home: [fish-chain.md](../fish-chain.md). Needs: existing saves.
-- **What another stop's `itemsAtStopUnsatisfied0_c6` counts** (604, one game) A stop showed 47 where the town stop showed 35. Home: [spoilage.md](../spoilage.md#unsatisfied-counts-at-the-stops-604). Needs: existing saves.
+- **What another stop's `itemsAtStopUnsatisfied0_c6` counts** (604, one game) A stop showed 47 where the town stop showed 35. Home: [unsatisfied-lists.md](../unsatisfied-lists.md#unsatisfied-counts-at-the-stops-604). Needs: existing saves.
 - **Whether the industry's destroyed fish are overflow only** (604, one game) The first quarry period (70 produced, 70 destroyed, stock full) fits. Home: [industries.md](../industries.md). Suggested test: keep one industry's output full with nothing loading for a cycle and compare destroyed with each production pulse.
 
 ## Warehouses
