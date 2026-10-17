@@ -2,6 +2,12 @@
 
 What the game's own street and track templates say about a road edge's type, read from the install and not from a save. The edge records are in [road-network.md](road-network.md); this note starts from the type name an edge carries. Evidence labels are as defined in [README.md](README.md#evidence-labels).
 
+## In short
+
+- **The type name gives the lane count and width (Observed, 604 install, 87 templates).** The lane count is not decoded from the edge record's lane block; it comes from the template's `laneConfigs`: small types 2, medium 4, large 6 vehicle lanes, tracks 1, the tram-only street 2. The profile width is the sum of the lane widths: a small town street is 16, medium 24, large 32, a track 4 (unit taken to be metres, Open).
+- **A mod's street type has no template** in the base files, so its count is not known this way.
+- **Open.** The unit of the widths (no in-game measurement), and which word the game uses for `town_old_large`.
+
 ## Lane counts
 
 **Observed**, read from the install of the 604 build (`base/content/infrastructure/street.zip` and `track.zip`, one `<type>.street_template.lua` per type, the path the save's template string names). Each has a `laneConfigs` list with one entry per lane: a direction, a width, a speed and the transport modes it takes. The lane count of a type is the number of entries whose modes include a vehicle (`CAR`, `BUS`, `TRUCK`, `TRAM`, `TRAIN` and their electric forms); the footpath lanes (`PERSON` and `CARGO` only) are left out. Over the 87 street and track templates: the small types have 2, the medium 4 and the large 6 (country and town, old and new alike); `highway_new_small`, `_medium` and `_large` have 1, 2 and 3; a track type (`simple`, `standard`, `high_speed`, with or without catenary) has 1; the tram-only street has 2; the airport runway and taxiway types have none. So the lane count is not stored in the save's edge record (its lane block stays undecoded, see [road-network.md](road-network.md#the-street-edge-table)) but is found from the type name, which `terrain_map.py` did while it drew widths in proportion to lanes over two (it now draws the profile widths below). A mod's own street type has no template in the base game's files, so its count is not known this way. The glossary's "four-lane town road" for `town_old_large` does not match the six vehicle lanes its template lists; which word is right in the game's own text was not checked.

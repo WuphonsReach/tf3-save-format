@@ -2,6 +2,14 @@
 
 What marking buildings Historic Preservation in the map editor wrote, where one such house stood, and what the building record's `town` value might be. The record layout is in [town-buildings.md](town-buildings.md#the-record-and-how-to-list-it). Observed on 604 in the [Giant temperate editor game](test-games.md#giant-temperate-editor-game), whose roads are in [road-network.md](road-network.md).
 
+## In short
+
+This note is a log by nature (Observed, 604, one Giant temperate editor game). The conclusions:
+
+- **Ticking Historic Preservation flips one flag byte 0 to 1** in the building's record and changes nothing else in it. The record has no position and the parcel ids occur only inside the records, so a tick does not place the building; a ground-texture lot near the player's screenshot did, once.
+- **The record's `town` value is not one town's id in an editor map** (18 distinct values for 18 towns, but one town held buildings with two values), unlike a regular game.
+- **A counter near the end of the stream** counts ticks since the game was loaded, not buildings ticked (lead only).
+
 Between two saves the player ticked Historic Preservation on three buildings in the map editor, all in the town Hemsworth by the player's account. Exactly three flag bytes went 0 to 1 in the stream, each in a record of the layout above, and no other byte of those records changed. The three records had level 1, three to four parcels, depth 3 or 4, heights 11.6 to 15.7 m, `timeBuilt` 0 and one town id. A record has no position, and the parcel ids occur only inside the records, so the ticks did not give a building's place on the map; the other tables around a road edit did ([road-network.md](road-network.md)).
 
 - **A single tick, and where the house stands (`0649`, Observed).** One flag byte went 0 to 1 and nothing else in the record changed: `b` = 0xffffffff (a house), level 1, two parcels, depth 3, height 7.9 m, `timeBuilt` 0, town value 128,031. In the player's screenshot it stood 43 m from where the country road meets the main road. The ground-texture polygons ([road-network.md](road-network.md#the-other-tables-a-road-edit-touches)) hold one polygon per building lot, named by its texture (`buildings/a/r1/4x4_03/a_res_l1_4x4_03.gtex` is residential, level 1). The only such lot within 40 m of the spot read off the screenshot was centred at (-3400, 12366), 2 m from it. That is a position for a ticked building from the stream, but the record and the lot are tied only by the screenshot; no id links them (**Open**).

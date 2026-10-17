@@ -2,6 +2,11 @@
 
 The expected delivery time of each cargo, as the company window's Delivery Time tab shows it, against the `timeToDeliverInSeconds` of the cargo files. Cargo that went bad on the way, and how its age may compare with these times, is in [spoilage.md](spoilage.md). Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game).
 
+## In short
+
+- **The tab shows the cargo file's time times 1.5 (Observed, 604, one game).** Each bar's tooltip in the company window's Delivery Time tab equals the `timeToDeliverInSeconds` of the cargo's file multiplied by 1.5, from 22 m 30 s for meat to 1 h 52 m for stone. The three tallest bars are clipped at the axis top but their tooltips give the real value.
+- **Open.** Where the 1.5 comes from, and whether game difficulty changes it.
+
 ## The Delivery Time tab (604)
 
 The company window's "Delivery Time" tab draws one bar per cargo type of the game, "the expected delivery time", with a note that food has a low expected time, that bulk cargo is less time sensitive and that late delivery affects town ratings. Each bar shows its value in a tooltip. **Observed**, one game, with these tooltips read by the player, each equal to the cargo file's `timeToDeliverInSeconds` (in the `cargos/` archives of `base/content`) times 1.5:

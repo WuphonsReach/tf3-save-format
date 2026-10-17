@@ -2,6 +2,11 @@
 
 What a game started with Tutorial On leaves in the save, and the open question of why its town and industry counts differ from the New Game screen. **Observed**, 604, one game of ours with Tutorial On ([the Small tropical game](test-games.md#map-format-tests), two saves) against our games started with it Off. Labels are defined in [README.md](README.md).
 
+## In short
+
+- **What it leaves (Observed, 604, one game with Tutorial On).** `guideSystemConfig.tutorial` is 2 for On and 1 for Off. The states `mission/mission.gs` and `mission/guide_system.gs` hold the tasks (7 and 18 at the start, empty with Tutorial Off); `mission.gs` also has `isTutorialActive`.
+- **Open.** Why the tutorial game held 15 industries while the New Game screen showed 8; the test is at the end of the note.
+
 ## What the save keeps
 
 - **The option.** `guideSystemConfig.tutorial` is 2 for On and 1 for Off ([settings.md](settings.md#the-options)). The Start Game button is greyed on a map without enough water ([settings.md](settings.md#the-options)).

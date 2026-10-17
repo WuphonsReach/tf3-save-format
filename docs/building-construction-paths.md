@@ -2,6 +2,12 @@
 
 The construction path string the stream keeps for each town building, and what it gives that the building record ([town-buildings.md](town-buildings.md)) does not: the zone and the footprint.
 
+## In short
+
+- **The zone and footprint are in a path string (Observed, 604, two saves of one game).** Each town building has a `.con` string `buildings/a/<zone><level>/<w>x<d>_<nn>/...` whose zone is `res`, `com` or `ind` and whose second footprint number equals the record's `depth`. No other place in the stream gives the zone so far.
+- **The path's level is not the record's level,** and `b` = 0xffffffff does not mean a house.
+- **Open.** What each of those fields means.
+
 ## The zone and footprint from the construction path (604)
 
 **Observed** on 604 in the Small subarctic game, saves `1035` (410 buildings) and `1824` (1,329). The stream holds one construction path string per building, `buildings/a/<zone><level>/<w>x<d>_<nn>/a_<zone>_l<level>_<w>x<d>_<nn>.con`, where the zone is `res`, `com` or `ind`, for example a 3 by 4 commercial building of level 1.

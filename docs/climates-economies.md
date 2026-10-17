@@ -2,6 +2,11 @@
 
 The header names a climate and an economy in its config resources (`climate`, `economy` and `nameList`, each a path such as `::/economy/all.eco`, see [header.md](header.md)). They come in matched pairs, plus the all-industries economy. How many saves use each pair is counted in [versions.md](versions.md#climates-and-economies-in-the-catalog-2026-10-09). The climate files are `<name>.clima` and the economy files `<name>.eco`.
 
+## In short
+
+- **Matched pairs (Observed, 604).** Each climate pairs with its own economy (note `tropic.eco`), and every climate except the mission one also pairs with `all.eco`. The economy is a choice of its own: a dry-climate game stored `subarctic.eco`.
+- **What an economy leaves out of town cargo (Observed, 599 to 604):** subarctic has no bricks or vegetables, tropic no bricks, cement or beverages, dry no fish, temperate no cement; `all.eco` has everything. The ids are the same in every economy.
+
 ## The pairs
 
 | Climate | Economy |

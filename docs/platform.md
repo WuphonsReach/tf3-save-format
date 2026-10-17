@@ -1,6 +1,14 @@
 # Platform in the save
 
-Checked 2026-10-10 on the 244 catalog entries of [versions.md](versions.md#summarised-catalog-2026-10-09). There is no field that names the platform a save was made on (**Observed**, 568 to 604). The entries were matched with the uploader's platform from the mod.io upload records ([versions.md](versions.md#versions-and-releases-2026-10-10)), and searched in full for platform names:
+Checked 2026-10-10 on the 244 catalog entries of [versions.md](versions.md#summarised-catalog-2026-10-09).
+
+## In short
+
+No field names the platform (Observed, 568 to 604, 244 catalog entries), and the header, settings and mod list read the same on every platform. Two things can still give it away: a stored Lua error with the mod file's install path, and a mod from outside mod.io (PC only, probably). Open: a platform code in a field not yet described.
+
+## What was searched
+
+There is no field that names the platform a save was made on (**Observed**, 568 to 604). The entries were matched with the uploader's platform from the mod.io upload records ([versions.md](versions.md#versions-and-releases-2026-10-10)), and searched in full for platform names:
 
 - **Header.** No field reads differently by platform. Checked: the two flags, the achievements-earnable state ([header.md](header.md#the-two-flags)), the open stats fields, the mod list's `source` (`DLC`, `mod.io`, `BuiltInMods` on every platform) and `flags`, and the settings keys and values. Two comparisons were made: console against PC at 601 (39 against 2), and Windows, Mac, Linux and the Epic/GOG build at 604. A value that turned up off Windows only did so in one or two saves.
 - **Whole stream.** Searched for the names of the consoles, operating systems and stores, and for the path prefixes of each system. The short ones (`PS5`, `GDK`, `EGS`, `GOG`, `C:\`) occur in nearly every save on every platform, so they are chance byte matches. `steam` and `platform` are game words. The longer hits are names from the name lists, or part of a mod's name.

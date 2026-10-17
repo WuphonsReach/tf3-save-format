@@ -2,6 +2,13 @@
 
 The seed of a game is the last field of the header ([header.md](header.md)), called `id` there. It is the text of the Seed box on the New Game screen. This note covers what the field holds, which seeds the catalog saves carry, whether the seed alone rebuilds the map, and where else the game writes it.
 
+## In short
+
+- **The seed is the header's last field (Confirmed, 604).** It holds exactly the text typed in the New Game dialog's Seed box; 104 of 110 catalog saves hold the 10 random letters the game offers, and 94 values in 110 saves show a seed is not unique.
+- **The seed alone does not rebuild the map as far as the save shows (Open).** The sliders that went with it are not stored.
+- **The game's log carries it too (Observed, 604):** `Map seed text` on every new game and load, in `stdout.txt` of the `crash_dump` folder; the file is rewritten at each start.
+- **Open.** What the editor calls the field, and whether default sliders give the New Game screen's map.
+
 ## The `id` field
 
 A `str`, the last field of the header.

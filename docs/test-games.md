@@ -2,6 +2,15 @@
 
 The games of our own that the notes draw on, each described once so a note can name it and link here. All were made on the PC release (format 604). A game is identified by its map seed (the header's `id`, see [seed.md](seed.md)) together with its climate: one seed was played in two climates, and those are different maps. Save names are the ones the game wrote; the notes cite a save by the four-digit time at the end of its name (`1401`), and an autosave by its clock.
 
+## In short
+
+This note is a log by nature: each of our own test games described once, so another note can name it and link here. A game is its seed plus its climate. The main ones:
+
+- **Small subarctic game:** the game most notes use (typed seed, seven mods, three towns, played from 1900).
+- **Map-format tests:** a series of new games with every option set by hand and saved at once.
+- **Editor games** (Tiny flat, Giant temperate): maps the editor built, edited one change per save.
+- **Catalog games we re-saved:** mod.io saves that became test maps when we re-saved them.
+
 ## Small subarctic game
 
 The game most notes use, played from a new game for the purpose of these tests.

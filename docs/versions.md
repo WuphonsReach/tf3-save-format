@@ -2,6 +2,13 @@
 
 The u32 after the `tf**` magic. The game reads older versions. When it re-saves one it writes the current version: a 585 save came back as 604 (**Observed**, one save; the header's `value` field kept 585, see [header.md](header.md)).
 
+## In short
+
+- **604 is the PC release format and 601 the console format (Observed).** 568 to 599 are pre-release builds. A re-saved older save comes back as 604, keeping the old number in the header's `value` field.
+- **568 and 585 headers differ after the preview** (Open); everything after the header was read on all five versions except the money journal and entity data (604 only).
+- **No field names the platform** ([platform.md](platform.md)).
+- The sections below are dated counts of the catalog; they are exempt from the Confirmed / Observed / Open labels.
+
 ## Seen in the mod.io catalog (2026-10-08)
 
 120 public savegames from the Transport Fever 3 catalog on mod.io, read with [tools/save_header.py](../tools/save_header.py):

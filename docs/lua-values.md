@@ -2,6 +2,10 @@
 
 Used by the header's info table and settings, and by script states. Checked on 604. The header's info table and the script states also parse this way on 568 to 604 (the catalog saves of [versions.md](versions.md)).
 
+## In short
+
+A Lua value is a `u32` tag and a payload: nil, boolean, f64 number, string or table (Observed, 568 to 604). To find a named entry in a script state, search for its key encoded as a string value and check that the table parses.
+
 A value is a u32 tag followed by its payload:
 
 | Tag | Type | Payload |

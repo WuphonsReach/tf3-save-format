@@ -2,6 +2,12 @@
 
 Checked against the base game files of the build that writes 604 saves (the resource files under `base/content` and the English string catalog in `base/strings`). Keys and labels are **Observed** (read from the install, not from a save). The "players say" column is a writing aid, not a format fact.
 
+## In short
+
+- Write the game's internal name (the key), not the player's word or the on-screen label; the "players say" column is a writing aid, not a format fact.
+- Keys and labels were read from the install of the build that writes 604 saves (Observed), not from a save.
+- Words that could be two keys are marked ambiguous: ask, do not guess.
+
 **Rule: write the game's internal name.** A thing has a **key** (the identity the game and the save use: a resource folder or file name such as `cement`, `food_factory`, `water_depot`, or, for things with no resource of their own, the string id such as `HARBOR_SMALL`) and a **label** (the English text on screen). Notes, commit messages and tool output use the key, in code font where it stands for the thing itself. The label comes second, only to help a reader match the screen. If a player's message says "concrete", write `cement`; if it says "boat", write `ship`. When a loose word could be two keys (see [Ambiguous words](#ambiguous-words)), look at the context or ask.
 
 ## Cargo

@@ -2,6 +2,18 @@
 
 How to get from a line's entity id to its name, its vehicles and the cargo its stops load, and where that stops working. Companion to [lines.md](lines.md) (stop times, trip plans). Labels as in [README.md](README.md#evidence-labels).
 
+## In short
+
+This is a log by nature: one catalog save (6425796) plus one Tiny game, Observed on 604 only. The conclusions:
+
+- **Naming a line or vehicle needs a warning.** A line's id and name sit together only in `line_warning` notifications, a vehicle's in `cargo_rtc_warning` and `vehiclecondition` entries; the line's own record was not found.
+- **Cargo-unit records link a line to its vehicles** (line id, vehicle id, 0, origin industry id, a clock value), but only while the vehicles carry cargo. A line's id also sits in each of its vehicles' records, which works before any cargo is loaded.
+- **Name slots do not give the link;** a line and its vehicles share a run only when made together.
+- **The stop record ends in a 37-byte vector** with one byte per cargo-list entry; 1 means the stop loads it.
+- **Open.** What a cargo-unit record counts, which entity a stop record belongs to, and whether a lower load percentage changes the vector.
+
+## What was found
+
 **Observed** on one save, catalog [6425796](https://mod.io/g/transportfever3/m/mynewsavenotfinished1) (temperate, 1937, 735 MB stream), against the game's line window for the line Wool1 (four trucks, Road Vehicle 255 to 258; stop 1 loads wool, stop 2 unloads). Nothing here was tried on a second game.
 
 - **A line's id and name sit together only in `line_warning` notifications.** Each entry's `entity` is the line's entity id and `simParams.lineName` its name ([notifications.md](notifications.md#params-by-type)). The save had 14 such entries for 14 lines; Wool1 is 305,849. A vehicle's id and name sit together in the `simParams.mapping` of `cargo_rtc_warning` and `vehiclecondition` entries: Road Vehicle 255, 256 and 257 are 301,996, 303,875 and 305,653. A line or vehicle with no warning cannot be named this way. The line's id occurs nowhere else as a `u32`, `u64` or `f64` except in the records below, so the line's own record is not found, and so is not its list of stops.

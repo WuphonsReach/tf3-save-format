@@ -2,13 +2,18 @@
 
 How a road or rail edge's two stored tangents give its shape, and what was checked. Labels as in [README.md](README.md#evidence-labels). The record layout is in [road-network.md](road-network.md#the-street-edge-table).
 
+## In short
+
+- **The curve (Observed, 599 to 604).** The two stored tangents of an edge are the end derivatives of a cubic Hermite curve through the end positions; a straight edge's tangents equal the chord. Most edges are bent: 161 of 211 in one Tiny game.
+- **Checks agree in three ways** (five catalog saves): the curve is smooth across two-edge nodes, a tangent's length is the edge's arc length, and the map picture comes out smooth. It is a fit, not the game's own function; the sharpest bends come out 2 to 3 percent off.
+
 ## The curve
 
 **Observed**, 599 to 604. The two tangents of an edge record are the end derivatives of a cubic Hermite curve through the two end positions: a Bezier whose inner control points lie a third of each tangent in from its end. A straight edge has both tangents equal to the difference vector, so its curve is the chord.
 
 Most edges are not straight. In one Tiny 604 game (a test save) 161 of 211 edges had tangents off the difference vector and 127 bulged more than 0.5 m from their chord, the most 14.5 m on a 43 m street edge.
 
-## Checks
+## Evidence and tests
 
 Five catalog saves of other sizes (mod.io 6358716, 599; 6417174 and 6429368, 601; 6417290 and 6433541, 604; 437 to 5,784 edges) agree in three ways:
 
