@@ -13,7 +13,7 @@ What a crop farm's fields are in a save, how many it has, and what the number be
 
 Each field is a Lua table in the farm's `modules` table. It starts with the string `::/industries/farm/field.module` (`livestock_farm/`, `forest/` and `clay_pit/` have their own) and a `variant` key. In the 30 records read `variant` was 0; the number that tells fields apart is the table key before each record, a number from 1 to 20. Find a farm's fields by that string: the records of one farm follow each other, and the table's count sits just before the first (a `u32` after the `modules` key's table tag).
 
-The earlier note on a road removing a field ([editor-saves.md](editor-saves.md#a-running-clock-a-tree-a-farm-and-a-rock)) called these numbers variants; they are the slot keys.
+The earlier note on a road removing a field ([editor-saves.md](editor-saves-tests.md#a-running-clock-a-tree-a-farm-and-a-rock)) called these numbers variants; they are the slot keys.
 
 ## Evidence and tests
 
