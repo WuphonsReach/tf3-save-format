@@ -32,7 +32,8 @@ Options:
 
 Shot names: Spectacle (`Screenshot_YYYYMMDD_HHMMSS.png`), GNOME (`Screenshot from YYYY-MM-DD
 HH-MM-SS.png`), Windows (`Screenshot YYYY-MM-DD HHMMSS.png`) and Steam (`APPID_YYYYMMDDHHMMSS_N.png`)
-carry the local time; any other .png/.jpg uses its file time. A shot's id is its local date and time,
+carry the local time; any other .png/.jpg uses its file time. Shots are read from the folder itself and from
+any folder below its `tf3` subfolder (the game's shots are filed into `tf3/YYYY-MM-DD/`). A shot's id is its local date and time,
 `YYYYMMDD_HHMMSS`; the index prints UTC (local time to UTC by the system's time zone rules).
 
 Loading screens: a shot of the game's load card (a save or a map-editor map loading) has black bars at the
@@ -173,12 +174,21 @@ def local_to_utc(naive):
 Shot = collections.namedtuple("Shot", "id utc path")
 
 
+def shot_files(folder):
+    """(name, path) of the images in `folder` and, below its `tf3` subfolder, in the day folders
+    (`tf3/YYYY-MM-DD/`) that older shots are filed into."""
+    for f in os.listdir(folder):
+        if f.lower().endswith(IMAGE_EXT):
+            yield f, os.path.join(folder, f)
+    for root, _dirs, names in os.walk(os.path.join(folder, "tf3")):
+        for f in names:
+            if f.lower().endswith(IMAGE_EXT):
+                yield f, os.path.join(root, f)
+
+
 def list_shots(folder, dates):
     out, seen = [], set()
-    for f in os.listdir(folder):
-        if not f.lower().endswith(IMAGE_EXT):
-            continue
-        path = os.path.join(folder, f)
+    for f, path in shot_files(folder):
         naive = None
         for rx, digits in NAME_PATTERNS:
             m = rx.search(f)

@@ -24,6 +24,12 @@ Every command takes `--work local/screenshots`. The screenshot folder and the ga
 3. Only then look: `sheets --out DIR` (scratchpad) gives 12-up contact sheets, enough to tell a New Game screen from a map layer; crop for text.
 4. Add rows to `local/screenshots/labels.tsv` (columns in the tool's docstring: first, last, game, topic, what, points of interest, sure, links; reuse existing topic words). Label a range, not each shot; add a per-shot row only where one shot differs. Tie a cluster to the saves around it and to the `local/games/<game>/part-N.md` or `docs/` note that used it. Look the game up by seed and climate (header `map_seed`), not by the save-name prefix. Then `build`, and `check` to list label facts the OCR did not see (advisory: look at the picture before changing a label).
 
+## Filing shots by day
+
+Ubuntu saves new shots at the top of the screenshot folder. Shots dated before today that are game shots are filed into `tf3/YYYY-MM-DD/` below it (local date, one folder per day; clusters are not split into sub-folders, the label ranges in `labels.tsv` keep them apart). The tool reads `tf3/**` as well, so ids, OCR cache and labels need no change; the private `local/screenshots/moved.tsv` lists file and folder.
+
+What counts as a game shot (user's rule, 2026-10-17): everything labelled, loading cards (they name the save or editor map being loaded), settings screens before a load card, and any shot whose OCR shows game UI (HUD date or account, window titles, town labels, settings, notifications, crash dialogs) or that sits within 30 minutes of such a shot and shows no sign of another program. Leave at the top: today's shots, browser, terminal, IDE, file-manager, Spectacle and chat windows, and the pictures our own tools drew (compass diagrams, map renders). Run `ocr` first so every shot has an entry, then plan from the cache, list what stays, and look at the ambiguous ones on one contact sheet before moving.
+
 ## Rules
 
 - Do not trust a thumbnail for numbers or names: a first read gave Chagford "255" for what is "251 ^". Zoom a crop and re-read before writing a figure; mark thumbnail-only reads `guess`. HUD figures are OCR reads too.
