@@ -2,6 +2,13 @@
 
 The save holds a table of path records, apart from the street-edge table: one kind runs along an edge, one lies inside a node. Each carries the path's own length and the speed its bend allows, which is the number the speed-limit layer shows. Labels as in [README.md](README.md#evidence-labels). Everything here is **Observed**: the records on 599 to 604 (catalog 6358716, 599; 6429368, 601; 6433541, 604, and a Giant temperate game of our own, 604); the slip switch in that game only, in four saves made one after another with the clock stopped. `tools/lane_paths.py` reads them.
 
+## In short
+
+- **Two kinds of path record (Observed, 599 to 604).** A table apart from the street-edge table holds one record along each rail edge and one inside each node (a node connection). Each carries the path's length, the type's speed and the speed its bend allows, in m/s; 213.9 means nothing limits it. Rail edges have one almost always, street edges hardly ever.
+- **The speed-limit layer shows the stored number (Observed, Giant temperate game).** The label is the stored bend speed rounded to the nearest whole number, and the bend rule of [road-speeds.md](road-speeds.md) fits it. One number can cover several edges next to a junction.
+- **The Double Slip Switch setting adds two node connections (Observed, one game, four saves).** They are the diagonals, with a bend limit as their speed; no street-edge record changes. The switch was not offered at about 24.7 degrees, so the limit lies between 20.1 and 24.7 degrees (Open).
+- **Open.** What the slots count, what the floats between position and length are, where a road's bend speed is saved, and the angle limit of the slip switch.
+
 ## The records
 
 A record starts with five `u32`: node, slot, node, slot, and the constant 2. The rest is floats, and three of them sit at the same place in every record seen:
@@ -26,7 +33,16 @@ The bend speed is saved: the lower number on a bent edge is not only worked out,
 - **The rule fits it.** With A in the rule of [road-speeds.md](road-speeds.md#bends-lower-it-slopes-do-not) taken from the stored value (A is v squared times the largest curvature of the Hermite curve through the end positions and tangents), the 15 rail edges of the Giant game under 100 km/h gave 2.45 to 2.54 for 14 of them (median 2.47) and 2.72 for a 3 m edge, whose label read 44 where the rule at 2.5 gives 42. In three catalog saves (6358716, 6429368, 6433541: 599, 601, 604; 59 to 107 such edges each) the implied A was never below 2.45 and its median 2.46 to 2.87, higher where an edge lies next to a junction.
 - **One number can cover several edges.** The two edges of the sharp spur (23.5 m and 53.9 m, bends of 25 and 59 degrees) and the node between them all store 43.9, the shallow spur's three edges and their nodes 51.9. The edge-by-edge curvature gives 42.1 and 51.6, so near a junction the game's number comes from a longer path.
 
-## The double slip switch (604)
+## Open
+
+- What the slots count, what the floats between the positions and the length are, and why edges next to junctions are shorter than their chord.
+- Road edges: they have no path record of this kind, so where the bend speed of a road is saved, if it is, was not found.
+- The other crossing in the loop's neighbourhood (another X, 8.6 degrees) was left at No and has four records, as the plain one did before.
+
+
+## Evidence and tests
+
+### The double slip switch (604)
 
 A crossing of two tracks has a setting, Double Slip Switch, a drop-down in the crossing's window (No or Yes). It is stored as two more node connections.
 
@@ -41,9 +57,3 @@ A crossing of two tracks has a setting, Double Slip Switch, a drop-down in the c
 - **Only the connections change.** No street-edge record is added, removed or changed by the setting (checked on the parent and 1517, and 1519 and 1520). The stream was 886 bytes shorter after the setting was turned off.
 - **The two added paths are the diagonals.** Their stored speed is a bend limit: 72.08 km/h on both, 22.6 m long, at the 8.3 degree crossing, and 32.04 and 30.54, 9.4 m long, at the 20.1 degree one. The four plain connections of the first crossing hold 251 to 265 km/h, so nothing limits them.
 - **The angle.** The switch was offered at 8.3 and 20.1 degrees and, going by the save's name, not at 24.7, so the limit lies between 20.1 and 24.7 degrees: **Open** (the angle is between the headings of the two paths at the node; the window of the 1518 crossing was not seen).
-
-## Open
-
-- What the slots count, what the floats between the positions and the length are, and why edges next to junctions are shorter than their chord.
-- Road edges: they have no path record of this kind, so where the bend speed of a road is saved, if it is, was not found.
-- The other crossing in the loop's neighbourhood (another X, 8.6 degrees) was left at No and has four records, as the plain one did before.

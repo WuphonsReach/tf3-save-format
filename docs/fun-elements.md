@@ -4,6 +4,12 @@ The Deluxe Upgrade mod (`urbangames_deluxe_upgrade_pack`) sends an Urban Games h
 
 All of it is **Observed** on 604 in one game (the [Tiny temperate game](test-games.md#tiny-temperate-games): temperate, Tiny 1 : 4, 2048 x 6144 m, start 1900, calendar speed 1.00x throughout). Five saves were read: the new game on 1 January 1900, an autosave on 11 May, a save made paused on 20 September 1900 just after the sighting, an autosave of the same paused moment (same clock), and a save on 2 January 1901 after the game had run on and the balloon had gone. Times are game-clock values, 4000 per day at 1.00x ([calendar.md](calendar.md)).
 
+## In short
+
+- **The balloon is in three places (Observed, 604, one game, five saves).** The mod's script state `fun_elements/balloon.gs` (a `balloons` table and `nextSpawnTime`), a notification entry tied to a town, and a model instance with the balloon's model id and the same `x` and `y`. Its `z` in the state is the height above the ground (200 m); the instance holds the world height.
+- **After it leaves,** `balloons` is empty again, `nextSpawnTime` is unchanged, no instance uses the model, and the notification entry stays with `dismissed` and `expired` true.
+- **Open.** How spawn times and the town are chosen, when and how the balloon leaves, whether `position` moves along `velocity` in play, and what the UFO state does.
+
 ## The script state
 
 The state of the mod script `fun_elements/balloon.gs`. In the stream the path `str` follows a `str` holding the mod id, then the table body as for the base game's scripts ([script-states.md](script-states.md#finding-a-table)):
@@ -50,15 +56,6 @@ The balloon has a model instance record of the shape described in [models.md](mo
 - Find the instance by searching for that model id with a plausible position 52 bytes after it, or for the 8 bytes of the script's `x` and `y` as `f32`. In the September saves it sat 3.0 MB after the header, among the animals' records. The saves from before the balloon came have no instance with that model id.
 - The rest of the balloon entity, and whether it has other components, is **Open**.
 
-## After the balloon leaves
-
-In the January 1901 save, run on from the September one at 1.00x:
-
-- `balloons` is empty again, and `nextSpawnTime` is unchanged (27 February 1907). The departure did not set a new spawn time.
-- No model instance uses the balloon's model id.
-- The notification entry stays in the `notifications` table, with `dismissed` and `expired` both `true` and its `timestamp`, `entity` and `townEntity` unchanged. The game removes the balloon but keeps the log entry.
-- When the balloon left, between 20 September 1900 and 2 January 1901, is **Open**.
-
 ## Other fun-element states
 
 On the same saves, `game_mechanics/fun_elements/fun_elements.gs` held only `spawnNextUfoAtGameTime` (5,302,823, 19 August 1903), unchanged from January to September. `game_mechanics/fun_elements/fireworks.gs` was an empty table. Neither was tested in play. **Observed**.
@@ -69,3 +66,15 @@ On the same saves, `game_mechanics/fun_elements/fun_elements.gs` held only `spaw
 - Whether `position` moves along `velocity` while the game runs. Both September saves are the same paused moment.
 - When and how the balloon leaves: after a fixed time, at the map's edge, or on another rule.
 - The UFO: what it does, and what the save holds while one is on the map.
+
+
+## Evidence and tests
+
+### After the balloon leaves
+
+In the January 1901 save, run on from the September one at 1.00x:
+
+- `balloons` is empty again, and `nextSpawnTime` is unchanged (27 February 1907). The departure did not set a new spawn time.
+- No model instance uses the balloon's model id.
+- The notification entry stays in the `notifications` table, with `dismissed` and `expired` both `true` and its `timestamp`, `entity` and `townEntity` unchanged. The game removes the balloon but keeps the log entry.
+- When the balloon left, between 20 September 1900 and 2 January 1901, is **Open**.

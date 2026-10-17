@@ -2,6 +2,13 @@
 
 How the game sorts its vehicles, and how `tools/vehicle_counts.py` turns a save's model instances into counts. Checked on the install that writes 604 saves (its vehicle model files) and on saves 568 to 604.
 
+## In short
+
+- **Five carriers (Confirmed against the 604 install, Observed in saves 568 to 604).** Every base vehicle model names a carrier, `ROAD`, `TRAM`, `RAIL`, `WATER` or `AIR`, and the folder under `vehicle/` always agrees with it. A save records only the model path, so the folder is all it says about the carrier.
+- **Power and load come from the model file (Observed, install).** A unit with an empty engine list (every wagon, a multiple unit's middle and end cars) is unpowered; its `cargoClassesIncluded` make it `passenger`, `cargo`, `mixed` or `none`. A mod's vehicle is counted by folder only, so its power and load are `unknown`.
+- **The instance count is a good check, not an exact one (Observed, four saves).** The header's road vehicle, aircraft and ship counts equal the folder counts in some saves and fall short in others; private cars are town traffic, not the player's.
+- **Open.** Whether one line can mix carriers, whether a line or depot cares which track a tram uses, what the extra instances are, and whether a bus or truck can be town traffic.
+
 ## Five carriers
 
 **Confirmed against the install, 604 build; Observed in saves 568 to 604.** Every base-game vehicle model file has a `transportVehicle` block in its metadata, and that block names a `carrier`. There are five: `ROAD`, `TRAM`, `RAIL`, `WATER` and `AIR`. The game's own vehicle statistics (`base/vehicle_stats_data.lua` in `base/content/base.zip`) group vehicles the same way, one set of weights each for road, tram, rail and water, and two for air, aircraft and helicopters.
@@ -38,7 +45,22 @@ A train or a tram is one model instance per unit ([models.md](models.md#vehicles
 `tools/mine_summary.py` (summary schema 7) has a `vehicles` block built by `tools/vehicle_counts.py`: for each carrier, the units by power (`powered`, `unpowered`, `unknown`) and load (`passenger`, `cargo`, `mixed`, `none`, `unknown`), the helicopters among the air units, the private cars and other town traffic as `ambient`, and `models_unread`. `index.csv` gets eight columns (units per carrier, the cargo-capable trams and aircraft, the unpowered rail units). The meaning of each is in [tools/README.md](../tools/README.md).
 
 - **A mod's vehicle is counted by folder only.** The install has no file for it, so its power and load are `unknown`; a `waggon`-folder model is taken as unpowered. In catalog save 6409998, which has dozens of mods, 91 distinct models were read this way, 295 of its 973 units (power or load unknown), against none in 6431760 with two Urban Games packs. A summary built on a machine without the install classifies nothing by load.
-- **Examples.** Catalog save 6431760 (format 601, 96 played periods): rail 538 unpowered passenger and 174 unpowered cargo units with 54 locomotives; tram 470 unpowered passenger and 101 unpowered cargo wagons with 166 powered passenger, 21 powered cargo and 36 unloaded steam units; air 38 powered passenger (the F 13), no cargo aircraft. A tram and plane fleet counted by model is therefore no sign that the planes carry goods.
-- **The header counts check the instance counts.** The load dialog's counts ([header.md](header.md#counts-the-load-dialog-shows)) are the player's road vehicles (`i32` index 2), aircraft (index 3) and ships (index 4). **Observed**, four saves, instances of the `bus` and `truck` folders against the road count: equal in 6095814 (568: 575) and 6409998 (604: 285), 8 more in 6431760 (601: 242 in the header) and 72 more in 6417707 (604: 952). Aircraft: equal in 6095814 (3), 6409998 (0) and 6431760 (38), 41 more in 6417707. Ships: equal in 6095814 (13), 8 more in 6431760, 27 more in 6417707, and 2 fewer in 6409998 (12 for 14, possibly mod ships under another folder). What the extra instances are (vehicles not the player's, a stale record) is **Open**.
 - **Private cars are not the player's.** 2,390 `car` instances in 6431760 and 5,809 in 6409998 are town traffic. Whether a bus or truck can also be town traffic is **Open**.
 - **A vehicle that has been bought has an instance at once** ([vehicles.md](vehicles.md)), so the count includes vehicles standing in a depot. Whether a vehicle is on a line is not in the instance (**Open**, [entity-names.md](entity-names.md)).
+
+
+## Open
+
+- Whether a line or depot cares which of the two track kinds a tram uses ([depots.md](depots.md)), and whether one line can mix carriers.
+- What the extra instances are where the header count is lower (vehicles not the player's, a stale record), and whether a bus or truck can be town traffic.
+- Whether a vehicle is on a line: not in the instance ([entity-names.md](entity-names.md)).
+
+## Evidence and tests
+
+### Examples of a summary
+
+Catalog save 6431760 (format 601, 96 played periods): rail 538 unpowered passenger and 174 unpowered cargo units with 54 locomotives; tram 470 unpowered passenger and 101 unpowered cargo wagons with 166 powered passenger, 21 powered cargo and 36 unloaded steam units; air 38 powered passenger (the F 13), no cargo aircraft. A tram and plane fleet counted by model is therefore no sign that the planes carry goods.
+
+### The header counts against the instance counts
+
+The load dialog's counts ([header.md](header.md#counts-the-load-dialog-shows)) are the player's road vehicles (`i32` index 2), aircraft (index 3) and ships (index 4). **Observed**, four saves, instances of the `bus` and `truck` folders against the road count: equal in 6095814 (568: 575) and 6409998 (604: 285), 8 more in 6431760 (601: 242 in the header) and 72 more in 6417707 (604: 952). Aircraft: equal in 6095814 (3), 6409998 (0) and 6431760 (38), 41 more in 6417707. Ships: equal in 6095814 (13), 8 more in 6431760, 27 more in 6417707, and 2 fewer in 6409998 (12 for 14, possibly mod ships under another folder). What the extra instances are (vehicles not the player's, a stale record) is **Open**.

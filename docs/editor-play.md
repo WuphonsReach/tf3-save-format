@@ -2,6 +2,14 @@
 
 Checked on 604. How an editor map becomes a played game (header fields: [header.md](header.md)): the editor's Save and Play button, and a flag flip made by hand on a copy. What the editor writes and how a map is converted the other way is in [editor-saves.md](editor-saves.md).
 
+## In short
+
+Both sections are single tests (Observed, 604), so this note is a log by nature. The conclusions:
+
+- **Save and Play from an editor map** (Giant temperate game): the game loads the editor re-save as a played game; the header gains a `company` entry (`level` 1.0) and `isMapEditor` goes to false; the town state table gains an entry; no road, building or town record changes. The stream shrinks by about 200 KB in two stretches whose content is Open.
+- **A flag flip by hand is enough (Tiny flat game).** Setting `isMapEditor` false in the settings and the stream byte made the editor map loadable and playable; the game added the `company` entry on the next save.
+- **Open.** Whether the extra bytes of an editor save are editor-only data the game drops, why one map kept its start year and the other did not, and what the in-place hunks hold.
+
 ## Save and play: from an editor map to a played game
 
 **Observed** on 604, once (`0654` to `0656` of the [Giant temperate editor game](test-games.md#giant-temperate-editor-game)): the editor's Save and Play button saved `0655`, the game loaded it as a played game at 1x speed, and the player paused and saved `0656`. This was the first map-to-game cycle of the series. No road, building or town record was changed on the way.

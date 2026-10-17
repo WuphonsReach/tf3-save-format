@@ -4,6 +4,14 @@ What each industry takes in and gives out, which climates have it, and how each 
 
 Sources, all under `base/content/` in the install: `industries/<name>.zip` (the `<name>/<name>.con.lua` file of each industry), `economy.zip` (`economy/<climate>.eco.lua`, `economy/placementparamsutil.lua`) and `cargos/<name>.zip` (`<name>/<name>.cargo.lua`). Cargo names are the resource names; the numeric ids a save uses are in [cargo-ids.md](cargo-ids.md). [tools/industry_chains.py](../tools/industry_chains.py) rebuilds all the tables below from the user's own install, and warns where the industry files and the economy files disagree.
 
+## In short
+
+- **Recipes (Observed, 604 build files, not changed in the game).** Each industry file lists input and output stocks and rules; an extractive industry needs no input and has a booster rule that takes tools, machines or fertilizer. [tools/industry_chains.py](../tools/industry_chains.py) rebuilds every table from the install.
+- **Climates.** Which economies have an industry or cargo is in the `categoryList` of its file, and the economy files agree. Four cargo are missing from one climate each.
+- **Transport class.** Each cargo has one of four classes (BULK, LIQUID, FLATBED, GOODS) that decide which vehicles and warehouse modules carry it; rubber and dyes are liquids.
+- **Mods can change any of it,** so a game's own `itemsConsumed` and `itemsProduced` lists are what it really uses.
+- **Open.** The unit of a rule's `capacity` (its cycle length), how the food factory picks fish or meat, what several economy weights and `waterIndustryFraction` do, and how the game treats an input whose cargo the economy lacks, and mods (see [Mods](#mods)).
+
 ## How a recipe is written
 
 Each industry file has a stock list and a list of rules:
@@ -60,7 +68,6 @@ Extractive industries, no input needed:
 
 Reading it as a graph: tools come from the tool_factory, machines from the machine_factory and fertilizer from the oil_refinery, so the boosters tie the extractive industries back into the manufacturing ones. Towns and the wonders consume the finished goods ([cargo-ids.md](cargo-ids.md#tiers-and-weights)).
 
-**Checked against a save**: the cement ratio matches the statistics lists of a subarctic game, where a cement plant consumed 36 and 28 stone for 18 and 14 cement ([cargo-ids.md](cargo-ids.md#the-ids-across-economies)), and the same plant's totals at clock 54.6 million were 1,852 stone for 926 cement ([cement-chain.md](cement-chain.md)), so 2 stone per cement. Reading a recipe's ratio off a save's `itemsConsumed` and `itemsProduced` lists ([statistics-lists.md](statistics-lists.md)) is the quickest way to see what a particular game uses.
 
 ## Which climates have which industry
 
@@ -113,3 +120,16 @@ Passengers have their own class; every other cargo lists `UNIVERSAL` as well. Ru
 ## Mods
 
 A mod can change a recipe, change which economies an industry or cargo appears in, or add whole industries and cargo, so none of the tables above holds for every game. The mod list in the save says which mods a game had ([mods.md](mods.md)); the numbers in a game's own `itemsConsumed` and `itemsProduced` lists are what that game really uses. **Open**: not tested here. No modded industry file has been read yet, and neither has the way a mod's files override the base ones.
+
+
+## Open
+
+- The unit of a rule's `capacity` ("duration" in the file), and how the `food_factory` picks between fish and meat when both are in stock.
+- What `initWeight`, `waterIndustryFraction`, `cargoRequiredIndustries` and the 0.01 value of `companyRankRequiredIndustries` mean.
+- How the game treats an input whose cargo the economy lacks (the saw_mill's sawdust outside subarctic and similar).
+
+## Evidence and tests
+
+### Checked against a save
+
+the cement ratio matches the statistics lists of a subarctic game, where a cement plant consumed 36 and 28 stone for 18 and 14 cement ([cargo-ids.md](cargo-ids.md#the-ids-across-economies)), and the same plant's totals at clock 54.6 million were 1,852 stone for 926 cement ([cement-chain.md](cement-chain.md)), so 2 stone per cement. Reading a recipe's ratio off a save's `itemsConsumed` and `itemsProduced` lists ([statistics-lists.md](statistics-lists.md)) is the quickest way to see what a particular game uses.
