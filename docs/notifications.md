@@ -2,6 +2,18 @@
 
 State of `game_mechanics/notifications/notifications.gs`. The game's popups and its log keep one entry per notification here. Subsidy offers are notifications ([subsidies.md](subsidies.md)), and so is the hot air balloon sighting ([fun-elements.md](fun-elements.md#the-notification)). The state is read like any script state ([script-states.md](script-states.md#finding-a-table)). `tools/notifications.py` lists the entries and the lines that `line_warning` entries name.
 
+## In short
+
+All 604, mostly one played game (the Small subarctic game) plus catalog save 6425796 for the line warnings; the base layout was read on 585 and 604.
+
+- **One script state keeps every notification: `notifications` (entries by id), `history` (ids oldest first), `maxId`, `version` (24), `ignored` and five bookkeeping tables (Observed; the schema is Confirmed from the game's own script).** An entry is `{notification, timestamp, dismissed, expired, tracked, playedInitialSound}` plus `persisting` when a warning is still open.
+- **The table holds at most 100 entries, oldest dropped first except entries with a `persisting` list (Confirmed from `maxEntries` in the game's script, Observed in a save with 100).** A long game cannot be read for its early notifications from here, and one noisy kind can fill the table (69 of 100 were overcrowding in one game).
+- **`notification.type` is a script path; `notification.params` holds what the type needs and `simParams` the names the text looks up (Observed, 11 types read in the save).** [Params by type](#params-by-type) lists the shapes.
+- **`tracked` is the negation of the type's `ignored.types` value at the time of the entry (Confirmed from the script, Observed).** 11 types are ignored by default; ignored types still get entries.
+- **An entry expires when its timestamp plus `autoDismissDuration` has passed or its entities changed; expiring sets `dismissed` too (Observed).**
+- **The bookkeeping tables decide when a warning is raised:** a vehicle enters `wastedVehicles` at maintenance 0.2 or less and leaves above 0.3; a stuck-vehicle warning needs 300,000 units standing still; a line warning's timestamp is in `line2problemTimestamp` and ties it to a line entity (Observed, rules from the script).
+- **Open:** what the second and third numbers of an entity revision are, what `line_warning` issue types other than 1 mean, what `status` is on a subsidy entry, why a group that already had an overcrowding entry gets a new one, and whether the balloon entry has the same layout.
+
 ## The state and its entries
 
 **Observed** on 604, in the latest autosave of the [Small subarctic game](test-games.md#small-subarctic-game) (start year 1900, clock 45,001,200, 1914). The balloon and subsidy entries were first read on 585 and 604 in other games, see [Entry layout](#entry-layout).
@@ -71,10 +83,6 @@ Path strings for notification scripts under `::/game_mechanics/notifications/typ
 - **`uid` of a subsidy offer is the entity id times 10,000 plus a counter.** In the `usedUids` of `subventions.gs`, the industry offers (`deliver_cargo`) all ended in 0000 (497,020,000 for entity 49,702), and the town offers (`deliver_cargo_town`) read 179,120,006, 179,120,015, 179,120,031 and 179,120,035 for town 17,912. The saw mill offer of the game in [Industry closing notifications](notifications-in-play.md#industry-closing-notifications-604) fits too (13,865 times 10,000). The second offer in [subsidies.md](subsidies.md) (uid 35,826) does not, so this is **Observed**, not a rule. `status` was 1 in both subsidy entries; its meaning is **Open**.
 - **A missed offer.** The `subvention_missed` entry (`reason` `"Timeout"`) names the same town and cargo as the town offer 607,600 units earlier, and that offer's uid (179,120,031) reads `false` in `usedUids`, like any offer that is no longer open. The live industry offer (uid 497,020,000, `true`) is the one with the entry stamped 400 after its `spawnTime`, as under [Dismissing a notification](notifications-in-play.md#dismissing-a-notification-and-what-else-changes-604).
 
-### One kind can fill the table
-
-69 of the 100 entries were `overcrowding`, for just two station groups (44 and 25 entries), spread over the whole span of the table. 67 were `dismissed` and `expired`; the latest of each group (ids 862 and 864) was `dismissed` with `expired` false, and only those two carried `persisting`. Why the game makes a new entry for a group that already had one, and why the old ones expire, was not worked out: **Open**. The effect is that the 100 slots held 31 entries of every other kind.
-
 ### Persistent warnings
 
 A warning that follows a state (a vehicle in poor condition, a full station, an industry about to close) is made with a `persisting` list naming its entities. The game's script re-checks the state periodically, sets the list when it makes the warning and clears it when the problem is gone or the parameters change; if the problem returns it makes a new entry. **Observed** on 604: 10 of the 100 entries had one (5 vehicle condition, 2 overcrowding, 1 town rating, 1 industry closing, 1 industry subsidy offer), and an entry that has one is not dropped when the table is trimmed.
@@ -92,6 +100,12 @@ A warning that follows a state (a vehicle in poor condition, a full station, an 
 ## The availability state
 
 The state of `game_mechanics/notifications/availability_notifications.gs` has a `lastYear` number that matched the year on screen (2060, then 2061). It tracks the year but is not the clock. **Observed** on 604.
+
+## Evidence and tests
+
+### One kind can fill the table (604)
+
+69 of the 100 entries were `overcrowding`, for just two station groups (44 and 25 entries), spread over the whole span of the table. 67 were `dismissed` and `expired`; the latest of each group (ids 862 and 864) was `dismissed` with `expired` false, and only those two carried `persisting`. Why the game makes a new entry for a group that already had one, and why the old ones expire, was not worked out: **Open**. The effect is that the 100 slots held 31 entries of every other kind.
 
 ## Notifications in play
 

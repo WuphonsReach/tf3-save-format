@@ -17,7 +17,7 @@ An industry's stock is not stored as a number. Its group of statistics lists hol
 
 ### Three periods (clock 3,785,800)
 
-The windows and lists of that save are in the table of [statistics-lists.md](statistics-lists.md#the-yearly-bars-are-periods-of-1461000-units-604).
+The windows and lists of that save are in the table of [statistics-bars.md](statistics-bars.md#the-yearly-bars-are-periods-of-1461000-units-604).
 
 - **Output stocks again follow `start + produced - destroyed - loaded`.** The Fishing Grounds read 38 of 300: 300 + 144 produced - 6 destroyed - 400 loaded. The quarry read 400 of 400: 400 + 200 - 128 - 72. The start value was the output capacity both times, as in the first test above.
 - **The quarry fits "a full stock destroys what it cannot hold".** In period 1 nothing was loaded and the stock began full at 400, so all 70 stone produced were destroyed (70 produced, 70 destroyed). In periods 2 and 3, once the stone line's carts (`horsewagon_1850_usa_v2` and `horse_cart_small`) loaded 44 and 28, only 34 of 74 and 24 of 56 were destroyed. The quarry that was not full (North, 140 of 400) destroyed nothing. This is the test proposed above, made by accident, and it fits that reading better than a spoil timer, because the destroyed amount follows the stock being full and not the age of the cargo. **Observed** on two `quarry` and one `fishing_grounds`, still not a proof: the engine's rule is not in any file the project reads.

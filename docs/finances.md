@@ -28,7 +28,7 @@ Versions: 604 throughout (one catalog save and one new game); 585 and 601 were n
 ## Periods
 
 - **Confirmed**: each column of the Earnings Details table is one period of 1,461,000 clock units (365.25 stored days), and the period boundaries are multiples of 1,461,000. For this save the four columns were the bookings with `time` from 378,399,000, 379,860,000, 381,321,000 and 382,782,000 (multiples 259 to 262), the last one still open.
-- At calendar speed 0.50x one period shows as six months, which is why the columns read like half years. At another speed the span in game dates would differ. The statistics bars keep the same 1,461,000-unit periods at 0.25x and with the date stopped ([statistics-lists.md](statistics-lists.md#the-yearly-bars-are-periods-of-1461000-units-604)); this tab's columns were not read at another speed. **Open**.
+- At calendar speed 0.50x one period shows as six months, which is why the columns read like half years. At another speed the span in game dates would differ. The statistics bars keep the same 1,461,000-unit periods at 0.25x and with the date stopped ([statistics-bars.md](statistics-bars.md#the-yearly-bars-are-periods-of-1461000-units-604)); this tab's columns were not read at another speed. **Open**.
 - The Earnings figure of a period is the sum of every booking except type `LOAN`. In all four periods the sum matched the tab to the dollar (24,828,167, 27,855,151, 32,872,616 and 18,966,088). The Bank Account row is the balance at the end of the period.
 
 ## Rows against the booking categories
