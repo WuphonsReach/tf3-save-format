@@ -2,6 +2,13 @@
 
 What a deleted town leaves in a save, and the one marker found for it. Background and the first test (a town deleted in the map editor) are in [road-edits.md](road-edits.md#deleting-the-town). Labels are as in [README.md](README.md). Everything here is **Observed**, 604, one Giant editor map of 25 live towns; no other map was checked.
 
+## In short
+
+- **The roads stay (Observed, 604, one Giant editor map of 25 live towns).** A deleted town keeps its street edges in the edge table, and a load and save does not clear them. An industry placed on the ground clears the leftovers under it.
+- **The free-id list marks them (Observed).** The `vec<u32>` of free entity ids near the end of the stream holds the node ids of five of the eight dead-town clusters almost completely, and of single deleted roads, and holds no live node. A reader finds a list in 203 of 208 catalog saves.
+- **Nothing in the edge itself (Observed).** No field of a dead edge's record differs from a live one's. The strip table and the junction table keep rows for dead ids too, and no table of live ids was found.
+- **Open.** When a town's nodes enter the list, what took the rest of the one unfreed town's ids, whether the list can stand in for the Towns export, and every other map.
+
 ## What stays after a deletion
 
 - A town deleted by hand keeps its roads in the street-edge table, 30 to 45 nodes each. Drawing country roads over the place did not remove them. A map drawn from the table therefore shows towns the game no longer has.
@@ -13,18 +20,7 @@ What a deleted town leaves in a save, and the one marker found for it. Backgroun
 
 Join the town-type edges into clusters (edges sharing a node), one per town. The map had 33 clusters and 25 towns in the editor's Towns export, so 8 clusters had no live town. The free-id list ([road-network.md](road-network.md#the-other-tables-a-road-edit-touches)) is a `vec<u32>` near the end of the stream. **Observed**, 604, four saves of this map: its count word parses (64,486 to 71,558 ids, ending 1,400 to 5,800 words before the end of the stream). The list has two parts. The first is a **head** of 4,800 to 11,900 ids in small ascending groups (8 to 50 ids, groups of 12 common, descents between them). The second is one long ascending run of about 59,700 ids that starts 3, 12805, 12806 and ends at 297,868 here. `street_edges.read_free_ids` finds the run as the longest ascending stretch of small values in the last 4 MB (at any 4-byte alignment; in the 946 MB stream of one 604 map the list sat 1 to 1.5 MB from the end, so a one-megabyte window missed it), then looks back for the word that counts up to the run's end. **Observed**, 604, the four saves of this map and all 208 catalog saves: it found a list in 203 of the 208 and in the four; in five no run was found, and `terrain_map.py` then draws every edge. A candidate with an id twice is not taken (in two saves a run of repeated values ending near 999,900 had been taken for the list; the real list, about 10,300 ids starting at 3, was found once that was refused). A found list holds no live node id and no live edge's strip id, which a stray run would not manage; 44 of the saves have dead edges by it, mostly in connected stubs, with 0 or 1 edge alone in the ones looked at. In the editor save every one of the 185 listed node ids stood in the head and none in the run; the head grew from 4,792 ids (66 nodes) to 11,794 (185 nodes) between the two editor saves, which would fit more towns deleted in between (a guess; the saves' differences were not read). After a load and save the head came out nearly sorted, and the node ids stood at other places in the list (positions differed again between the two later saves); 184 of the 185 were still in it.
 
-| Clusters | Node ids found in the free list |
-|---|---|
-| 25 matching a live town | 0 of every cluster |
-| 5 dead towns | 41 of 42, 34 of 36, 31 of 31, 30 of 33, 21 of 23 |
-| a dead town west of a livestock farm | 4 of 29, about what chance gives; 8 of its ids are also nodes of a later country road 20 km away |
-| 2 dead towns in the far south, each partly cleaned | 18 of 44, 1 of 2 |
-
-Of the 4,038 nodes in the table, 185 were in the list, about 180 of them in those clusters. The same five clusters showed it in the later save, so the load and save did not change the set.
-
-**The exception is probably id reuse.** In this table 14 node ids stand at two places. Eight of them are ids of the unfreed town's nodes, also used by a country road drawn later at the far side of the map. New roads take ids from the free list ([road-network.md](road-network.md#the-other-tables-a-road-edit-touches)), so those eight were freed with the town, taken by the new road, and left the list. That leaves 17 of its 29 ids unaccounted for (a guess: other new entities took them). The other six doubled ids were not checked.
-
-**Check against the player's knowledge.** The player knew each town's place on the road network and which roads they re-drew through the old streets (they delete the grid, then join country roads through it, sometimes trimming an inbound road back first). With the town edges of the five clusters dropped, the country roads left in the circles read as the player described: a dead-end town (1 dead end, no junction), a T-town (1 junction, 3 roads in), and a town with no junction (the unfreed town too, once its edges are dropped as well). A fourth, a through town, also had a junction and two dead ends: two stubs of three edges each, which the player confirmed were deleted roads (below). The sixth circle on the map (a through road, no junction) and the far-south pair were not part of the check.
+**The exception is probably id reuse.** The one dead town the list does not mark (4 of 29 ids, the "unfreed town" in the [cluster table](#node-ids-found-per-cluster)) is the exception. In this map 14 node ids stand at two places. Eight of them are ids of the unfreed town's nodes, also used by a country road drawn later at the far side of the map. New roads take ids from the free list ([road-network.md](road-network.md#the-other-tables-a-road-edit-touches)), so those eight were freed with the town, taken by the new road, and left the list. That leaves 17 of its 29 ids unaccounted for (a guess: other new entities took them). The other six doubled ids were not checked.
 
 ## It marks single deleted roads too
 
@@ -40,8 +36,25 @@ Taking the list per node, not per town: an edge with an end node in the list is 
 
 So the list reads as the entity ids the game no longer has, and the edge table, the strip table and the junction table all keep rows for ids that are gone. The ground-texture polygons keep them as well: a polygon record is an index list, the `.gtex` name, a vertex list (count, then x and y as `f32` pairs) and per-vertex values, with no id or flag, and the town-street fill polygons within each dead town's circle number 35 to 102 against 72 on average for a live town. That the game draws from the entity set is a **guess**; it fits why no flag sits on any of these rows. A town's edge id and node ids together catch 14 of the unfreed town's 31 edges.
 
-## No other table holds the live ids
+## Open
+
+- Whether a town's nodes enter the list at once on deletion, whether the rest of the unfreed town's ids were taken by other entities, and whether the list can stand in for the Towns export (a map filter needs a rule for towns like the unfreed one).
+
+## Evidence and tests
+
+### Node ids found per cluster
+
+| Clusters | Node ids found in the free list |
+|---|---|
+| 25 matching a live town | 0 of every cluster |
+| 5 dead towns | 41 of 42, 34 of 36, 31 of 31, 30 of 33, 21 of 23 |
+| a dead town west of a livestock farm | 4 of 29, about what chance gives; 8 of its ids are also nodes of a later country road 20 km away |
+| 2 dead towns in the far south, each partly cleaned | 18 of 44, 1 of 2 |
+
+Of the 4,038 nodes in the table, 185 were in the list, about 180 of them in those clusters. The same five clusters showed it in the later save, so the load and save did not change the set.
+
+**Check against the player's knowledge.** The player knew each town's place on the road network and which roads they re-drew through the old streets (they delete the grid, then join country roads through it, sometimes trimming an inbound road back first). With the town edges of the five clusters dropped, the country roads left in the circles read as the player described: a dead-end town (1 dead end, no junction), a T-town (1 junction, 3 roads in), and a town with no junction (the unfreed town too, once its edges are dropped as well). A fourth, a through town, also had a junction and two dead ends: two stubs of three edges each, which the player confirmed were deleted roads (below). The sixth circle on the map (a through road, no junction) and the far-south pair were not part of the check.
+
+### No other table holds the live ids
 
 **Observed**, one save (the first editor save). The next step was a table of live entities, which the free list would be the complement of. The stream was searched for the 4,038 node ids and the 739 edge ids paired in the strip table, as plain `u32` at all four alignments, and the hits counted per megabyte. The only places where one alignment stood out were the edge, junction and strip tables themselves. Elsewhere the counts were the same at all four alignments (chance: the ids are small numbers that also occur as 16-bit pairs and floats). Also found nowhere: the free set or the live set (ids up to the list's highest) as a bitmap in either bit order, a byte array or a `u32` array (a 48 to 512-byte piece searched), and the node ids as their low or high 24 bits. A sparse-set layout was tried as well (an array indexed by id with one repeated value at every free id): the longest run of consecutive free ids (979 ids) was searched for as a run of one repeated value in `u8`, `u16` and `u32` arrays at every alignment, and each candidate checked against 2,000 free and 2,000 live ids. Every candidate matched free and live ids at the same rate (for example 0.90 against 0.89), so all were stretches of constant data, not an id-indexed array. So the game's own record of which ids are alive, if it exists, is not a plain id list. It may be a component store indexed by position or key, whose ids this search would not see; that was not tried.
-
-Open: whether a town's nodes enter the list at once on deletion, whether the rest of the unfreed town's ids were taken by other entities, and whether the list can stand in for the Towns export (a map filter needs a rule for towns like the unfreed one).

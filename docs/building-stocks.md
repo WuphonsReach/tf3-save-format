@@ -1,12 +1,13 @@
 # Building stocks
 
 A town's cargo is stored twice. The town record ([town-records.md](town-records.md)) holds the picks the town asks for. Each existing building has stock records of its own with the cargo it actually takes. Changing the first does not change the second. Checked on 604, editor saves (an 18-town giant map of ours and its re-saves), catalog save [6430076](https://mod.io/g/transportfever3/m/gigantomanisch-fjpjcl8aod-start-bearbeitet) (day 1 of 1900) and one played save.
+## In short
 
-## The symptom
-
-**Observed**, one editor map. Its town records were patched in place (tier 1 and `vehicles` picks moved to tier 0 cargo; ids and weights only, same stream length). In the editor, the Editor tab and the Towns export showed the new picks. The Towns table (supply, demand, coverage columns) and a commercial building's window still showed the old cargo (an input stock of `tinned_food`, 0 of 1). Scanning the patched save and the autosaves written after loading it found the new ids in the record and no leftover old-cargo `(u32 id, f32 weight)` pair anywhere else. The `town_cargo` and `town` script states are empty in editor saves, so the old picks are not kept in a town-level table.
-
-The save before the patch and the patched one had the same number of building stock records for every cargo, which is the same finding without the editor: **Confirmed** on 604 (one map), the record patch did not touch the stocks.
+- **Two stores (Confirmed, 604, one editor map).** The town record holds the picks; each existing building has its own stock record. Patching the town record in place left every stock record as it was, so the Towns table and the building windows kept the old cargo.
+- **The stock record (Observed, 604, four saves).** An 82-byte pattern: cargo id at +12 (a position in the save's own cargo list), capacity at +20 and again at +73, a float at +77. Cargo blocks come 119 bytes apart, each after a constant block.
+- **The Editor tab acts like the API command with the update flag (Observed, one town).** It rewrote every building of the town to the town's whole need list, not only the pick that was edited.
+- **Blocks run by town (Observed, three towns).** A town's blocks sit in a run as long as its count of building records whose `b` field is set; a deleted building keeps its block. A block can be tied to its town but not yet to its building.
+- **Open.** The constant block, the float, where a building's customer count is kept, the order inside a run, and the rule for new buildings.
 
 ## What the API says
 
@@ -32,13 +33,34 @@ The save before the patch and the patched one had the same number of building st
 - **The float at +77** was 1.2 in 507 of 599 giant-map blocks and in all 2,446 of 6430076. The rest were 0.6 (87), 0.3 (3) and 0.9 (2). It is 1.2 in every record whose cargo is tier 0 (`fish`, `meat`, `vegetables`, `planks`, `fuel`, `bricks`); `clothes` had 49 at 1.2 and 64 at 0.6 and `vehicles` 10 at 0.6 and 3 at 0.3. It is not a function of the cargo alone: the nine `vehicles` blocks of one town held 0.6 six times and 0.3 three times. Probably a consumption factor scaled by something per building; **Open**.
 - **Buildings and stock lists.** The building record's `b` field ([town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)) is a stock list entity or 0xffffffff. The same map had 566 building records with `b` set (found by the pattern there; the scan may miss some) against 599 cargo blocks, so the counts are close but not reconciled (**Open**). The stock record holds no entity id in its 82 bytes, so a stock record is not tied to its building by an id; its town is found by run and count ([below](#which-blocks-belong-to-which-town-604)).
 
-## Changing one town in the Editor tab
+## Method pitfalls
+
+Do not diff a manual editor save against another by offset. A manual editor save re-serialises a large entity region (about 62 MB to 326 MB into the stream here) with shifting offsets, though only one town changed: A and B differ in length by 27,185 bytes. Two autosaves from one session differ by 440 bytes at equal length. Count `(id, capacity)` pairs over the whole stream and pair the matches in stream order.
+
+## Open
+
+- What the constant block is, what the float measures and where a building's customer count is kept.
+- The order of the blocks inside a town's run, the reason a record has `b` equal to `a` or not, and the 600th block (see [Which blocks belong to which town](#which-blocks-belong-to-which-town-604)).
+- **Observed** (604, play in the map editor and a game, not checked in a save): changing a town's cargo in its Editor tab changed all of that town's existing buildings, which agrees with the save diff in [Changing one town in the Editor tab](#changing-one-town-in-the-editor-tab). Buildings built afterwards followed the town's picks to an extent not known, and no building asked for a cargo that was not on the town's label. A town's label grows as it levels up ([cargo-ids.md](cargo-ids.md#how-the-game-adds-cargo-to-a-town); a record with a second commercial cargo is in [town-records.md](town-records.md)).
+- Still **Open**: the exact rule for new buildings, whether picking the cargo the record already holds triggers the building update, whether the game repairs a building that disagrees with its town on load or on a level change, and how stock capacity follows level and cargo weight: not tested in a save.
+- Residential buildings: no pick was changed, so none were looked at.
+- The Towns table's per-town demand figure was not rebuilt from the stocks.
+
+## Evidence and tests
+
+### The symptom
+
+**Observed**, one editor map. Its town records were patched in place (tier 1 and `vehicles` picks moved to tier 0 cargo; ids and weights only, same stream length). In the editor, the Editor tab and the Towns export showed the new picks. The Towns table (supply, demand, coverage columns) and a commercial building's window still showed the old cargo (an input stock of `tinned_food`, 0 of 1). Scanning the patched save and the autosaves written after loading it found the new ids in the record and no leftover old-cargo `(u32 id, f32 weight)` pair anywhere else. The `town_cargo` and `town` script states are empty in editor saves, so the old picks are not kept in a town-level table.
+
+The save before the patch and the patched one had the same number of building stock records for every cargo, which is the same finding without the editor: **Confirmed** on 604 (one map), the record patch did not touch the stocks.
+
+### Changing one town in the Editor tab
 
 **Observed**, one town of 15 buildings. Save A was the map re-saved unchanged; save B had only that town's commercial pick changed in its Editor tab (to `meat`). Both streams have the same count of matches (1,199), and comparing them in stream order gives exactly 15 differing blocks: 6 commercial (`tinned_food` to `meat`) and 9 industrial (`vehicles` to `planks`), which is the town's 15 stock-bearing buildings. In those blocks the id (+12) changed in all 15, the capacity and its copy (+20, +73) went from 1 to 2 in 11 and the float went to 1.2 in 10 (from 0.6 in 7 and 0.3 in 3).
 
 The town's record in A already named `vegetables` (commercial) and `planks` (industrial), the values the record patch had written, while its buildings carried `tinned_food` and `vehicles`. In B the record's commercial pick was `meat` and its industrial pick unchanged, yet the industrial buildings also changed, from `vehicles` to `planks`. So the command brought every building of the town into line with the town's whole need list, not only the pick that was edited (**Observed**, one town), and a record that was patched without it stays out of line.
 
-## Which blocks belong to which town (604)
+### Which blocks belong to which town (604)
 
 **Observed**, an 18-town giant temperate editor map and four re-saves, each changing the cargo of one or a few towns in their Editor tabs (the 1900 start, 599 cargo blocks, 1,173 building records found by the pattern in [town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)).
 
@@ -48,16 +70,3 @@ The town's record in A already named `vegetables` (commercial) and `planks` (ind
 - **A town can be in more than one run.** The nine `vehicles` blocks of one town were one block in front of the 19-block run of another town and eight behind it, with that town's 19 blocks in between. The runs follow when the buildings were made, not the town as a whole, so a town that was grown in two steps has two.
 - **A deleted building keeps its block.** After the player bulldozed one industrial plot (3 by 4 parcels, see [parcels.md](parcels.md#deleting-a-building-604)), all 599 cargo blocks (the 82 bytes of each) and every field of all 1,173 building records were unchanged, so a run probably counts the buildings the town ever had, not only those standing (**Observed**, 604, two deletions of one industrial plot each; the inference is not tested).
 - **The order inside a run is not found.** Sorting a town's records by the first id `a`, the second id `b`, `d`, the position in the record table, `timeBuilt`, the first or last parcel or the height gave neither the zone pattern nor the capacity pattern of the blocks (the 93 blocks of the large town against its 93 records, a Pearson correlation under 0.3 for the capacity against parcels, depth, level and height under every order). The record table itself is in `timeBuilt` order and alternates between towns, so the block order is not the table order. A block can therefore be tied to its town, but not yet to its building.
-
-## Method pitfalls
-
-Do not diff a manual editor save against another by offset. A manual editor save re-serialises a large entity region (about 62 MB to 326 MB into the stream here) with shifting offsets, though only one town changed: A and B differ in length by 27,185 bytes. Two autosaves from one session differ by 440 bytes at equal length. Count `(id, capacity)` pairs over the whole stream and pair the matches in stream order.
-
-## Open
-
-- What the constant block is, what the float measures and where a building's customer count is kept.
-- The order of the blocks inside a town's run, the reason a record has `b` equal to `a` or not, and the 600th block (see above).
-- **Observed** (604, play in the map editor and a game, not checked in a save): changing a town's cargo in its Editor tab changed all of that town's existing buildings, which agrees with the save diff in [Changing one town in the Editor tab](#changing-one-town-in-the-editor-tab). Buildings built afterwards followed the town's picks to an extent not known, and no building asked for a cargo that was not on the town's label. A town's label grows as it levels up ([cargo-ids.md](cargo-ids.md#how-the-game-adds-cargo-to-a-town); a record with a second commercial cargo is in [town-records.md](town-records.md)).
-- Still **Open**: the exact rule for new buildings, whether picking the cargo the record already holds triggers the building update, whether the game repairs a building that disagrees with its town on load or on a level change, and how stock capacity follows level and cargo weight: not tested in a save.
-- Residential buildings: no pick was changed, so none were looked at.
-- The Towns table's per-town demand figure was not rebuilt from the stocks.

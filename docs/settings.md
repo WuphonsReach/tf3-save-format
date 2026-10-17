@@ -2,6 +2,13 @@
 
 The game settings of a save: the options of the New Game screen (and of the Settings tab on the Load Game screen), the difficulty presets, and what a load does to them. They sit in the header, in the params entry with the empty key (see [header.md](header.md#settings)), as a flat Lua table of numbers. Checked on format 604 unless a line says otherwise.
 
+## In short
+
+- **Storage (Confirmed, 604).** A setting is its position in the option list plus 1, a Lua number in the header's flat settings table. The number alone does not say what it means: the lists differ in length and the game does not store which amount an entry stands for. `map.size` does not give one size; read the header's width and height.
+- **The preset is not stored (Confirmed, 604).** Only the 16 values a difficulty preset writes are kept, and the Load Game list derives its Difficulty label from them (Observed, one save). Presets do not touch map, town density, tutorial, weather or time-of-day options.
+- **A load rewrites the settings (Confirmed, 604, one game).** The Load Game Settings tab changes the header values of the next save, including Industries and Climate; map size, format and seed are not on it. What a save says is only known to be in force from its last load.
+- **Effect in play (Open).** Cargo Income acts in play (Observed, one save); the other options were not tested.
+
 ## How a setting is stored
 
 **A setting is stored as its position in the option list plus 1** (**Confirmed** on 604, two catalog games and the test saves). The New Game screen is built from the game's `base/mod.json` in the install directory. Each option there has a `key` (the settings key below), a `values` list in screen order and a `defaultIndex` counted from 0. A stored 3 is the third entry.
@@ -51,10 +58,6 @@ Keys as stored: the settings table is flat and the dotted names are the keys (se
 | `advancedOptions.trafficSpeedSensitivityScale` | not seen on a screen | 0%, 25%, 50%, 75%, **100%**, 125%, 150%, 175%, 200% |
 | `isMapEditor` | | bool; `true` in map editor saves ([editor-saves.md](editor-saves.md)) |
 
-The key-to-screen-name pairs come from comparing screenshots with the saved numbers. For the options moved during the tests (the presets, the six hand-set options, population, passenger and cargo income) the screen value and the stored entry changed together (**Confirmed** on 604); Infrastructure Costs and Infrastructure Upkeep were told apart in a save where one read 50% and the other 100%. Two later new games (a Tiny dry 1 : 2 and a Small tropical 1 : 3, [test-games.md](test-games.md#map-format-tests)) were set by hand on every option and saved at once: all 32 stored values matched the New Game screens, including the whole range of Weather (Sunny 2, Rainy 4), Time of Day (Continuous 2, Evening 6), the sensitivities (Off 1, Very Low 2, Low 3, Very High 6, Extreme 7), Subsidies Never 1, Subsidies Risk None 1, Closing Very Often 5, Reforestation Off 1, Tutorial Off 1 and On 2, and **Reputation Off 1 and On 2** (**Confirmed** on 604 for the Reputation key; before this only On had been saved). The terrain sliders are not among the 32 keys. Five more Tiny games the same day (temperate 1 : 1, subarctic 1 : 2, tropical 1 : 3, dry 1 : 4, tropical 1 : 5, [test-games.md](test-games.md#map-format-tests)) were checked screen against save for every key of the table above that has a screen: all matched again, and they added the pairs Local Time 3 and Morning 4 (Time of Day), Cloudy 3 (Weather), Subsidies Often 4, Risk Fair 2 and Very Risky 4, Landmark High 4, Inflation Very High 5, Maintenance Effect Low 2 and Very High 5 and Happiness Very High 6, Closing Never 1, Subsidies Sometimes 3, Risk Risky 3, Traffic Very High 6, Happiness Low 3, Delivery Extreme 7, Time of Day Night 7 and Cargo Income 125% 4 (**Confirmed** on 604). The Industries list entry "All Industries" is `all.eco` and "Temperate" on a dry map is `temperate.eco`. The terrain sliders (Lakes, Rivers or Water, Swamps, Ocean, Islands, Mountains) are on the screen only; none of the three saves stores them.
-
-**The tutorial needs water (Observed, screenshots only):** with Tutorial On, a Tiny 1 : 3 map showed "Tutorial requires more water. Adjust water settings or change the seed." and the Start Game button was greyed out. The player cleared it by raising the map size one step, to Small, and the same seed then started. Whether the water sliders alone clear it was not tried.
-
 ## Difficulty presets
 
 The Difficulty row (Easy, Normal, Hard, Very Hard) on the New Game screen and on the Load Game settings tab writes a fixed group of options. **The preset itself is not stored**, only the values it wrote (**Confirmed** on 604): there is no preset key, and a save cannot tell you which button was pressed last. The New Game screen showed "Difficulty: Custom" once options had been set by hand.
@@ -86,8 +89,7 @@ Each preset was clicked in turn on one test game (Easy, Normal, Hard, Very Hard,
 
 **The stored settings are those of the last load, not of the New Game screen** (**Confirmed** on 604, one game, one load per change). The Load Game screen has a Settings tab (headed "Save Settings") for the chosen save. A banner "Achievements cannot be earned" shows once something differs from the saved values.
 
-- A new game was made (the [Tiny tropical game](test-games.md#tiny-tropical-game): Tiny, 1 : 3, tropical, a typed seed), saved, loaded, six options were changed on that tab and the game was saved under a new name. The new header held the changed values and no others: of 32 settings values, 26 were equal. The changes were subsidy risk Risky to Fair, vehicle costs 75% to 100%, industry productivity 150% to 75%, industry target density Packed to Dense, population 150% to 50% and delivery sensitivity Low to High.
-- Every value on the load screen matched the new header, and each settings key occurs once in the stream, in the header. There is no second copy.
+- Every value on the load screen matched the header of the next save ([test below](#a-load-changes-six-options)), and each settings key occurs once in the stream, in the header. There is no second copy.
 - The tab's **Experimental** group has **Industries** and **Climate**. Setting them to Dry and Temperate changed the header's `economy` resource from `tropic.eco` to `dry.eco` and `climate` from `tropical.clima` to `temperate.clima` (see [header.md](header.md) for the resources and [climates-economies.md](climates-economies.md) for the pairs).
 - Map size, map format and the seed are not on that screen and did not change.
 - So the saves of one game can hold different settings, and what a save says is only known to be in force from its last load.
@@ -105,3 +107,17 @@ The Load Game list shows the loaded save's own values: its Difficulty row read "
 - Whether the saves a load starts from stay byte for byte as they were. The first test save was not hashed before the load.
 - Whether the terrain and the existing industries change when the climate is switched on load. `tropical` occurred 13 times in the stream before the switch and 11 times after.
 - What `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen.
+
+## Evidence and tests
+
+### The key-to-screen pairs
+
+The key-to-screen-name pairs come from comparing screenshots with the saved numbers. For the options moved during the tests (the presets, the six hand-set options, population, passenger and cargo income) the screen value and the stored entry changed together (**Confirmed** on 604); Infrastructure Costs and Infrastructure Upkeep were told apart in a save where one read 50% and the other 100%. Two later new games (a Tiny dry 1 : 2 and a Small tropical 1 : 3, [test-games.md](test-games.md#map-format-tests)) were set by hand on every option and saved at once: all 32 stored values matched the New Game screens, including the whole range of Weather (Sunny 2, Rainy 4), Time of Day (Continuous 2, Evening 6), the sensitivities (Off 1, Very Low 2, Low 3, Very High 6, Extreme 7), Subsidies Never 1, Subsidies Risk None 1, Closing Very Often 5, Reforestation Off 1, Tutorial Off 1 and On 2, and **Reputation Off 1 and On 2** (**Confirmed** on 604 for the Reputation key; before this only On had been saved). The terrain sliders are not among the 32 keys. Five more Tiny games the same day (temperate 1 : 1, subarctic 1 : 2, tropical 1 : 3, dry 1 : 4, tropical 1 : 5, [test-games.md](test-games.md#map-format-tests)) were checked screen against save for every key of the table above that has a screen: all matched again, and they added the pairs Local Time 3 and Morning 4 (Time of Day), Cloudy 3 (Weather), Subsidies Often 4, Risk Fair 2 and Very Risky 4, Landmark High 4, Inflation Very High 5, Maintenance Effect Low 2 and Very High 5 and Happiness Very High 6, Closing Never 1, Subsidies Sometimes 3, Risk Risky 3, Traffic Very High 6, Happiness Low 3, Delivery Extreme 7, Time of Day Night 7 and Cargo Income 125% 4 (**Confirmed** on 604). The Industries list entry "All Industries" is `all.eco` and "Temperate" on a dry map is `temperate.eco`. The terrain sliders (Lakes, Rivers or Water, Swamps, Ocean, Islands, Mountains) are on the screen only; none of the three saves stores them.
+
+### The tutorial needs water
+
+Observed, screenshots only: with Tutorial On, a Tiny 1 : 3 map showed "Tutorial requires more water. Adjust water settings or change the seed." and the Start Game button was greyed out. The player cleared it by raising the map size one step, to Small, and the same seed then started. Whether the water sliders alone clear it was not tried.
+
+### A load changes six options
+
+A new game was made (the [Tiny tropical game](test-games.md#tiny-tropical-game): Tiny, 1 : 3, tropical, a typed seed), saved, loaded, six options were changed on that tab and the game was saved under a new name. The new header held the changed values and no others: of 32 settings values, 26 were equal. The changes were subsidy risk Risky to Fair, vehicle costs 75% to 100%, industry productivity 150% to 75%, industry target density Packed to Dense, population 150% to 50% and delivery sensitivity Low to High.

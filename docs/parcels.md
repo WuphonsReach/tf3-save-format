@@ -2,6 +2,13 @@
 
 The strips of ground along town streets where the town developer can put a building, and what the save keeps about them: a table of parcels with their cells, a flag word on each cell, and what bulldozing a building does to those flags. Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game), by reading its first save and seven later ones against the player's screenshots; labels are defined in the [README](README.md#evidence-labels). The building record that names parcels is in [town-buildings.md](town-buildings.md#the-record-and-how-to-list-it). [tools/parcels.py](../tools/parcels.py) lists the table and compares two saves.
 
+## In short
+
+- **The table (Observed, 604, eight saves of one game).** One list holds every parcel: the street edge it runs along, a side, a position along the edge and one to four faces of 8 by 8 m cells, stacked away from the street. A normal 88 m edge has 22 parcels, 11 a side. It grew in the tests and never lost a row.
+- **The flag word (Observed).** Bit 0 means something stands on the cell (a building, and sometimes something else). Bit 1 means another parcel overlaps it; that is a fit, not a one-variable test.
+- **Deleting a building (Observed, 604, six deletions and two on an editor map).** It clears bit 0 on the cells of its footprint, yard included. The building record, its flags and its ground-texture polygons stay in the save.
+- **Open.** Which table position a parcel id is, the zone of an unbuilt parcel, what the trailing `8.0` or `7.0` is, whether deleting a road removes parcels, and whether other versions match.
+
 ## The parcel table (604)
 
 **Observed** in eight saves of one game, from 1 January 1900 to 1920: one table holds every parcel, as a `u32` count followed by that many records.
@@ -36,26 +43,6 @@ n x
 - **Bit 1 (value 2): another parcel overlaps the cell.** The game's collision map for a face has two entries, `Environment` and `Parcel`. Faces within 4 m of a face of a different street edge were 3,527 of 10,172 in the first save and 13,624 of 29,252 in the late one (a third to nearly half; they gather at junctions and bends), and 1,437 of the 1,669 faces that read 3 in the first save were among them. Value 2 on its own is rare (18 faces). The reading is **Observed** as a fit, not confirmed by a test that changes one overlap.
 - **Flags move with the town.** Of the first save's 10,172 faces, 5,869 read 1 in both it and the late save, 1,633 went from 0 to 1, 70 from 1 to 0, 156 from 3 to 1 and 16 from 0 to 3, while 1,513 stayed at 3. The 0-to-1 faces are cells built on (or planted) in twenty game years.
 
-## Deleting a building (604)
-
-**Observed.** The player bulldozed one building at a time with the game paused, and each save was compared with the one before it. The game lets the simulation tick a little during a bulldozer action, so whole-stream differences are noisy; the changes below are only those in the parcel table, the building records and the ground-texture lists.
-
-| Save | The building | What changed in the parcel table |
-|---|---|---|
-| `1011-1824` | a house | 2 parcels side by side on one edge, faces 0 to 2 cleared (6 cells), 16 by 24 m |
-| `1011-1825` | another house in the same town | 2 parcels, faces 0 and 1 (4 cells), 16 by 16 m |
-| `1011-1826` | the player ticked Historic Preservation on a commercial building | nothing (only the building record's flag byte changed) |
-| `1011-1827` | that commercial building deleted | 29 cells on three street edges, about 960 m² once the overlaps are counted, 36 by 29 m across |
-| `1011-1828` | a 1 by 1 commercial plot on a corner | face 0 of one parcel on each of two edges, the cells sharing a side, about 16 by 8 m |
-| `1011-1829` | a small house, level 1, one resident, facing west-ish, next to the 1825 house | 1 parcel, faces 0 and 1 (8 by 16 m) |
-
-- **A deleted building's record stays.** In all five deletions the building records (1,329 of them), their flag bytes and the ground-texture polygon lists were byte for byte the same afterwards. The Historic Preservation flag is kept too: the commercial building still showed it after it was gone.
-- **The same on an editor map (604, one deletion).** In an 18-town giant temperate editor map the player bulldozed one industrial plot between two saves: three side-by-side parcels on one edge went from 1 to 0 on all four faces each (24 by 32 m, a 3 by 4 lot), and the building records (1,173) and street edges were unchanged. A second industrial plot, bulldozed in the next save, cleared all four faces of three parcels on one edge and of one parcel on a second edge (a 3 by 4 lot lying across two edges), again with every record and block unchanged. The stock block stayed too ([building-stocks.md](building-stocks.md#which-blocks-belong-to-which-town-604)).
-- **The cleared cells are the footprint, yard included, not the lot.** The commercial building's record says 3 parcels wide and 4 deep (a lot of 768 m²), but its cleared cells covered about 960 m² on three edges, so the footprint can lie across parcels of different edges. The player's reading of the 1829 house: it was small enough to sit on the front cell of the two cells that cleared, or a 1 by 1 house whose back yard the game keeps clear so no building crowds it. Either way the flags record the space taken, not the roof.
-- **The door side is the first face.** Checked on two buildings, where the first face of the parcel that cleared lay on the street the door faced: the 1828 plot's door faced the street a road vehicle (the player's Road Vehicle 49, in slot 14 of that save) was on, and that is the edge of the parcel that cleared on the plot's own side; the 1829 house's street side was at a compass bearing of about 304° from the cleared cells, north-west, which the player called west-ish.
-- **An overlapped cell did not always clear.** In the 1828 test the cell of the other edge that lay on 58 of the 64 m² of the cleared one stayed at 1, so a building does not clear every parcel it overlaps. Something else on that ground (a tree stood just beside the plot) may hold it. The earlier idea that the flag says which of two overlapping parcels hosts the building is therefore **Open**.
-- **A cell can read 0 inside a flagged parcel.** Parcel 1266 of the 1829 test read 1 1 0 1 before the house went: the cleared faces were 0 and 1, face 2 was already free and face 3 stayed at 1.
-
 ## Parcel ids and the building records
 
 The `parcels` list of a building record ([town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)) holds parcel entity ids. Which table position an id is stands **Open**; what is known:
@@ -74,3 +61,25 @@ The `parcels` list of a building record ([town-buildings.md](town-buildings.md#t
 - **What `tail` is** (8 or 7) and what chooses it, and whether `left` 1 is the left side of the edge as the API says. One edge was checked.
 - **Whether a deleted road removes parcels,** and what a town does with parcels of a deleted building (the building record staying listed means the developer's own bookkeeping was not tested).
 - **Whether the table is the same on other versions.** Only 604 was read.
+
+## Evidence and tests
+
+### Deleting a building (604)
+
+**Observed.** The player bulldozed one building at a time with the game paused, and each save was compared with the one before it. The game lets the simulation tick a little during a bulldozer action, so whole-stream differences are noisy; the changes below are only those in the parcel table, the building records and the ground-texture lists.
+
+| Save | The building | What changed in the parcel table |
+|---|---|---|
+| `1011-1824` | a house | 2 parcels side by side on one edge, faces 0 to 2 cleared (6 cells), 16 by 24 m |
+| `1011-1825` | another house in the same town | 2 parcels, faces 0 and 1 (4 cells), 16 by 16 m |
+| `1011-1826` | the player ticked Historic Preservation on a commercial building | nothing (only the building record's flag byte changed) |
+| `1011-1827` | that commercial building deleted | 29 cells on three street edges, about 960 m² once the overlaps are counted, 36 by 29 m across |
+| `1011-1828` | a 1 by 1 commercial plot on a corner | face 0 of one parcel on each of two edges, the cells sharing a side, about 16 by 8 m |
+| `1011-1829` | a small house, level 1, one resident, facing west-ish, next to the 1825 house | 1 parcel, faces 0 and 1 (8 by 16 m) |
+
+- **A deleted building's record stays.** In all five deletions the building records (1,329 of them), their flag bytes and the ground-texture polygon lists were byte for byte the same afterwards. The Historic Preservation flag is kept too: the commercial building still showed it after it was gone.
+- **The same on an editor map (604, one deletion).** In an 18-town giant temperate editor map the player bulldozed one industrial plot between two saves: three side-by-side parcels on one edge went from 1 to 0 on all four faces each (24 by 32 m, a 3 by 4 lot), and the building records (1,173) and street edges were unchanged. A second industrial plot, bulldozed in the next save, cleared all four faces of three parcels on one edge and of one parcel on a second edge (a 3 by 4 lot lying across two edges), again with every record and block unchanged. The stock block stayed too ([building-stocks.md](building-stocks.md#which-blocks-belong-to-which-town-604)).
+- **The cleared cells are the footprint, yard included, not the lot.** The commercial building's record says 3 parcels wide and 4 deep (a lot of 768 m²), but its cleared cells covered about 960 m² on three edges, so the footprint can lie across parcels of different edges. The player's reading of the 1829 house: it was small enough to sit on the front cell of the two cells that cleared, or a 1 by 1 house whose back yard the game keeps clear so no building crowds it. Either way the flags record the space taken, not the roof.
+- **The door side is the first face.** Checked on two buildings, where the first face of the parcel that cleared lay on the street the door faced: the 1828 plot's door faced the street a road vehicle (the player's Road Vehicle 49, in slot 14 of that save) was on, and that is the edge of the parcel that cleared on the plot's own side; the 1829 house's street side was at a compass bearing of about 304° from the cleared cells, north-west, which the player called west-ish.
+- **An overlapped cell did not always clear.** In the 1828 test the cell of the other edge that lay on 58 of the 64 m² of the cleared one stayed at 1, so a building does not clear every parcel it overlaps. Something else on that ground (a tree stood just beside the plot) may hold it. The earlier idea that the flag says which of two overlapping parcels hosts the building is therefore **Open**.
+- **A cell can read 0 inside a flagged parcel.** Parcel 1266 of the 1829 test read 1 1 0 1 before the house went: the cleared faces were 0 and 1, face 2 was already free and face 3 stayed at 1.

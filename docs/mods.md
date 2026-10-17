@@ -2,6 +2,13 @@
 
 What a save records about the mods a game uses: the entry in the header's mod list, the mod's options, the script state a mod keeps, and the model and notification entries that carry a mod's id. The first three rows of the table below are header fields. Checked on 568 to 604 unless a line says otherwise.
 
+## In short
+
+- **Three places in the header (Observed, 568 to 604).** A mod has an entry in the `mods` list, its id in the config-mods list, and a keyed entry in the config params list that holds its options (an empty table when it has none). Mods that add content also leave their id in the model table's source field, in a script-state path and in notification types.
+- **Switching on or off at load (Confirmed, 604, one load each).** The Mods tab on the Load Game screen adds a mod to, or drops it from, all three places in the next save, so a save's mod list reflects the last load. A deactivated mod left no trace elsewhere in the stream. Tested only on mods with no options and no models in use.
+- **Removal warnings** follow the manifest's `severityRemove` (Observed, 306 manifests read).
+- **Open.** Mods with a script state or models in use, a mod that has options, what `flags` means (0, 1 or 2), and whether mod options follow the position-plus-1 rule of the settings.
+
 ## What a save records about a mod
 
 | Where | What | Note |
@@ -34,6 +41,35 @@ The header field `mods` is a `vec<mod>`. Each mod is five `str` and a u32: id, s
 
 The Load Game screen has a Mods tab next to the Settings tab described in [settings.md](settings.md#changing-settings-when-loading). A mod can be switched on or off there before the save loads (the tab's heading gains a count and an asterisk once something is changed). The next save then lists the mods as set on that tab, so like the settings, a save's mod list reflects the last load, not the game's start.
 
+A switch reaches the load through the params table: the dialog script (`gui/menu/savegame_react_util.tl` in `base/content/gui.zip`) hands the load the save's `info` with only `modParams` replaced by the tab's edited copy, so a deactivated mod's key is missing and the load drops the mod from all three places. The tests are under [Evidence and tests](#switching-a-mod-on).
+
+**Warnings on removal.** Removing some mods first shows a warning, and not others: none for `urbangames_vehicles_no_end_year_1`, `ingo_boathouse_asset`, `bobdike_achievements_unbound` or `advanced_track_patterns`, a warning for the `ug_legacy_*` vehicle mods, the Deluxe Upgrade and `stardorn_industry_upgrades`. That matches the `severityRemove` key in each mod's `mod.json` (`None`, `Warning` or `Critical`; the API says a value above 0 raises the message, `api/tealdef/api/type/mod.d.tl`), which was `Warning` in 22 of the 306 manifests read here, `Critical` in one and absent or `None` in the rest. A mod may carry `severityAdd` the same way (`stardorn_industry_upgrades` has `Warning`). **Open:** whether a mod with a script state (`advanced_track_patterns`, `stardorn_industry_upgrades`) or with models the save uses (a vehicle or asset on the map) can be switched off the same way; the model mods dropped here had nothing placed. A first look at the other case (**Observed**, 604, once, the load not saved): loading a Giant temperate editor map with `urbangames_deluxe_upgrade_pack` switched off showed a Loading Report saying that the pack's `boar_m` and `boar_y` model instances (`/animal/boar_m/boar_m.mdl`, `/animal/boar_y/boar_y.mdl`) would be replaced by placeholders. So models the save uses are named at load, not dropped silently.
+
+## Mod script states and stored errors
+
+A mod with scripts keeps its state in the same layout as the game's scripts: the script's path string, then its table. How to find and read one is in [script-states.md](script-states.md#finding-a-table), and the mod-specific part is [there too](script-states.md#mod-script-states-and-stored-errors): the mod's id sits just before the path, and a mod can keep a Lua error message whose chunk name is a path on the player's machine. That path can hold an account name. Don't copy it into notes; write it as `<path>/mod.io/10640/mods/<id>/...`.
+
+## Mods with notes of their own
+
+- **Deluxe Upgrade** (`urbangames_deluxe_upgrade_pack`): the hot air balloon's script state, notification and model instance in [fun-elements.md](fun-elements.md); its music playlist in [script-states.md](script-states.md#the-music-player-state); its 31 models in [models.md](models.md#the-model-table); the bison, boar and Komodo dragon it adds to the animal list in [animals.md](animals.md).
+- **Canadian Names** (`spearin_names_canadian`, mod.io 5860216): choosing the name list Canadian (Ontario) on the New Game screen put it in the header's mod list (source `mod.io`, flags 1) and the config-mods list, and the `nameList` resource became `canada_on.names`. The Mods tab on that screen still read "Mods (2)" (Deluxe Upgrade and No Costs) while the save listed three, so a name-list mod is counted in the save and not on the tab (**Observed**, two saves: also a Romanian list from the mod `dh106_names_romania` on a Tiny 1 : 3 game, 604; the Asian, English, European and German lists added no mod).
+- **Mapzilla** (mod.io 6423494): adds a terrain generator and `mz_*` sliders to the New Game screen. Installing it adds nothing to the save. See [terrain.md](terrain.md#generators-and-the-mapzilla-mod).
+- **Auto Passenger Cameras** (`dome_wagon_cameras`, mod.io 6422630): the `camera_bridge.gs` state and the error messages it keeps, in [script-states.md](script-states.md#mod-script-states-and-stored-errors).
+- **Toll mods** (for example `epod_pay_your_tolls_tf3_1`, script `pyt/pyt_toll.gs`): a `toll` option in the params entry (above) and a script state under the mod's path.
+- **Overpass Builder** (mod.io 6050917) and **Vehicles: No End Year** (`urbangames_vehicles_no_end_year_1`): the switching tests under [Evidence and tests](#switching-a-mod-on).
+
+## Open
+
+- Whether mods with a script state, or with models in use on the map, drop out the way the no-option ones did.
+- Whether a deactivated mod with options is dropped together with its options. Only mods with no options were switched on and off.
+- What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
+- Whether mod options follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)).
+- What `flags` in a mod entry means (0, 1 or 2).
+
+## Evidence and tests
+
+### Switching a mod on
+
 **Switching a mod on.** **Confirmed** on 604, one load: a mod.io script mod, Overpass Builder ([6050917](https://mod.io/g/transportfever3/m/overpass-builder)), was activated on a save with two mods and the game was saved under a new name. Against the save before it:
 
 - The header's mod list got a third entry after the existing two: id `move_it_probe_overpass`, source `mod.io`, path `6050917` (the mod.io id as text), the display name, the mod's page URL and flags 0.
@@ -42,22 +78,22 @@ The Load Game screen has a Mods tab next to the Settings tab described in [setti
 - The settings table, the resources, the money, the counter, the seed and the map size were unchanged. The header grew by 182 bytes.
 - The mod's id occurs three times in the stream, all in the header (mod list, config-mods list, params key). Nothing after the header names it. The rest of the stream differs from the save before by 32 bytes in length and by some blocks, as every re-save does, and I did not check whether any of that is mod related.
 
-**Switching a mod off.** **Confirmed** on 604, one load: on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. Whether a mod that has options loses them (the params table) the same way was not tested, as these two mods had none.
+### Switching a mod off
 
-**Two loads of one 14-mod save (Observed, 604, a Giant subarctic save).** The Mods tab shows one card per mod, each with an `Activated` button and a gear button beside it, plus Mod Hub, Save Preset, Load Preset, Disable All Mods and a heading that gains an asterisk (`Mods (13) *`) once the list is changed.
+**Confirmed** on 604, one load: on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. Whether a mod that has options loses them (the params table) the same way was not tested, as these two mods had none.
+
+### Two loads of one 14-mod save
+
+Observed, 604, a Giant subarctic save. The Mods tab shows one card per mod, each with an `Activated` button and a gear button beside it, plus Mod Hub, Save Preset, Load Preset, Disable All Mods and a heading that gains an asterisk (`Mods (13) *`) once the list is changed.
 
 - **First load.** Mods were deactivated with the gear icon, and the game was saved. The new save lists the same 14 mods, with the same flags, config-mods list and params keys, so nothing was deactivated and the game said nothing. Which mods were touched was not recorded.
 - **Second load.** One mod was switched off on the tab (the heading read `Mods (13) *`). The new save has 13 mods: `urbangames_vehicles_no_end_year_1` was gone from the mod list, the config-mods list and the params keys, the order of the rest unchanged, the settings the same, and the header 218 bytes shorter, the same as in the switch-off test above.
 
 - **Third load.** Two more were switched off on the tab (`Mods (11) *`): Early Road Vehicles and Early Trams (`ug_legacy_road_1850`, `ug_legacy_trams_1850`), two vehicle model mods, in a save with no vehicles. The next save has 11 mods, with both gone from the three places, the others in order, the settings unchanged and the achievements flag still 1 (the force mod is still in the list).
 
-So the gear button does not deactivate: it opens the mod's details page, not its settings (the player's report), and the `Activated` button switches the mod off. Removing some mods first shows a warning, and not others: none for `urbangames_vehicles_no_end_year_1`, `ingo_boathouse_asset`, `bobdike_achievements_unbound` or `advanced_track_patterns`, a warning for the `ug_legacy_*` vehicle mods, the Deluxe Upgrade and `stardorn_industry_upgrades`. That matches the `severityRemove` key in each mod's `mod.json` (`None`, `Warning` or `Critical`; the API says a value above 0 raises the message, `api/tealdef/api/type/mod.d.tl`), which was `Warning` in 22 of the 306 manifests read here, `Critical` in one and absent or `None` in the rest. A mod may carry `severityAdd` the same way (`stardorn_industry_upgrades` has `Warning`). The dialog script (`gui/menu/savegame_react_util.tl` in `base/content/gui.zip`) hands the load the save's `info` with only `modParams` replaced by the tab's edited copy, so the deactivation reaches the load through the params table, which loses the mod's key. **Open:** whether a mod with a script state (`advanced_track_patterns`, `stardorn_industry_upgrades`) or with models the save uses (a vehicle or asset on the map) can be switched off the same way; the model mods dropped here had nothing placed. A first look at the other case (**Observed**, 604, once, the load not saved): loading a Giant temperate editor map with `urbangames_deluxe_upgrade_pack` switched off showed a Loading Report saying that the pack's `boar_m` and `boar_y` model instances (`/animal/boar_m/boar_m.mdl`, `/animal/boar_y/boar_y.mdl`) would be replaced by placeholders. So models the save uses are named at load, not dropped silently.
+So the gear button does not deactivate: it opens the mod's details page, not its settings (the player's report), and the `Activated` button switches the mod off.
 
-## Mod script states and stored errors
-
-A mod with scripts keeps its state in the same layout as the game's scripts: the script's path string, then its table. How to find and read one is in [script-states.md](script-states.md#finding-a-table), and the mod-specific part is [there too](script-states.md#mod-script-states-and-stored-errors): the mod's id sits just before the path, and a mod can keep a Lua error message whose chunk name is a path on the player's machine. That path can hold an account name. Don't copy it into notes; write it as `<path>/mod.io/10640/mods/<id>/...`.
-
-## Seven mods in one new game
+### Seven mods in one new game
 
 A new game (604, subarctic, Normal difficulty) with seven mods active, saved at once (the first save of the [Small subarctic game](test-games.md#small-subarctic-game)), shows what each kind of mod leaves. **Observed**, one save.
 
@@ -76,20 +112,3 @@ A new game (604, subarctic, Normal difficulty) with seven mods active, saved at 
 - Vehicles: No End Year has no models and no state, so it is only in the header, as the switching test above found. A mod that adds only rules or only data may leave nothing else.
 - Mapzilla was installed and not activated, and left no trace.
 - The mod entries are listed in the order the mods were activated in the game's mod list, and the config params entries come in the reverse order (**Observed**, this save; the order in the catalog was not checked against the activation order).
-
-## Mods with notes of their own
-
-- **Deluxe Upgrade** (`urbangames_deluxe_upgrade_pack`): the hot air balloon's script state, notification and model instance in [fun-elements.md](fun-elements.md); its music playlist in [script-states.md](script-states.md#the-music-player-state); its 31 models in [models.md](models.md#the-model-table); the bison, boar and Komodo dragon it adds to the animal list in [animals.md](animals.md).
-- **Canadian Names** (`spearin_names_canadian`, mod.io 5860216): choosing the name list Canadian (Ontario) on the New Game screen put it in the header's mod list (source `mod.io`, flags 1) and the config-mods list, and the `nameList` resource became `canada_on.names`. The Mods tab on that screen still read "Mods (2)" (Deluxe Upgrade and No Costs) while the save listed three, so a name-list mod is counted in the save and not on the tab (**Observed**, two saves: also a Romanian list from the mod `dh106_names_romania` on a Tiny 1 : 3 game, 604; the Asian, English, European and German lists added no mod).
-- **Mapzilla** (mod.io 6423494): adds a terrain generator and `mz_*` sliders to the New Game screen. Installing it adds nothing to the save. See [terrain.md](terrain.md#generators-and-the-mapzilla-mod).
-- **Auto Passenger Cameras** (`dome_wagon_cameras`, mod.io 6422630): the `camera_bridge.gs` state and the error messages it keeps, in [script-states.md](script-states.md#mod-script-states-and-stored-errors).
-- **Toll mods** (for example `epod_pay_your_tolls_tf3_1`, script `pyt/pyt_toll.gs`): a `toll` option in the params entry (above) and a script state under the mod's path.
-- **Overpass Builder** (mod.io 6050917) and **Vehicles: No End Year** (`urbangames_vehicles_no_end_year_1`): the switching tests above.
-
-## Open
-
-- Whether mods with a script state, or with models in use on the map, drop out the way the no-option ones did.
-- Whether a deactivated mod with options is dropped together with its options. Only mods with no options were switched on and off.
-- What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
-- Whether mod options follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)).
-- What `flags` in a mod entry means (0, 1 or 2).
