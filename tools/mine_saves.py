@@ -6,7 +6,8 @@ Usage: mine_saves.py [--no-maps] OUT_DIR SAVE_OR_MODDIR [...]
 Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
 OUT_DIR/index.csv from every summary there (it has the map's size name and format ratio as stored in the
-settings, with their positions, next to the width and height in metres). <seed> is the map seed from the header and <c>
+settings, with their positions, next to the width and height in metres, the save's file name in `source_name` (the load list shows it, not the
+catalog `name`), and the mod keys as a `;`-separated list in `mod_list`). <seed> is the map seed from the header and <c>
 its first character, so OUT_DIR holds few folders and the saves of one game (and the editor
 maps made from the same seed) sit together. A save without a seed (truncated, or a format
 that has none) goes to OUT_DIR/_noseed/<id>-<name>. A summary found in another place (an

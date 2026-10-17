@@ -175,9 +175,9 @@ FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", 
           "stream_bytes", "calendar", "journal", "vehicles", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
-INDEX_COLS = ["map_seed", "mod_id", "name", "author", "version", "start_year", "map_size", "map_size_name",
+INDEX_COLS = ["map_seed", "mod_id", "name", "author", "source_name", "version", "start_year", "map_size", "map_size_name",
               "map_format", "map_ratio", "map_w_m", "map_h_m", "climate",
-              "name_list", "mods", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
+              "name_list", "mods", "mod_list", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "journal_bookings", "play_periods", "income_periods",
               *INDEX_NAMES, "tools_commit"]
 
@@ -258,14 +258,14 @@ def setting_position_name(settings, key):
 def index_row(sm):
     tr = sm.get("town_records") or {}
     if sm.get("error"):
-        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"]] + [""] * 15
+        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm.get("source_name")] + [""] * 16
                 + ["error", sm.get("kind", "savegame")] + [""] * (7 + len(INDEX_NAMES)) + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
     jr = sm.get("journal")
     size, fmt = (setting_position_name(sm.get("settings"), k) for k in ("map.size", "map.format"))
-    return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm["version"], sm["start_year"],
+    return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm.get("source_name"), sm["version"], sm["start_year"],
             *size, *fmt, sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
-            len(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
+            len(sm["mods"]), ";".join(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
             cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
             (sm.get("company") or {}).get("rank_earned"),
