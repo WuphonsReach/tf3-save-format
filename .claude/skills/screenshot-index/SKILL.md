@@ -7,7 +7,7 @@ description: Look up or extend the index of the user's game screenshots (tools/s
 
 Why: the user's screenshots (4K, local time in the file name) hold figures, window titles and layouts the saves do not. Reading them blind costs a lot of context (a first pass over 371 shots cost about 200,000 tokens). The index lets a session look a topic or a UTC time up first. The tool is `tools/screenshot_index.py` (usage and the label format are in its docstring and `tools/README.md`). Its work files (labels, index, OCR text, `hud.csv`) are private: they hold save names and times, and the pictures show company names, install paths and account folders. Keep them in the gitignored `local/screenshots/` and never copy one, a path, a company name or an account name into `docs/`, a commit or tool output.
 
-Every command takes `--work local/screenshots`. The screenshot folder and the game's save folders are found by themselves (`--shots`, `--saves-dir` override). Run as `python3 -I tools/screenshot_index.py --work local/screenshots COMMAND`.
+Every command takes `--work local/screenshots`. The script lowers its own priority (nice 19, idle I/O; `--no-nice` turns it off), so no `nice` prefix is needed even for a long `ocr` pass. The screenshot folder and the game's save folders are found by themselves (`--shots`, `--saves-dir` override). Run as `python3 -I tools/screenshot_index.py --work local/screenshots COMMAND`.
 
 ## Look something up (cheap, do this first)
 

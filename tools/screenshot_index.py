@@ -29,12 +29,19 @@ Options:
   --jobs N        tesseract processes in parallel for `ocr` (default: up to 8)
   --hud-engine E  tesseract (default) or rapidocr: the engine that reads the bottom bar in `ocr`
   --out DIR       where `sheets` writes
+  --no-nice       keep the normal priority (see below)
+
+Priority: the script lowers its own priority at start (nice 19, and idle I/O when `ionice` is installed; the
+tesseract and other child processes inherit it), so an `ocr` pass over thousands of 4K frames leaves the
+machine usable and needs no `nice` prefix. `--no-nice` keeps the normal priority.
 
 Shot names: Spectacle (`Screenshot_YYYYMMDD_HHMMSS.png`), GNOME (`Screenshot from YYYY-MM-DD
 HH-MM-SS.png`), Windows (`Screenshot YYYY-MM-DD HHMMSS.png`) and Steam (`APPID_YYYYMMDDHHMMSS_N.png`)
 carry the local time; any other .png/.jpg uses its file time. Shots are read from the folder itself and from
 any folder below its `tf3` subfolder (the game's shots are filed into `tf3/YYYY-MM-DD/`). A shot's id is its local date and time,
-`YYYYMMDD_HHMMSS`; the index prints UTC (local time to UTC by the system's time zone rules).
+`YYYYMMDD_HHMMSS`; the index prints UTC (local time to UTC by the system's time zone rules). The id and the OCR
+cache follow the file name, not the folder, so filing a shot into a day folder, or moving it between them,
+costs no new read; two shots of the same second get `-2`, `-3` in file-name order.
 
 Loading screens: a shot of the game's load card (a save or a map-editor map loading) has black bars at the
 top and bottom, a picture between them, the save's name centred in the top bar, a tip at the bottom and a
@@ -126,6 +133,15 @@ def redact(line):
 
 # ---------------------------------------------------------------- where things are
 
+def lower_priority():
+    """Nice 19 and idle I/O for this process and the children it starts; best effort."""
+    try:
+        os.nice(19)
+        subprocess.run(["ionice", "-c3", "-p", str(os.getpid())], check=False, stderr=subprocess.DEVNULL)
+    except (OSError, AttributeError):
+        pass
+
+
 def die(msg):
     sys.exit("screenshot_index.py: " + msg)
 
@@ -140,7 +156,7 @@ def work_dir(arg):
 
 def has_images(path):
     try:
-        return any(f.lower().endswith(IMAGE_EXT) for f in os.listdir(path))
+        return any(True for _ in shot_files(path))
     except OSError:
         return False
 
@@ -178,7 +194,7 @@ def shot_files(folder):
     """(name, path) of the images in `folder` and, below its `tf3` subfolder, in the day folders
     (`tf3/YYYY-MM-DD/`) that older shots are filed into."""
     for f in os.listdir(folder):
-        if f.lower().endswith(IMAGE_EXT):
+        if f.lower().endswith(IMAGE_EXT) and os.path.isfile(os.path.join(folder, f)):
             yield f, os.path.join(folder, f)
     for root, _dirs, names in os.walk(os.path.join(folder, "tf3")):
         for f in names:
@@ -188,7 +204,7 @@ def shot_files(folder):
 
 def list_shots(folder, dates):
     out, seen = [], set()
-    for f, path in shot_files(folder):
+    for f, path in sorted(shot_files(folder)):      # file name first: a filed shot keeps its id
         naive = None
         for rx, digits in NAME_PATTERNS:
             m = rx.search(f)
@@ -786,7 +802,10 @@ def main():
     ap.add_argument("--jobs", type=int, default=min(8, os.cpu_count() or 1))
     ap.add_argument("--out")
     ap.add_argument("--hud-engine", choices=("tesseract", "rapidocr"), default="tesseract")
+    ap.add_argument("--no-nice", action="store_true")
     a = ap.parse_args()
+    if not a.no_nice:
+        lower_priority()
     if a.command == "find" and not a.terms:
         die("find needs at least one term")
     work = work_dir(a.work)
