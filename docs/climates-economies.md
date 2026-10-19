@@ -34,8 +34,8 @@ The header names a climate and an economy in its config resources (`climate`, `e
 
 Each of those economy files (`economy/<name>.eco.lua` in the install's `base/content/economy.zip`, 604 build) was read to see which cargo it removes. The ids are not in those files. The save has its own cargo list, which gives each cargo's id as its position and holds all 37 base cargo whatever the economy ([cargo-ids.md](cargo-ids.md#the-id-is-the-position-in-the-cargo-list)).
 
-Which industries each economy removes, and what each industry makes, are in [industry-chains.md](industry-chains.md).
+Which industries each economy removes, and what each industry makes, are in [industry-chains.md](industry-chains.md); the per-climate lookup of industries and town cargo is [climate-reference.md](climate-reference.md).
 
 ## Open
 
-- What the climate changes in the save beyond this: terrain, vegetation, which industries spawn.
+- What the climate changes in the save beyond this: terrain and vegetation. Which industries can spawn is in [climate-reference.md](climate-reference.md#industries-by-climate); which ones a new map does spawn is not tested.

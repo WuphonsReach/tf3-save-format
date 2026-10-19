@@ -12,6 +12,7 @@ Unofficial notes on Transport Fever 3 `.sav` files, worked out from the outside:
 | [seed.md](seed.md) | The map seed: the `id` field, the catalog's seeds, the seed in the game's log (the log's other contents: transit-overlay.md) |
 | [settings.md](settings.md) | The game settings: how they are stored, option lists and defaults, the difficulty presets, changing them on load |
 | [climates-economies.md](climates-economies.md) | The climate and economy resources and how they pair, what each economy leaves out |
+| [climate-reference.md](climate-reference.md) | One-page lookup per climate: which industries a map can place (with raw producers marked, plus the placement weight, order and nearby requirement from the economy files) and which cargo a town can ask for, by tier |
 | [industry-chains.md](industry-chains.md) | Base-game recipes (what each industry takes and gives), boosters, which climates have which industry, the rank-to-industry table, each cargo's transport class, and why mods can change all of it |
 | [glossary.md](glossary.md) | The game's internal names against labels and what players call things: cargo, industries, stops, stations, ports, depots, warehouses and vehicles, with the aliases players use for each and the loose words that could be two keys |
 | [versions.md](versions.md) | Format versions seen in the wild, with dated counts |

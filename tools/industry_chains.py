@@ -1,4 +1,5 @@
-"""Print the industry chains of a Transport Fever 3 install: recipes, boosters, climates, cargo classes.
+"""Print the industry chains of a Transport Fever 3 install: recipes, boosters, climates, cargo classes,
+placement by climate and town cargo by climate.
 
 Usage: industry_chains.py [--content DIR] [--json] [--out DIR]
 
@@ -8,7 +9,7 @@ goes to stdout, or with --out into `DIR/industry-chains.md` (and `.json` with --
 install path is printed.
 
 Reads only text files: `industries/<name>.zip` (`<name>/<name>.con.lua`),
-`economy.zip` (`economy/<climate>.eco.lua`) and `cargos/<name>.zip` (`<name>/<name>.cargo.lua`).
+`economy.zip` (`economy/<climate>.eco.lua`, `economy/placementparamsutil.lua`) and `cargos/<name>.zip` (`<name>/<name>.cargo.lua`).
 Nothing from the install is bundled here. See docs/industry-chains.md.
 
 The files are Lua tables, read here with brace matching and a few regular expressions, not a
@@ -152,6 +153,65 @@ def read_cargos(content):
     return out
 
 
+def named_children(tbl):
+    """(key, `{...}` body) pairs of the `key = {...}` items at the top level of a table body."""
+    body = tbl[1:-1]
+    out, depth, i = [], 0, 0
+    while i < len(body):
+        c = body[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        elif depth == 0:
+            m = re.match(r"(\w+)\s*=\s*\{", body[i:])
+            if m:
+                start = i + m.end() - 1
+                d = 0
+                for k in range(start, len(body)):
+                    d += (body[k] == "{") - (body[k] == "}")
+                    if d == 0:
+                        out.append((m.group(1), body[start:k + 1]))
+                        i = k
+                        break
+        i += 1
+    return out
+
+
+def words(body, key):
+    """The quoted words of a `key = { "a", "b" }` list inside body, or []."""
+    t = block(body, key + " =")
+    return re.findall(r'"(\w+)"', t) if t else []
+
+
+def read_placement(content):
+    """The shared tables of `economy/placementparamsutil.lua`: placement params per industry
+    and the cargo categories (the cargo a town can demand are those with a land use)."""
+    z = zipfile.ZipFile(os.path.join(content, "economy.zip"))
+    try:
+        t = strip_comments(z.read("economy/placementparamsutil.lua").decode(errors="replace"))
+    except KeyError:
+        warn("economy/placementparamsutil.lua missing")
+        return {}, {}
+    inds, cats = {}, {}
+    for fn, out in (("getAllParams", inds), ("getCargoCategories", cats)):
+        top = block(t, "placementparamsutil." + fn)  # the first table after the name is the returned one
+        if not top:
+            warn(f"{fn} not found in placementparamsutil.lua")
+            continue
+        for name, body in named_children(top):
+            d = {}
+            for k in ("buildOrder", "initWeight", "tier", "townConsumptionFactor"):
+                m = re.search(r"\b" + k + r"\s*=\s*([\d.]+)", body)
+                if m:
+                    d[k] = number(m.group(1))
+            d["tags"] = words(body, "tags")
+            d["requires"] = words(body, "requiredIndustryTags")
+            d["land_uses"] = words(body, "landUses")
+            out[name] = d
+    return inds, cats
+
+
 def read_economies(content):
     z = zipfile.ZipFile(os.path.join(content, "economy.zip"))
     eco = {}
@@ -167,7 +227,17 @@ def read_economies(content):
         rt = block(t, "companyRankRequiredIndustries")
         for rank, body in re.findall(r"\[(\d+)\]\s*=\s*(\{[^}]*\})", rt or ""):
             ranks[int(rank)] = sorted(re.findall(r"(\w+)\s*=\s*[\d.]+", body))
-        eco[c] = dict(removed=removed, init_weight=weights, rank_industries=ranks)
+        cats_removed = sorted(re.findall(r"cargoCategories\.(\w+)\s*=\s*(?:nil|nin)\b", t))
+        requires = {a: re.findall(r'"(\w+)"', b)
+                    for a, b in re.findall(r"placementParams\.(\w+)\.requiredIndustryTags\s*=\s*(\{[^}]*\})", t)}
+        cat_requires = {a: re.findall(r'"(\w+)"', b)
+                        for a, b in re.findall(r"cargoCategories\.(\w+)\.requiredIndustryTags\s*=\s*(\{[^}]*\})", t)}
+        build_order = {a: int(b) for a, b in re.findall(r"placementParams\.(\w+)\.buildOrder\s*=\s*(\d+)", t)}
+        fb = block(t, "industryPlacementFallbacks")
+        fallbacks = dict(re.findall(r'(\w+)\s*=\s*"(\w+)"', fb)) if fb else {}
+        eco[c] = dict(removed=removed, init_weight=weights, rank_industries=ranks,
+                      categories_removed=cats_removed, requires=requires, category_requires=cat_requires,
+                      build_order=build_order, fallbacks=fallbacks)
     return eco
 
 
@@ -184,6 +254,21 @@ def check(inds, cargos, eco):
                      f"economy file says {'removed' if removed else 'kept'}")
 
 
+def check_categories(cargos, cats, eco):
+    """Warn where an economy's removed cargo categories differ from the cargo files' climates."""
+    for c in CLIMATES:
+        if c not in eco:
+            continue
+        for name in cats:
+            if name not in cargos:
+                continue
+            listed = c in cargos[name]["climates"]
+            removed = name in eco[c]["categories_removed"]
+            if listed == removed:
+                warn(f"cargo {name} in {c}: cargo file says {'present' if listed else 'absent'}, "
+                     f"economy file says {'category removed' if removed else 'category kept'}")
+
+
 def table(head, rows):
     out = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
     out += ["| " + " | ".join(r) + " |" for r in rows]
@@ -194,7 +279,7 @@ def amounts(d):
     return ", ".join(f"{v} {k}" for k, v in d.items())
 
 
-def markdown(inds, cargos, eco):
+def markdown(inds, cargos, eco, place, cats):
     lines = ["# Industry chains", ""]
     prod, extr = [], []
     for name, d in sorted(inds.items()):
@@ -218,6 +303,48 @@ def markdown(inds, cargos, eco):
     lines += ["## Cargo", ""] + table(["Cargo", "Classes"] + list(CLIMATES), [
         [n, ", ".join(d["classes"])] + ["x" if c in d["climates"] else "" for c in CLIMATES]
         for n, d in sorted(cargos.items())]) + [""]
+    if place:
+        lines += ["## Placement by climate", ""]
+        head = ["Industry", "Kind", "Order", "Tier", "Weight", "Needs nearby"] + list(CLIMATES)
+        rows = []
+        for n, d in sorted(place.items(), key=lambda kv: (kv[1].get("buildOrder", 0), kv[0])):
+            main = [r for r in inds.get(n, {}).get("rules", []) if not r["booster"]]
+            kind = "extractive" if main and not any(r["takes"] for r in main) else "processing"
+            row = [n, kind, str(d.get("buildOrder", "")), str(d.get("tier", "")), str(d.get("initWeight", "")),
+                   ", ".join(d["requires"])]
+            for c in CLIMATES:
+                e = eco.get(c)
+                if not e:
+                    row.append("")
+                elif n in e["removed"]:
+                    row.append("")
+                else:
+                    extra = []
+                    if n in e["init_weight"]:
+                        extra.append(f"weight {e['init_weight'][n]}")
+                    if n in e["requires"]:
+                        extra.append("needs " + ", ".join(e["requires"][n]))
+                    if n in e["build_order"]:
+                        extra.append(f"order {e['build_order'][n]}")
+                    row.append("x" + (" (" + "; ".join(extra) + ")" if extra else ""))
+            rows.append(row)
+        lines += table(head, rows) + [""]
+    if cats:
+        lines += ["## Town cargo by climate", ""]
+        head = ["Cargo", "District", "Tier", "Factor"] + list(CLIMATES)
+        rows = []
+        for n, d in sorted(cats.items(), key=lambda kv: (kv[1].get("tier", 9), kv[1]["land_uses"], kv[0])):
+            if not d["land_uses"]:
+                continue
+            row = [n, ", ".join(u.lower() for u in d["land_uses"]), str(d.get("tier", "")),
+                   str(d.get("townConsumptionFactor", ""))]
+            row += ["x" if c in eco and n not in eco[c]["categories_removed"] else "" for c in CLIMATES]
+            rows.append(row)
+        lines += table(head, rows) + [""]
+        other = {c: [n for n in e["categories_removed"] if n in cats and not cats[n]["land_uses"]]
+                 for c, e in eco.items() if c in CLIMATES}
+        lines += ["## Other cargo categories an economy removes", ""] + table(
+            ["Economy", "Removed (no district)"], [[c, ", ".join(v)] for c, v in other.items()]) + [""]
     ranks = sorted({r for e in eco.values() for r in e["rank_industries"]})
     rows = []
     for r in ranks:
@@ -242,11 +369,13 @@ def main():
     if not content or not os.path.isdir(content):
         sys.exit("base/content not found; pass --content DIR")
     inds, cargos, eco = read_industries(content), read_cargos(content), read_economies(content)
+    place, cats = read_placement(content)
     if not inds:
         sys.exit("no industries read; is --content the base/content folder?")
     check(inds, cargos, eco)
-    data = dict(industries=inds, cargos=cargos, economies=eco)
-    md = markdown(inds, cargos, eco)
+    check_categories(cargos, cats, eco)
+    data = dict(industries=inds, cargos=cargos, economies=eco, placement=place, cargo_categories=cats)
+    md = markdown(inds, cargos, eco, place, cats)
     if a.out:
         os.makedirs(a.out, exist_ok=True)
         with open(os.path.join(a.out, "industry-chains.md"), "w") as f:

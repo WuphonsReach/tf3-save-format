@@ -7,7 +7,7 @@ Sources, all under `base/content/` in the install: `industries/<name>.zip` (the 
 ## In short
 
 - **Recipes (Observed, 604 build files, not changed in the game).** Each industry file lists input and output stocks and rules; an extractive industry needs no input and has a booster rule that takes tools, machines or fertilizer. [tools/industry_chains.py](../tools/industry_chains.py) rebuilds every table from the install.
-- **Climates.** Which economies have an industry or cargo is in the `categoryList` of its file, and the economy files agree. Four cargo are missing from one climate each.
+- **Climates.** Which economies have an industry or cargo is in the `categoryList` of its file. The economy files agree for industries; for cargo they differ in one case (bricks, also removed in tropical). Four cargo are missing from one climate each. The per-climate lookup is in [climate-reference.md](climate-reference.md).
 - **Transport class.** Each cargo has one of four classes (BULK, LIQUID, FLATBED, GOODS) that decide which vehicles and warehouse modules carry it; rubber and dyes are liquids.
 - **Mods can change any of it,** so a game's own `itemsConsumed` and `itemsProduced` lists are what it really uses.
 - **Open.** The unit of a rule's `capacity` (its cycle length), how the food factory picks fish or meat, what several economy weights and `waterIndustryFraction` do, and how the game treats an input whose cargo the economy lacks, and mods (see [Mods](#mods)).
@@ -71,7 +71,7 @@ Reading it as a graph: tools come from the tool_factory, machines from the machi
 
 ## Which climates have which industry
 
-The `categoryList` in each industry file names the economies it appears in; the economy files remove the same industries from their placement table. The two agree. `all.eco` has every industry.
+The `categoryList` in each industry file names the economies it appears in; the economy files remove the same industries from their placement table. The two agree. The same data as one table per climate, with the raw producers marked, is in [climate-reference.md](climate-reference.md#industries-by-climate). `all.eco` has every industry.
 
 - All four climates: saw_mill, forest, steel_mill, coal_mine, iron_ore_mine, quarry, glass_works, sand_pit, oil_refinery, oil_well, oil_platform, chemical_plant, farm, livestock_farm, weaving_mill, textile_factory, food_factory, furniture_factory, tool_factory, machine_factory, vehicle_factory.
 - Not dry: fishing_grounds, sand_excavator.
@@ -81,7 +81,7 @@ The `categoryList` in each industry file names the economies it appears in; the 
 - Subarctic only: cement_plant, paper_mill, printing_press.
 - Tropical only: rubber_farm, tire_factory.
 
-The matching cargo files list the economies each cargo exists in. Sawdust, paper, books and cement are subarctic only; tires and rubber tropical only; clay temperate and dry only. Four more are missing from one climate each: vegetables and bricks from subarctic, beverages from tropical, fish from dry. What each economy leaves out of town cargo, as seen in saves, is in [climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo). **Open**: some rules still name a cargo their climate lacks (the saw_mill's sawdust and the vehicle_factory's tires outside those climates, the farm's vegetables in subarctic). How the game treats an input whose cargo the economy lacks is not in the files read; it presumably drops that stock.
+The matching cargo files list the economies each cargo exists in. Sawdust, paper, books and cement are subarctic only; tires and rubber tropical only; clay temperate and dry only. Four more are missing from one climate each: vegetables and bricks from subarctic, beverages from tropical, fish from dry. The economy files go further: `tropic.eco` also removes the bricks category, which no tropical industry makes. What each economy leaves out of town cargo, as seen in saves, is in [climates-economies.md](climates-economies.md#what-each-economy-leaves-out-of-town-cargo). **Open**: some rules still name a cargo their climate lacks (the saw_mill's sawdust and the vehicle_factory's tires outside those climates, the farm's vegetables in subarctic). How the game treats an input whose cargo the economy lacks is not in the files read; it presumably drops that stock.
 
 Each economy file also holds:
 
