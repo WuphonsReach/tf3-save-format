@@ -32,6 +32,9 @@ _INSTANCE = re.compile(rb"(....)(.{12}\x00\x00\x00\x00.{12}\x00\x00\x00\x00.{12}
                        rb"(.{12})\x00\x00\x80\x3f", re.S)
 
 
+_BLOCK_RUN = 6       # fewest records in a run to count as the preview block (its pages hold 6, 12 or 18 to 36: one or more columns of six cells)
+
+
 class ModelPaths(list):
     """The model paths in table order, as a plain list; `ids` holds each entry's stored id and `by_id` maps
     an id to its path. In a save with many mods the ids skip (docs/models.md), so a list index is not an id."""
@@ -75,18 +78,53 @@ def read_model_table(data):
     raise ValueError("no model table found")
 
 
-def read_instances(data, prefixes=("vehicle/",), table=None):
+def _preview_block(matches):
+    """The indexes (into `matches`) of the records of the model preview block that map editor saves carry
+    (docs/editor-saves.md). A page is a run of instances exactly 68 bytes apart (nothing between them) whose
+    matrix has no rotation (only the diagonal and the translation are non-zero) and whose model ids rise by one.
+    The block is pages of at least `_BLOCK_RUN` records, and a shorter page (the last of a group) joins it
+    when it sits next to a block page with only a short trailer (at most 200 bytes) between them. It is a
+    registry of models laid out in cells near 0,0, not anything the game draws. No other page like it was
+    found in the saves checked, in any position."""
+    pages, run, prev = [], [], None
+    for k, m in enumerate(matches):
+        f = struct.unpack("<12f", m.group(2))                       # rows 1 to 3 of the matrix, four floats each
+        plain = all(f[i] == 0 for i in (1, 2, 4, 6, 8, 9))
+        mid = struct.unpack("<I", m.group(1))[0]
+        if plain and prev is not None and m.start() - prev[0] == 68 and mid == prev[1] + 1:
+            run.append(k)
+        else:
+            if run:
+                pages.append(run)
+            run = [k] if plain else []
+        prev = (m.start(), mid)
+    if run:
+        pages.append(run)
+    keep = [len(pg) >= _BLOCK_RUN for pg in pages]
+    near = lambda a, b: 0 < matches[pages[b][0]].start() - matches[pages[a][-1]].start() - 68 <= 200
+    for i in range(1, len(pages)):                                  # forwards, then backwards: a short page next to a block page
+        keep[i] = keep[i] or (keep[i - 1] and near(i - 1, i))
+    for i in range(len(pages) - 2, -1, -1):
+        keep[i] = keep[i] or (keep[i + 1] and near(i, i + 1))
+    return {k for pg, kp in zip(pages, keep) if kp for k in pg}
+
+
+def read_instances(data, prefixes=("vehicle/",), table=None, keep_preview_block=False):
     """The model instances whose model path starts with one of `prefixes`, as dicts: `slot` (index
     among the instances of those prefixes, in stream order), `model` (path), `x`, `y`, `z`
     (the translation), `fx`, `fy` (the first row of the transform: the facing) and `offset`.
-    Pass `table=read_model_table(data)` to reuse a table already read."""
+    Pass `table=read_model_table(data)` to reuse a table already read. The model preview block of
+    map editor saves (a copy of many models in a grid near 0,0, see `_preview_block`) is left out unless
+    `keep_preview_block` is true."""
     paths, end = table or read_model_table(data)
     by_id = getattr(paths, "by_id", None) or dict(enumerate(paths))
     wanted = {i for i, p in by_id.items() if p.startswith(tuple(prefixes))}
+    matches = list(_INSTANCE.finditer(data, end))
+    skip = set() if keep_preview_block else _preview_block(matches)
     out = []
-    for m in _INSTANCE.finditer(data, end):
+    for k, m in enumerate(matches):
         mid = struct.unpack("<I", m.group(1))[0]
-        if mid not in wanted:
+        if mid not in wanted or k in skip:
             continue
         x, y, z = struct.unpack("<3f", m.group(3))
         fx, fy = struct.unpack_from("<2f", m.group(2))

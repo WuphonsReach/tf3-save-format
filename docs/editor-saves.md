@@ -14,6 +14,8 @@ All 604, except the regular-save conversion (checked once on one 34-town save).
 - **Drawing re-cuts the roads it meets, keeping their total length, and adds a path without taking any away (Observed);** a bypass leaves the old road in place. Tram roads are street types in the same table.
 - **A road drawn beside a farm can remove one of its fields (Observed, once);** find the fields by the string `::/industries/livestock_farm/field.module`.
 - **Editing leaves the strip and parcel tables alone for roads in open ground and deleted town-road pieces (Observed, the editor-map series).**
+- **A block of about 1,300 model records near 0,0 is not map content (Observed, 604, one Giant editor map and a game started from it).** It lists many models (industry, station, infrastructure, landmark, cargo and character parts), laid out in a grid of cells, and the game draws none of it. A map script that reads model instances then shows a phantom industry cluster at 0,0. It can be told apart without position, see [The model preview block](#the-model-preview-block-near-00). What it is for and which action writes it are **Open**.
+- **The Towns / Industries dialog's proposals are not in the save (Observed).** The dialog's preview map shows towns in white, existing industries in brown and the industries a Generate would add in gold; the totals follow the density slider and the gold ones have no record until placed.
 - **Open:** what the 4-byte counter near the end of the stream counts, what the three growing lists and the delete-list ids hold, and what the editor does with a converted save's money and journal.
 
 ## Compared with regular saves
@@ -38,6 +40,17 @@ The game keeps editor saves in `save_maps/` and regular saves in `save/`, both u
 The game lists it under Load Custom Map and opens it in the map editor. The Towns / Industries export works, with towns and industries at their positions. Money, journal, script states and the rest of the game state stay in the file. What the editor does with them is **open**.
 
 tf3-save-editor's CLI can make the change: `tf3se-cli settings SAVE --set isMapEditor=true -o NEW.sav`.
+
+## The model preview block near 0,0
+
+**Observed**, 604. A block of bare model instance records, one page after another:
+
+- Each record is a model id and a 64-byte matrix with nothing around it, 68 bytes after the previous one, so it lacks the repeated rotation that follows a real instance ([models.md](models.md)).
+- The matrix has no rotation: x scale about 0.08 to 1.5, y scale 0.875 or 1, z scale 1, translation in a grid of 3 columns by 5 rows of cells (x 0, 12, 24, y -7 to 7, z 0), six records to a column.
+- Model ids rise by one along a page (pages of 6 to 36 records); between pages sits a trailer of 56 to 124 bytes.
+- The models are alphabetical by directory (`cargos`, `characters`, `depots`, `game_mechanics`, `industries`, `infrastructure`, `landmarks`, `model_editor`, `placeholders`, `stations`, `assets`). Industry models alone are 168 records of 16 of the 23 industry directories, which is why a map of industries shows a cluster of every kind at 0,0.
+
+It sits about 5.7 MB into the stream, ahead of the real instances, and appears from one editor save on and then stays (also in a game started from the map). A page's records carry no flag. A scan for the signature above (a page of six or more, then short pages next to one) finds nothing else in the saves checked. [model_instances.py](../tools/model_instances.py) leaves the block out of `read_instances` by that signature, so the maps and `industry_compass.py` stop showing it. Why it is written (the model trailers hold world coordinates that look like a camera) and which editor action first writes it are **Open**.
 
 ## Evidence and tests
 
