@@ -28,6 +28,7 @@ What is read:
   play (building, buying, upkeep, income); null where no journal was found. It ranks a save by how much it was played.
 - vehicles (vehicle_counts.py, docs/vehicle-classes.md): the count of vehicle units by carrier, power and load; null where
   the save has no model table. Reads the game install's model metadata at run time when there is one.
+- industries (industry_counts.py): the number of industries in total and per kind; null where the save has no model table.
 - company, counters, cycles, subsidies, town_states: from the script states
   of the company, achievements, game time, subsidy and town scripts. A save
   without one of them (editor maps) has null there.
@@ -38,9 +39,11 @@ not be read (then `error` says why).
 import collections
 import json
 import os
+import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from industry_counts import count_industries  # noqa: E402
 from journal import play_summary  # noqa: E402
 from save_header import read_header  # noqa: E402
 from script_commits import closure_commit  # noqa: E402
@@ -49,13 +52,15 @@ from tf3save import (RANKS, calendar_speed_label, cargo_entries, date_of_day, da
                      decompress, find_day_table, find_game_speed, scan_records, script_state, setting_label,
                      town_names)
 
-def summarise_records(recs, cargo_names):
+def summarise_records(recs, cargo_names, data=None):
     start = [r for r in recs if r["floats"] == (1.0, 1.0, 1.0, 1.0)]
     run, best = 0, 0
     for a, b in zip(recs, recs[1:]):
         run = run + 1 if b["offset"] - a["offset"] == 78 else 0
         best = max(best, run + 1)
     out = {"records": len(recs), "starting_layout": len(start), "longest_78_byte_run": best}
+    # the last of the four u32s before the first record, which docs/town-records.md calls the town count; 0 in some saves
+    out["table_count"] = struct.unpack_from("<I", data, recs[0]["offset"] - 4)[0] if data and recs and recs[0]["offset"] >= 4 else None
     if start:
         for kind in ("com", "ind"):
             c = collections.Counter(r["id"][kind] for r in start)
@@ -165,19 +170,19 @@ def catalog_profiles(mods_dir):
 SUMMARY_FILE = "tf3-save-summary.json"
 OLD_SUMMARY_FILE = "summary.json"
 # Any layout change raises the version and adds a new schema file; committed ones are never edited.
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 SCHEMA_URL = ("https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/"
               f"tf3-save-summary.v{SCHEMA_VERSION}.schema.json")
 # Every key, in the order written (the schema file of SCHEMA_VERSION).
 FIELDS = ["$schema", "schema_version", "name", "mod_id", "kind", "source_name", "source_size", "author", "tags",
           "url", "tools_commit", "error", "version", "first_version", "map_seed", "start_year", "map_w_m", "map_h_m",
           "header_money", "header_counter", "climate", "economy", "name_list", "is_map_editor", "header_partial",
-          "stream_bytes", "calendar", "journal", "vehicles", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
+          "stream_bytes", "calendar", "journal", "vehicles", "industries", "company", "counters", "cycles", "subsidies", "town_states", "town_records", "towns",
           "settings", "mods", "cargo_list", "cargo_from_mods"]
 
 INDEX_COLS = ["map_seed", "mod_id", "name", "author", "source_name", "version", "start_year", "map_size", "map_size_name",
               "map_format", "map_ratio", "map_w_m", "map_h_m", "climate",
-              "name_list", "mods", "mod_list", "is_map_editor", "start_layout_towns", "records", "stream_bytes", "header", "kind",
+              "name_list", "mods", "mod_list", "is_map_editor", "start_layout_towns", "records", "towns_names", "towns_header", "towns_states", "industries", "stream_bytes", "header", "kind",
               "date", "calendar_speed", "play_speed", "rank", "journal_bookings", "play_periods", "income_periods",
               *INDEX_NAMES, "tools_commit"]
 
@@ -225,8 +230,9 @@ def summarise_save(path, mod_id, mods_dir, kind="savegame"):
             "calendar": summarise_calendar(data),
             "journal": play_summary(data, h["money"]),
             "vehicles": summarise_vehicles(data),
+            "industries": count_industries(data),
             **states,
-            "town_records": summarise_records(recs := scan_records(data), cargo_names),
+            "town_records": summarise_records(recs := scan_records(data), cargo_names, data),
             "towns": summarise_towns(data, recs, states["town_states"]),
             "settings": {k: setting_label(k, v) for k, v in sorted(s.items())} if s else None,
             "mods": [m["id"] for m in h["mods"]],
@@ -258,7 +264,7 @@ def setting_position_name(settings, key):
 def index_row(sm):
     tr = sm.get("town_records") or {}
     if sm.get("error"):
-        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm.get("source_name")] + [""] * 16
+        return ([sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm.get("source_name")] + [""] * 20
                 + ["error", sm.get("kind", "savegame")] + [""] * (7 + len(INDEX_NAMES)) + [sm.get("tools_commit")])
     cal = sm.get("calendar") or {}
     jr = sm.get("journal")
@@ -266,6 +272,8 @@ def index_row(sm):
     return [sm.get("map_seed"), sm["mod_id"], sm["name"], sm["author"], sm.get("source_name"), sm["version"], sm["start_year"],
             *size, *fmt, sm["map_w_m"], sm["map_h_m"], sm["climate"], sm["name_list"],
             len(sm["mods"]), ";".join(sm["mods"]), sm["is_map_editor"], tr["starting_layout"], tr["records"],
+            (sm.get("towns") or {}).get("count"), tr.get("table_count"), sm.get("town_states"),
+            (sm.get("industries") or {}).get("count"),
             sm["stream_bytes"], "partial" if sm["header_partial"] else "ok", sm.get("kind", "savegame"),
             cal.get("date"), cal.get("calendar_speed"), cal.get("play_speed"),
             (sm.get("company") or {}).get("rank_earned"),
