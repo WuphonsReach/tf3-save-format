@@ -44,18 +44,80 @@ from tf3save import decompress  # noqa: E402
 
 # An edge record starts right after the `.street` string that ends the previous record (or the
 # table's first string): u32 node a, u32 node b, then two vec3 f32 (the end positions), then two
-# more vec3 (the tangents), lane data, and the record's own two strings (docs/road-network.md).
+# more vec3 (the tangents), the object and lane lists, and four strings: a mod name, the street type,
+# a mod name and the base type (docs/road-network.md).
 # A lookahead, so a match does not use up the bytes of the next record's own `.street`.
 _START = re.compile(rb"\.street(?=(....)(....)(.{12})(.{12})(.{12})(.{12}))", re.S)
-_TEMPLATE = re.compile(rb"([\x20-\x80])\x00\x00\x00(infrastructure/(?:street|track)/[A-Za-z0-9_/]+)\.street_template")
+_SUFFIX = b".street_template"
 CLUSTER_GAP = 1 << 20         # records less than this far apart belong to one table
-TEMPLATE_WINDOW = 800         # the type string follows the lane data within this many bytes
+TEMPLATE_WINDOW = 800         # the type string ends within this many bytes of the record's start (441 the most seen)
+TRAIN_MODES = (1 << 7) | (1 << 8)  # TRAIN and ELECTRIC_TRAIN, by their place in the game's TransportMode list
 MAX_ID = 1 << 24
 MAX_X, MAX_Y = 40000.0, 60000.0
 
 
 def _vec3(raw):
     return struct.unpack("<3f", raw)
+
+
+def _u32(data, p):
+    return struct.unpack_from("<I", data, p)[0]
+
+
+def _lane_modes(data, start, tpl_at):
+    """The transport-mode bits of all the record's lanes together, or None when the bytes from the tangents up
+    to the street type's `str` at `tpl_at` do not read as: u32, u32, vec<(u32 id, u32 value)> (the objects on
+    the edge), vec<(u32, u8)>, vec<lane>, 9 bytes, str (a mod name, empty for the game's own type). A lane
+    is 21 bytes: f32 speed, f32 width, f32 height, u8, u32 modes, f32 offset."""
+    p = start + 64
+    n = _u32(data, p)
+    if n > 64:
+        return None
+    p += 4 + 8 * n
+    m = _u32(data, p)
+    if m > 64:
+        return None
+    p += 4 + 5 * m
+    lanes = _u32(data, p)
+    if not 1 <= lanes <= 32:
+        return None
+    p += 4
+    modes = 0
+    for k in range(lanes):
+        modes |= _u32(data, p + 21 * k + 13)
+    p += 21 * lanes
+    return modes if p + 13 + _u32(data, p + 9) == tpl_at else None
+
+
+def _record_type(data, start):
+    """(type, family, template) of the record whose first node id is at `start`, as `read_edges` describes
+    them, or three Nones. The street type is the record's first `.street_template` string after the tangents,
+    and the next two strings (a mod name and the base type) must follow it; no later string is tried, as that
+    is the next record's."""
+    j = data.find(_SUFFIX, start + 56, start + TEMPLATE_WINDOW)
+    if j < 0:
+        return None, None, None
+    end = j + len(_SUFFIX)
+    q = j
+    while q > start + 60 and data[q - 1] >= 0x20:  # back over the text to the length word, whose top byte is 0
+        q -= 1
+    q -= 4
+    if _u32(data, q) != end - q - 4:
+        return None, None, None
+    mod = _u32(data, end)
+    if mod > 256:
+        return None, None, None
+    base = _u32(data, end + 4 + mod)
+    if base > 512 or not data[end + 8 + mod:end + 8 + mod + base].endswith(b".street"):
+        return None, None, None
+    path = data[q + 4:j].decode("utf-8", "replace")
+    template = path[len("infrastructure/"):] if path.startswith("infrastructure/") else path
+    modes = _lane_modes(data, start, q)
+    if modes is not None:
+        family = "track" if modes & TRAIN_MODES else "street"
+    else:
+        family = template.split("/")[0] if path.startswith(("infrastructure/street/", "infrastructure/track/")) else None
+    return template.split("/")[-1], family, template
 
 
 def _plausible(a, b, p0, p1, t0, t1):
@@ -80,10 +142,11 @@ def _plausible(a, b, p0, p1, t0, t1):
 def read_edges(data):
     """The street-edge table as a list of dicts: `a`, `b` (node entity ids), `p0`, `p1` (x, y, z), `t0`, `t1` (the end tangents, x, y, z),
     `length` (horizontal, metres), `type` (street or track type without folder, or None if the type
-    string was not found), `family` (`street` or `track`, from the folder; None with the type),
-    `template` (the path under `infrastructure/` without the suffix, such as
-    `street/town/town_old_small`; None with the type) and `offset` (of the record's first node id
-    in the stream)."""
+    string was not found), `family` (`track` when a lane carries trains, else `street`; from the
+    folder when the lanes do not read, None if that is not `infrastructure/street` or `track`),
+    `template` (the type's resource path without `.street_template`, and without `infrastructure/`
+    for the types under it: `street/town/town_old_small`, but `industries/shared/industry_track/industry`;
+    None with the type) and `offset` (of the record's first node id in the stream)."""
     out = []
     for m in _START.finditer(data):
         a, b = struct.unpack("<II", m.group(1) + m.group(2))
@@ -91,13 +154,7 @@ def read_edges(data):
         if not _plausible(a, b, p0, p1, t0, t1):
             continue
         start = m.start() + len(b".street")
-        window = data[start:start + TEMPLATE_WINDOW]
-        t = family = template = None
-        for tm in _TEMPLATE.finditer(window):
-            if len(tm.group(2)) == tm.group(1)[0] - len(b".street_template"):
-                parts = tm.group(2).decode().split("/")
-                t, family, template = parts[-1], parts[1], "/".join(parts[1:])
-                break
+        t, family, template = _record_type(data, start)
         out.append({"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
                     "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     out = _largest_cluster(out)
@@ -112,12 +169,7 @@ def _parse_record(data, start):
     p0, p1, t0, t1 = (_vec3(data[start + 8 + 12 * i:start + 20 + 12 * i]) for i in range(4))
     if not _plausible(a, b, p0, p1, t0, t1):
         return None
-    t = family = template = None
-    for tm in _TEMPLATE.finditer(data[start:start + TEMPLATE_WINDOW]):
-        if len(tm.group(2)) == tm.group(1)[0] - len(b".street_template"):
-            parts = tm.group(2).decode().split("/")
-            t, family, template = parts[-1], parts[1], "/".join(parts[1:])
-            break
+    t, family, template = _record_type(data, start)
     return {"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
             "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}
 
@@ -161,12 +213,11 @@ def bezier_point(c, t):
 
 
 def edge_is_curved(e, tol=0.25):
-    """True when the centre line leaves the chord by more than `tol` metres: the distance of the
-    curve's middle from the chord's middle is (t0 - t1) / 8, and that bounds the bulge to within a
-    small factor for the bends the game allows."""
+    """True when an inner control point of the centre line lies more than `tol` metres from the chord.
+    The curve stays inside its control points' hull, so no bend that leaves the chord by more is missed.
+    The curve's middle alone would miss an S-bend, whose middle can lie on the chord (docs/edge-curves.md)."""
     c = edge_bezier(e)
-    mid = bezier_point(c, 0.5)
-    return math.hypot(mid[0] - (c[0][0] + c[3][0]) / 2, mid[1] - (c[0][1] + c[3][1]) / 2) > tol
+    return max(_along(c[1], c[0], c[3])[0], _along(c[2], c[0], c[3])[0]) > tol
 
 
 def _largest_cluster(edges):
@@ -202,17 +253,18 @@ def read_strips(data):
     return out
 
 
-TAIL = 4_000_000              # the free-id list sits within the last few megabytes (1 to 1.5 MB from the end in a 900 MB stream)
+TAIL = 4_000_000              # the free-id list sits within the last few megabytes (its end at most 2.3 MB from the stream's end)
 FREE_MIN_RUN = 1000           # shortest ascending run taken for the list's sorted part
-FREE_MAX_ID = 1_000_000       # an id is below this; the words after the list are not
+FREE_MAX_ID = MAX_ID          # an id is below this (node ids pass 1,000,000 in long games)
 
 
 def read_free_ids(data):
     """The free-id list (docs/town-leftovers.md) as a set, or None if it is not found. It is a
-    vec<u32> near the end of the stream: a head of small ascending groups and then one long
-    ascending run. The run is the longest ascending stretch of small values in the stream's last TAIL bytes
-    (at any 4-byte alignment); the count word is the one before the list that reaches the run's end, and a candidate with an id twice is not taken.
-    A node or edge id in it belongs to an entity the game no longer has."""
+    vec<u32> near the end of the stream, followed by u32 2, a u32 and a short `str` of digits. Its
+    longest ascending stretch of small values (in the stream's last TAIL bytes, at any 4-byte alignment)
+    lies inside the list, mostly at its end. The list ends at the first such trailer from the run's end
+    on, and the count word is the word before the run that reaches that trailer exactly; a candidate
+    with an id twice is not taken. A node or edge id in it belongs to an entity the game no longer has."""
     tail = data[-TAIL:]
     for al in range(4):
         words = array("I")
@@ -229,14 +281,17 @@ def read_free_ids(data):
         if best is None:
             continue
         s = best[1]
-        end = s
-        while end < len(words) and words[end] < FREE_MAX_ID and (end == s or words[end] > words[end - 1]):
-            end += 1
-        for i in range(max(0, s - 100_000), s):       # the count word: i + 1 + count is the run's end
-            if abs(i + 1 + words[i] - end) <= 3 and words[i] > best[0]:
-                ids = set(words[i + 1:i + 1 + words[i]])
-                if len(ids) == words[i]:                  # a free-id list has no id twice
-                    return ids
+        for j in range(s + best[0], len(words) - 3):   # the trailer: 2, a u32, str of digits
+            if words[j] != 2 or not 1 <= words[j + 2] <= 32:
+                continue
+            p = al + 4 * (j + 3)
+            if not tail[p:p + words[j + 2]].isdigit():
+                continue
+            for i in range(s - 1, -1, -1):              # the count word: i + 1 + count is the trailer
+                if i + 1 + words[i] == j:
+                    ids = set(words[i + 1:j])
+                    if len(ids) == words[i] and max(ids) < FREE_MAX_ID:  # a free-id list has no id twice
+                        return ids
     return None
 
 
