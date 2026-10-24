@@ -8,7 +8,9 @@ Usage:
 Commands:
   ocr           read the text off every shot (tesseract) into DIR/ocr/, once per shot and bar engine;
                 also marks the game's loading screens (see below), a quick pass over shots already read
-  todo          list the clusters of shots that no label covers yet
+  todo          list the clusters of shots that no label covers yet, each with a hint whether its first
+                shot looks like the same static view as the shot before it (edge correlation, needs
+                numpy and Pillow; a long watch with shots 5 to 10 minutes apart is one cluster)
   sheets        contact sheets, 12 shots each, into --out (to read a cluster at a glance)
   build         write DIR/INDEX.md from DIR/labels.tsv, the OCR text and the saves
   find TERM..   shots whose OCR text holds every term (case-insensitive), with the cluster's label
@@ -699,13 +701,107 @@ def cmd_build(work, shots, saves):
     print(f"wrote INDEX.md: {len(shots)} shots, {len(covered)} labelled, {len(top)} clusters, {len(loads)} loading screens")
 
 
-def cmd_todo(work, shots):
+CONT_MAX_GAP = 1800  # seconds: past this a shot is not offered as a continuation of the one before
+SHARED_DF = 0.05    # a text line counts as distinctive when under this share of all shots hold it
+CONT_CORR = 0.5      # edge correlation from which two shots count as the same static view
+
+
+def edge_corr(path_a, path_b, size=(192, 108)):
+    """Correlation of the edge maps of two shots at thumbnail size: about 0 for unrelated pictures,
+    0.8 and up for one static view (HUD text and scene in the same places), lower when the camera moved."""
+    import numpy as np
+    from PIL import Image
+    maps = []
+    for path in (path_a, path_b):
+        im = Image.open(path).convert("L")
+        im.draft("L", (size[0] * 2, size[1] * 2))
+        a = np.asarray(im.resize(size, Image.BOX), dtype=np.float32)
+        e = (np.abs(np.diff(a, axis=1))[:-1] + np.abs(np.diff(a, axis=0))[:, :-1]).ravel()
+        maps.append(e - e.mean())
+    return float(maps[0] @ maps[1] / (np.linalg.norm(maps[0]) * np.linalg.norm(maps[1]) + 1e-9))
+
+
+def ceo_bar(path):
+    """Fill of the CEO experience bar at the bottom left of a 3840x2160 game frame, 0 to 1, or None (other
+    size, no bar). The bar rises very slowly while a company plays, so two shots of one session read close
+    together and never fall; a lower value is another company or a rank-up. The crop is placed by pixel
+    at 3840x2160 only, the way the account crop is; the bar's blue fill is measured against its 242 px track."""
+    import numpy as np
+    from PIL import Image
+    im = Image.open(path)
+    if im.size != (3840, 2160):
+        return None
+    row = np.asarray(im.convert("RGB").crop((460, 2098, 730, 2108)), dtype=np.int16).mean(axis=0)
+    xs = np.where((row[:, 2] - row[:, 0] > 35) & (row[:, 2] > 90))[0]
+    if len(xs) < 3 or xs.min() > 30:
+        return None
+    fill = float((xs.max() - 15 + 1) / 242.0)
+    return fill if fill <= 1 else None       # over 100%: not this bar (a menu or another layout)
+
+
+def text_keys(work, sid):
+    """Lines of a shot's OCR text worth comparing: 8 or more characters with letters, not a bare figure."""
+    d = load_ocr(work, sid)
+    keys = set()
+    for line in (d or {}).get("text", []):
+        k = re.sub(r"[^a-z0-9 ]", "", line.lower()).strip()
+        if len(k) >= 8 and re.search("[a-z]{3}", k) and not re.fullmatch(r"[\d ,$]+", k):
+            keys.add(k)
+    return keys if d else None
+
+
+def doc_freq(work, shots):
+    """How many shots' OCR text holds each line, so lines every game window has (Basics, Send to Line, ...)
+    are not counted as a shared vehicle or line name."""
+    df = collections.Counter()
+    for s in shots:
+        df.update(text_keys(work, s.id) or ())
+    return df
+
+
+def continues_note(work, shots, i, df, hud, total):
+    """A `todo` hint: does shot i look like the same view as the shot before it, though a gap over GAP
+    split them? Edge correlation of the pictures, plus (when both shots are read) the lines of text they
+    share that few other shots have (an open window's vehicle or line name), and the HUD date. The
+    labelling decision stays with a person."""
+    if i == 0:
+        return ""
+    prev = shots[i - 1]
+    gap = (shots[i].utc - prev.utc).total_seconds()
+    if gap > CONT_MAX_GAP:
+        return ""
+    try:
+        c = edge_corr(prev.path, shots[i].path)
+    except (ImportError, OSError) as e:
+        return f"\t(no continuation check: {type(e).__name__})"
+    a, b = text_keys(work, prev.id), text_keys(work, shots[i].id)
+    shared = sorted((k for k in a & b if df[k] <= SHARED_DF * total), key=len, reverse=True) if a and b else []
+    txt = f", {len(shared)} shared text line(s)" + (f" e.g. '{redact(shared[0])[:30]}'" if shared else "") if a and b else ", text not read"
+    bar = ""
+    d0, d1 = (hud.get(prev.id) or "?"), (hud.get(shots[i].id) or "?")
+    verdict = "likely continues" if c >= CONT_CORR or shared else "new view"
+    try:
+        e0, e1 = ceo_bar(prev.path), ceo_bar(shots[i].path)
+    except (ImportError, OSError):
+        e0 = e1 = None
+    if e0 is not None and e1 is not None:
+        bar = f", CEO bar {e0:.0%} -> {e1:.0%}" + (" (fell or jumped: other game or rank-up?)" if not -0.005 <= e1 - e0 <= 0.05 else "")
+    return f"\t{verdict} {prev.id} (gap {gap:.0f} s, edge corr {c:.2f}{txt}, HUD date {d0} -> {d1}{bar})"
+
+
+def cmd_todo(work, shots, every):
     pos, labels = positions(shots, load_labels(work))
     covered = set(loading_shots(work, shots))        # a loading screen needs no note
     for r in labels:
         covered.update(range(pos[r[0]], pos[r[1]] + 1))
+    df = doc_freq(work, every)
+    hud = {}
+    for sid in (s.id for s in shots):
+        d = load_ocr(work, sid)
+        hud[sid] = (d or {}).get("date")
     for i, j in unlabelled(shots, covered):
-        print(f"{shots[i].id}\t{shots[j].id}\t{j - i + 1} shots\tlocal {shots[i].id[9:11]}:{shots[i].id[11:13]}")
+        print(f"{shots[i].id}\t{shots[j].id}\t{j - i + 1} shots\tlocal {shots[i].id[9:11]}:{shots[i].id[11:13]}"
+              + continues_note(work, shots, i, df, hud, len(every)))
 
 
 def cmd_find(work, shots, terms):
@@ -813,7 +909,7 @@ def main():
     if a.command == "ocr":
         cmd_ocr(work, shots, a.jobs, a.hud_engine)
     elif a.command == "todo":
-        cmd_todo(work, shots)
+        cmd_todo(work, shots, list_shots(shots_dir(a.shots), set()))
     elif a.command == "sheets":
         cmd_sheets(shots, a.out)
     elif a.command == "build":
