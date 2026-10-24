@@ -21,7 +21,8 @@ when it is found next to the mods directory.
 
 The summary is built by mine_summary.py (what is read from a save is described there; run alone it prints one).
 Next to each summary this script also writes terrain-map.svg, the picture terrain_map.py draws with no options (the
-vector terrain, the roads and rails, the default grid and compass rose; docs/terrain.md), so the picture follows that
+vector terrain, the roads and rails, the stations, depots and industries when the game install is found, the default
+grid and compass rose; docs/terrain.md), so the picture follows that
 script's current defaults. `--no-maps` skips the pictures. A save the script cannot draw (it prints REFUSED or FAILED)
 gets no picture; the reason is kept in .map_state.json beside the summary. Pictures are other people's maps: they
 stay in OUT_DIR, which is never committed. The script needs about 2.5 GB of memory for a Giant map, so keep the

@@ -3,7 +3,12 @@
 
 Usage: terrain_map.py OUT_DIR SAVE.sav [...] [--mpp M] [--crop X,Y,R] [--grid N] [--grid-lines auto|none|dots|faint] [--png | --raster]
        [--contour M] [--index N] [--no-bands] [--tolerance M]
-       [--rose WHERE] [--rose-size M] [--game DIR] [--no-network] [--keep-dead] [--depots] [--stations] [--coverage] [--industries] [--industry-size M] [--stream]
+       [--rose WHERE] [--rose-size M] [--no-rose] [--no-terrain] [--road-width M] [--rail-width M] [--game DIR] [--mods DIR]
+       [--no-network] [--keep-dead] [--no-depots] [--no-stations] [--coverage] [--no-industries] [--industry-size M] [--stream]
+
+The options and their defaults follow the Rust mapper tf3map (0.4): stations, depots and industries are drawn unless
+`--no-stations`, `--no-depots` or `--no-industries` leaves them out (`--stations`, `--depots` and `--industries` are accepted
+and change nothing), a road or track is as wide as its lanes, and options for what only the SVG draws are refused with `--png`.
 
 Read only: no save is written. The picture goes to OUT_DIR/<save name>-terrain.svg and the script
 prints its size, the metres per pixel and the edge counts. The SVG holds the terrain as vector shapes (coloured
@@ -12,17 +17,16 @@ shaded embedded PNG instead. Every layer is a group with
 `class="layer"`, its id repeated in `data-layer` and Inkscape's layer attributes, so a page script can list
 them with `g.layer` and toggle `display`. Layers, bottom to top: `terrain`, `grid`, `roads` and `rails` (each a
 parent with one sublayer per street or track type, `road-TYPE` / `rail-TYPE`, holding one `<path>` per edge with
-`data-a` and `data-b` (the end node ids in hex), class `road` or `rail` plus the type name, and `data-edge` where
+`data-a` and `data-b` (the end node ids in hex), class `road` or `rail` plus `type-NAME`, and `data-edge` where
 the strip table gave the edge's entity id), `vehicles` (a sublayer per class, `vehicles-train` (wagons included),
 `-tram`, `-truck`, `-bus`, `-car`, `-ship`, ...; each vehicle one `<g class="vehicle CLASS" id="vehicle-SLOT">` with
 `data-slot`, `data-model`, `data-class`, `data-x`, `data-y`, holding its shape and name), `labels` (`edge-labels`:
 one `<g class="edge-label" data-a data-b>` each; `nodes`: one `<g class="node" data-x data-y data-edges>` per
-end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (`--depots`), `stations` and `stations-street` (`--stations`, a sublayer per kind), `coverage` (`--coverage`), `industries` (`--industries`) and
+end node), `maintenance-buildings`, `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (depots, unless `--no-depots`), `stations` and `stations-street` (unless `--no-stations`, a sublayer per kind), `coverage` (`--coverage`), `industries` (unless `--no-industries`) and
 `grid-labels`. The grid layers ignore the pointer. The colours and widths are also set on the
 groups and paths, since Krita ignores the style sheet. The root's size and `viewBox` are the terrain image's pixels (so an editor such as Krita opens
 it at that size, taking 96 PPI); each layer scales by 1 / (metres per pixel), so inside a layer
-the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (the template's real
-width, `--game`), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
+the units are map metres with the image's top-left corner at 0, 0. The line width is in metres too (the edge's own lane widths), so the lines scale with the terrain in every viewer; a width that stays fixed on screen
 (`vector-effect: non-scaling-stroke`) turned short edges into blobs in VS Code's preview.
 A `<metadata>` element
 (namespace `urn:tf3-save-format:terrain-map:1`, one `view` element with attributes) records the
@@ -83,11 +87,17 @@ game's own palette.
              a small cross's arm is a sixth of the gap, a larger cross's 0.4 of it; the 1000 m lines have twice as many dots; the 1000 m lines are
              always dots unless `none` or an `auto` close-up, darker than the minor ones; every dot and small cross arm is one pixel wide, a large cross's arm 1.5) or `faint` (a thin
              solid line).
---game DIR   the game's install folder. A road or track is drawn as wide as its template's profile (the sum of
-             its lanes' `width`, footpaths and shoulders included: a small town street 16 m, a medium one 24 m, a
-             track 4 m), read from the install's street and track templates when the script runs (nothing is copied
-             into the tool or the picture). Without an install, or for a type the install lacks (a mod's), a road is
-             16 m and a track 4 m. Default: the usual Steam folders.
+--game DIR   the game's install folder, read when the script runs for the footprints of depots, stations and industries
+             (nothing is copied into the tool or the picture). Default: the usual Steam folders. Without an install those
+             layers are left out and the run says so.
+--mods DIR   the mod.io game's mods folder, read for a mod's depots (the Boathouse mod's boathouse). Default: the usual places.
+             Without it the boathouse is a dot, with no catchment.
+(widths)     A road or track is drawn as wide as the sum of its own lanes' `width` (the `width` of `street_edges.read_edges`;
+             footpaths and shoulders included: a small town street 16 m, a medium one 24 m, a track 4 m), which needs no
+             install and covers a mod's types. An edge whose lanes do not read gets `--road-width` (default 16) or
+             `--rail-width` (default 4), and the run counts them.
+--no-terrain leave the terrain out (a `--png` then has the roads and rails on white).
+--no-rose    the same as `--rose off`.
 --rose WHERE (SVG only) a `compass` layer, the top one: a white circle with a black outline and a black compass rose (the
              shape of tools/icons/compass_rose.svg: north an arrow, E, S and W on shorter arms, the letters upright). The arms point
              where north and east lie in the picture, so under `--north sun` north is left. WHERE is `lower-right` (the default),
@@ -114,7 +124,7 @@ game's own palette.
              none, and the scan reads the whole stream).
 --zoom N     (SVG only) the root's width and height are N times the picture's pixels, so a viewer
              opens a small crop larger; the `viewBox` and the layers do not change.
---vehicles   (SVG only) add a `vehicles` layer: every model instance under `vehicle/` in the
+--vehicles   (SVG only; a whole map works too, but lists no vehicles in the run's output) add a `vehicles` layer: every model instance under `vehicle/` in the
              picture, drawn as one five-sided shape, a rectangle with a pointed front end, a white outline (mid-dark grey for trains and trams, which run on the red track) and an interior by class: train engine dark orange, trailing unpowered train car light orange, tram purple, truck dark blue, bus dark green, ship dark grey (the water is blue), car and the rest mid grey (the facing is the
              first row of the instance's transform, docs/models.md), sized by class (the save
              holds no vehicle length: train 20 x 3 m, wagon and tram 14 x 3, truck 7 x 2.5, bus
@@ -127,7 +137,7 @@ game's own palette.
              `AIR6`; any other text is written as given. The scan reads the whole stream (model_instances.py). Only the instances
              named get a text label; the run prints every instance drawn (slot, model, position,
              facing), so the caller can pick slots and run again.
---depots     (SVG only) add eight layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
+--depots     (SVG only, on by default; `--no-depots` leaves them out) add eight layers, `maintenance-buildings` (the road maintenance building, `road_maint_station`),
              `road-depots`, `tram-depots`, `rail-maintenance-buildings`, `rail-depots`, `ship-maintenance-buildings`, `ship-depots` and `boathouses` (the Boathouse
              mod's `ingo_bootsschuppen`): each building's ground face as an opaque rectangle or polygon, one grey or brown per carrier
              (ship dark brown, rail dark grey, road lighter grey, tram lightest grey; a maintenance building a step darker than
@@ -138,7 +148,7 @@ game's own palette.
              instance (`road_depot_sm`, likewise the rail depot's `rail_depot_sm`) is left out. The boathouse's script is read from the mod's folder (`--mods DIR`, default the
              usual mod.io places) and it has no ground face, so only a dot on its origin is drawn; the free
              decorative Boathouse asset uses the same model and cannot be told apart by it. Reads the whole stream; no `--crop` needed.
---stations   (SVG only) add a `stations` layer for the platforms and buildings of water, rail and street (bus and tram) stations, a
+--stations   (SVG only, on by default; `--no-stations` leaves it out) add a `stations` layer for the platforms and buildings of water, rail and street (bus and tram) stations, a
              sublayer per group: `station-water-decks` (wood brown) and `station-water-buildings` (darker brown),
              `station-rail-platforms` (grey) and `station-rail-buildings` (dark grey), `station-street-platforms` (light grey;
              the modular station's platform tiles and the small stops) and `station-street-buildings` (grey); all colours
@@ -163,7 +173,7 @@ game's own palette.
              600 m, a depot 400 m: a default the script lets a caller change, which no save was checked for). The pool
              and the transport modes in `data-pool` and `data-modes` are the script's: a road depot
              covers buses and trucks, a tram depot trams, the maintenance building all three; ship depot 1000 m, ship
-             maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like `--depots`.
+             maintenance building 1400 m, boathouse 600 m, rail depot and rail maintenance building 800 m. Aircraft maintenance is not drawn. Needs the install like the depots, and works with `--no-depots` too.
 --industries (SVG only, the default; `--no-industries` leaves it out) add an `industries` layer: a footprint sublayer
              (`industry-footprints`) and a sublayer per industry key (`industry-KEY`), each industry a badge: a white
              disc with a grey border and the key's icon from tools/icons/industries/ in dark grey. The footprint is the
@@ -241,9 +251,7 @@ SHALLOW, DEEP = (120, 175, 220), (30, 75, 125)
 
 GAME_DIRS = ("~/.steam/steam", "~/.local/share/Steam", "~/snap/steam/common/.local/share/Steam",
              "~/.var/app/com.valvesoftware.Steam/.local/share/Steam")
-_LANES = re.compile(r"laneConfigs\s*=\s*\{(.*?)\n\t\t\},", re.S)
-_WIDTH = re.compile(r"\bwidth\s*=\s*([\d.]+)")
-DEFAULT_WIDTH = {"street": 16.0, "track": 4.0}      # a template the install lacks (a mod's, or no install): a small town street, a track
+DEFAULT_WIDTH = {"street": 16.0, "track": 4.0}      # an edge whose lanes do not read (--road-width, --rail-width): a small town street, a track
 
 
 def find_content(game_dir=None):
@@ -256,28 +264,6 @@ def find_content(game_dir=None):
         if os.path.isdir(path):
             return path
     return None
-
-
-def read_profile_widths(content):
-    """{template: width in metres} for every street and track template in the install's
-    `infrastructure/street.zip` and `track.zip`, read when the script runs (nothing is stored). The width is
-    the sum of the `width` of every entry of the template's `laneConfigs` list: carriageway lanes, footpaths and the
-    lanes with no mode (a highway's shoulders and median), the strip the game builds the road on. A small town street
-    is 16 m (5 + 5 and a 3 m footpath each side), a track 4 m."""
-    out = {}
-    for name in ("street", "track"):
-        try:
-            zf = zipfile.ZipFile(os.path.join(content, name + ".zip"))
-        except (OSError, zipfile.BadZipFile):
-            continue
-        for member in zf.namelist():
-            if not member.endswith(".street_template.lua"):
-                continue
-            m = _LANES.search(zf.read(member).decode("utf-8", "replace"))
-            widths = [float(w) for w in _WIDTH.findall(m.group(1))] if m else []
-            if widths:
-                out[member[:-len(".street_template.lua")]] = sum(widths)
-    return out
 
 
 # maintenance buildings and depots: (layer id, label, archive in the install's depots folder, script path, model path,
@@ -353,9 +339,10 @@ LANDING_CLEARANCE = {"small": 0.35, "large": 0.5}            # of the icon's siz
 LANDING_TILT = {"small": 35.0, "large": 0.0}                  # degrees the icon file turns its anchor, taken back out so it starts vertical
 LANDING_INK = "#1f1f1f"                                      # very dark grey, a plain stamp with no disc
 STATION_OUTLINE = 1.5                                        # metres at 2 m per pixel and finer: an industry's outline width
-_BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
+_NUM = r"(-?[\d.]+(?:e[-+]?\d+)?)"                      # a number in a game file may carry an exponent: 2.28882e-07
+_BBOX = re.compile(r"bbM(ax|in)\s*=\s*\{\s*" + _NUM + r"\s*,\s*" + _NUM)
 _FACE = re.compile(r'\["ground_face"\]\s*=\s*\{\s*\{((?:\s*\{[^}]*\},?)+)')
-_POINT = re.compile(r"\{\s*(-?[\d.]+)\s*,\s*(-?[\d.]+)")
+_POINT = re.compile(r"\{\s*" + _NUM + r"\s*,\s*" + _NUM)
 _RADIUS = re.compile(r"catchmentArea\s*=\s*\{\s*radius\s*=\s*(?:captureParams\.radius or )?(\d+)")
 _COLLIDER = re.compile(r'\["collider"\]\s*=\s*\{(.*?)\n\t\t\t\},', re.S)
 _BOX3D = re.compile(r"\{\s*(?:\{[^{}]*\}\s*,?\s*){8}\}")
@@ -451,7 +438,7 @@ def read_depot_specs(content, mods_dir=None):
             if text is None:
                 continue
         face, radius, pool, modes = _FACE.search(text), _RADIUS.search(text), _POOL.search(text), _DEPOT_MODES.search(text)
-        if radius and (face or not archive):
+        if face or not archive:                      # a script with a face but no readable catchment keeps the face (no data-radius, no circle)
             pts = [(float(a), float(b)) for a, b in _POINT.findall(face.group(1))] if face else []
             boxes = []
             collider = _COLLIDER.search(text)
@@ -462,7 +449,7 @@ def read_depot_specs(content, mods_dir=None):
                         or box[2] < min(b for _, b in pts) - 0.5 or box[3] > max(b for _, b in pts) + 0.5):
                     boxes.append(box)
             out[lid] = {"face": pts, "boxes": boxes,
-                        "radius": int(radius.group(1)), "pool": int(pool.group(1)) if pool else 0,
+                        "radius": int(radius.group(1)) if radius else None, "pool": int(pool.group(1)) if pool else 0,
                         "modes": ",".join(re.findall(r'"(\w+)"', modes.group(1))) if modes else ""}
     return out
 
@@ -488,9 +475,10 @@ def read_industry_faces(content):
 
 
 def edge_width(edge, widths, floor=0.0):
-    """Stroke width in metres: the template's profile width (`read_profile_widths`), at least `floor`. A template
-    with no entry gets `DEFAULT_WIDTH` for its family."""
-    w = widths.get(edge["template"]) or DEFAULT_WIDTH["track" if edge["family"] == "track" else "street"]
+    """Stroke width in metres: the sum of the edge's own lane widths (`street_edges.read_edges`' `width`, so a
+    mod's type needs no install), or the fallback for its family from `widths` (`DEFAULT_WIDTH`, or --road-width and
+    --rail-width) when the lanes do not read; at least `floor`."""
+    w = edge.get("width") or widths["track" if edge["family"] == "track" else "street"]
     return max(w, floor)
 
 
@@ -1069,7 +1057,9 @@ def _closed_outline(polys, g=STREET_BORDER_CLOSE):
     """Closed loops (lists of points) round the union of the boxes `polys` (four corners each) with every gap up to 2 g metres
     closed, so the thin gaps between a station's pieces leave no line inside: each box is grown by g, the union is taken and shrunk
     by g again, in the frame of the boxes' own axes (a station's pieces share one heading, a quarter turn aside at most), on the
-    grid of the boxes' edge coordinates and their multiples of g. Boxes within 2 g of each other are one station."""
+    grid of the boxes' edge coordinates and their multiples of g. Boxes within 2 g of each other with the same heading (to
+    0.01 rad, modulo a quarter turn) are one station; two stations at other angles stay apart, as each would be inflated to the
+    other's rotated bounding box."""
     n = len(polys)
     parent = list(range(n))
 
@@ -1079,9 +1069,12 @@ def _closed_outline(polys, g=STREET_BORDER_CLOSE):
             a = parent[a]
         return a
     aabb = [(min(q[0] for q in c) - g, max(q[0] for q in c) + g, min(q[1] for q in c) - g, max(q[1] for q in c) + g) for c in polys]
+    turn = [math.atan2(c[1][1] - c[0][1], c[1][0] - c[0][0]) % (math.pi / 2) for c in polys]
     for a in range(n):
         for b in range(a + 1, n):
-            if aabb[a][0] <= aabb[b][1] and aabb[b][0] <= aabb[a][1] and aabb[a][2] <= aabb[b][3] and aabb[b][2] <= aabb[a][3]:
+            d = abs(turn[a] - turn[b])
+            if (aabb[a][0] <= aabb[b][1] and aabb[b][0] <= aabb[a][1] and aabb[a][2] <= aabb[b][3] and aabb[b][2] <= aabb[a][3]
+                    and min(d, math.pi / 2 - d) < 0.01):
                 parent[find(a)] = find(b)
     groups = collections.defaultdict(list)
     for a in range(n):
@@ -1227,8 +1220,8 @@ def station_layers(mpp, fr, instances, boxes):
             if i["model"] in models and i["model"] in boxes:
                 polys.append(corners(i))
                 rows.append(i)
-        if not polys:
-            continue
+        if not polys and not (lid == "station-street-platforms" and border_loops):
+            continue                                     # the border and ground are drawn in the platforms' pass, with or without platform tiles
         out_kind = top if lid.startswith("station-street") else out    # street stations lie over the roads
         if not out_kind:
             out_kind.append(layer("stations-street" if out_kind is top else "stations", "Street stations" if out_kind is top else "Stations",
@@ -1238,13 +1231,15 @@ def station_layers(mpp, fr, instances, boxes):
             out_kind.append('<path class="station-ground" d="%s" fill="%s" fill-rule="evenodd" fill-opacity="%g" stroke="%s" stroke-width="%g"'
                        ' stroke-opacity="%g"/></g>' % (loops_d(border_loops), STREET_BORDER_FILL, STREET_BORDER_OPACITY, STREET_BORDER_FILL,
                                                        0.5 * k, STREET_BORDER_OPACITY))
-        out_kind.append(layer(lid, label))
-        out_kind.append('<g opacity="%g">' % opacity)
+        if polys:
+            out_kind.append(layer(lid, label))
+            out_kind.append('<g opacity="%g">' % opacity)
         for i, c in zip(rows, polys):
             out_kind.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" '
                        'stroke="%s" stroke-width="%g"/></g>'    # a same-colour edge hides the seam between two boxes
                        % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % fr.pic(*q) for q in c), colour, colour, 0.5 * k))
-        out_kind.append("</g>")
+        if polys:
+            out_kind.append("</g>")
         if lid == "station-street-platforms" and border_loops:
             outer = _outer_runs([c for i, c in zip(rows, polys) if "/small_stops/" in i["model"]] or [])
         else:
@@ -1269,7 +1264,7 @@ def station_layers(mpp, fr, instances, boxes):
         out.append("<defs>")
         for size in sorted({LANDING_MODELS[i["model"].rsplit("/", 1)[-1][:-4]] for i in landings}):
             body = re.search(r"<svg[^>]*>(.*)</svg>", open(os.path.join(ICON_DIR, "..", "anchor_%s.svg" % size)).read(), re.S)
-            out.append('<symbol id="station-anchor-%s" viewBox="0 0 64 64">%s</symbol>' % (size, body.group(1)))
+            out.append('<symbol id="station-anchor-%s" viewBox="0 0 64 64"><g fill="currentColor">%s</g></symbol>' % (size, body.group(1)))
         out.append("</defs>")
         out.append(layer("station-landings", "Water stations: landings"))
         for i in landings:
@@ -1307,8 +1302,9 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
         if not spec or not rows:
             continue
         attrs = lambda i: ('id="depot-%s" class="depot %s" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"'
-                           ' data-pool="%d" data-radius="%d" data-modes="%s"'
-                           % (i["slot"], lid, i["slot"], quoteattr(model), i["x"], i["y"], spec["pool"], spec["radius"], spec["modes"]))
+                           ' data-pool="%d"%s data-modes="%s"'
+                           % (i["slot"], lid, i["slot"], quoteattr(model), i["x"], i["y"], spec["pool"],
+                              ' data-radius="%d"' % spec["radius"] if spec["radius"] is not None else "", spec["modes"]))
         if footprints:
             over.append(layer(lid, label, ' transform="scale(%g)" pointer-events="none"' % (1.0 / mpp)))
             for i in rows:
@@ -1334,7 +1330,7 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
                                 % (o[0], o[1], 4.0, colour, STATION_OUTLINE * k))
                 over.append("</g>")
             over.append("</g>")
-        if coverage:
+        if coverage and spec["radius"] is not None:
             cover.append(layer("coverage-" + lid, "Coverage: " + label))
             ink = "#%02x%02x%02x" % tuple(int(int(colour[c:c + 2], 16) * 0.5) for c in (1, 3, 5))
             for i in rows:
@@ -1420,7 +1416,7 @@ def industry_layers(mpp, fr, rows, diameter=None, faces=None):
         body = re.search(r"<svg[^>]*>(.*)</svg>", text, re.S)
         if body:
             have.add(key)
-            out.append('<symbol id="industry-icon-%s" viewBox="0 0 64 64">%s</symbol>' % (safe_id(key), body.group(1)))
+            out.append('<symbol id="industry-icon-%s" viewBox="0 0 64 64"><g fill="currentColor">%s</g></symbol>' % (safe_id(key), body.group(1)))
     out.append("</defs>")
     shapes = [i for i in rows if faces and i["key"] in faces]
     if shapes:
@@ -1572,7 +1568,7 @@ def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, ov
         else:
             d = "M%.1f %.1fL%.1f %.1f" % (c[0] + c[3])
         groups[fam].setdefault(e["type"] or "unknown", []).append(
-            '<path class="%s %s" data-a="%x" data-b="%x"%s stroke-width="%g" d="%s"/>'
+            '<path class="%s type-%s" data-a="%x" data-b="%x"%s stroke-width="%g" d="%s"/>'
             % (fam, safe_id(e["type"] or "unknown"), e["a"], e["b"], ' data-edge="%x"' % e["e"] if e.get("e") else "",
                edge_width(e, widths, min_width), d))
     parts = ['<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"'
@@ -1582,7 +1578,7 @@ def svg_document(png, size, mpp, fr, edges, widths, grid=None, metadata=None, ov
              '<style>.road{stroke:%s}.rail{stroke:%s}'
              '.road,.rail{fill:none;stroke-linecap:round;stroke-linejoin:round}</style>'
              % (ROAD_HEX, RAIL_HEX),
-             ] + (terrain if terrain else [
+             ] + (terrain if terrain is not None else [
              layer("terrain", "Terrain", ' transform="scale(%g)"' % (1.0 / mpp)),
              '<image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/>'
              % (w, h, base64.b64encode(png).decode()),
@@ -1638,7 +1634,7 @@ def main():
                     "or finer; none crosses only; dots or faint also draw the minor lines, as sparse dots or faint solid lines")
     ap.add_argument("--grid-dot-step", type=float, default=25, metavar="M",
                     help="metres between the dots of --grid-lines dots (default 25, at least %d pixels)" % GRID_MIN_DOT_PX)
-    ap.add_argument("--game", help="the game's install folder, for the street and track widths "
+    ap.add_argument("--game", help="the game's install folder, for the footprints of depots, stations and industries "
                     "(default: the usual Steam places)")
     ap.add_argument("--min-width", type=float, default=0.0, metavar="M", help="SVG only: draw no road or rail "
                     "narrower than M metres, so a whole-map picture keeps them visible (default 0: real widths)")
@@ -1647,6 +1643,12 @@ def main():
                     "upper-right, off, or X,Y (map metres) for its centre")
     ap.add_argument("--rose-size", type=float, metavar="M", help="SVG only: the rose circle's diameter in metres "
                     "(default 250, at most an eighth of the picture's short side)")
+    ap.add_argument("--no-rose", action="store_true", help="SVG only: leave out the compass rose (the same as --rose off)")
+    ap.add_argument("--no-terrain", action="store_true", help="leave out the terrain (a --png then has the network on white)")
+    ap.add_argument("--road-width", type=float, default=DEFAULT_WIDTH["street"], metavar="M",
+                    help="width in metres of a road whose lanes do not read (default %g)" % DEFAULT_WIDTH["street"])
+    ap.add_argument("--rail-width", type=float, default=DEFAULT_WIDTH["track"], metavar="M",
+                    help="width in metres of a track whose lanes do not read (default %g)" % DEFAULT_WIDTH["track"])
     ap.add_argument("--no-network", action="store_true")
     ap.add_argument("--keep-dead", action="store_true", help="draw edges whose end node is in the free-id list too")
     ap.add_argument("--label", action="append", default=[], metavar="A>B[=TEXT]",
@@ -1657,10 +1659,12 @@ def main():
     ap.add_argument("--vehicles", action="store_true", help="SVG only: draw the vehicle model instances")
     ap.add_argument("--name", action="append", default=[], metavar="SLOT=TEXT",
                     help="rename one vehicle instance in the picture (repeatable)")
-    ap.add_argument("--stations", action="store_true", help="SVG only: draw the water stations' docks, platforms and "
-                    "main buildings as boxes (sizes from the install)")
-    ap.add_argument("--depots", action="store_true", help="SVG only: draw the road maintenance buildings, road depots "
-                    "and tram depots (ground faces from the install)")
+    ap.add_argument("--stations", action=argparse.BooleanOptionalAction, default=True,
+                    help="SVG only, on by default (--no-stations leaves it out): draw the docks, platforms, main buildings and "
+                    "borders of the water, rail and street stations (sizes from the install)")
+    ap.add_argument("--depots", action=argparse.BooleanOptionalAction, default=True,
+                    help="SVG only, on by default (--no-depots leaves it out): draw the maintenance buildings and depots "
+                    "(ground faces from the install)")
     ap.add_argument("--industries", action=argparse.BooleanOptionalAction, default=True,
                     help="SVG only, on by default (--no-industries leaves it out): stamp each industry's icon on a white disc "
                     "with a grey border, 96 m across by default, at its origin (see the icon files in tools/icons/industries)")
@@ -1675,7 +1679,23 @@ def main():
     if args.raster and args.png:
         ap.error("--raster and --png are two ways to draw the terrain as pixels: pick one")
     vector = not (args.raster or args.png)
-    rose_at = args.rose
+
+    def given(*flags):                                    # the flags the command line names, as the mapper checks them
+        return [f for f in flags if any(a == f or a.startswith(f + "=") for a in sys.argv[1:])]
+    if args.png:                                          # a flat picture of the terrain and the network: nothing else
+        bad = given("--zoom", "--rose", "--rose-size", "--no-rose", "--grid", "--no-grid", "--grid-lines", "--grid-dot-step",
+                    "--vehicles", "--name", "--label", "--edge-ids", "--coverage", "--min-width", "--stations", "--no-stations",
+                    "--depots", "--no-depots", "--industries", "--no-industries", "--industry-size", "--contour", "--index",
+                    "--no-bands", "--tolerance")
+        if bad:
+            ap.error("%s works with the SVG, not --png" % bad[0])
+        args.depots = args.stations = args.industries = False
+        args.no_grid = args.no_rose = True
+    if args.raster and given("--contour", "--index", "--no-bands", "--tolerance"):
+        ap.error("%s is for the vector terrain, not --raster" % given("--contour", "--index", "--no-bands", "--tolerance")[0])
+    if args.raster and args.no_terrain:
+        ap.error("--raster draws the terrain: not with --no-terrain")
+    rose_at = "off" if args.no_rose else args.rose
     if rose_at not in ROSE_CORNERS + ("off",):
         try:
             rose_at = tuple(float(v) for v in args.rose.split(","))
@@ -1684,14 +1704,16 @@ def main():
             ap.error("--rose wants off, a corner (%s) or X,Y in metres" % ", ".join(ROSE_CORNERS))
     if args.rose_size is not None and args.rose_size <= 0:
         ap.error("--rose-size wants a diameter above 0")
-    if args.contour <= 0 or args.index < 1:
-        ap.error("--contour wants a step above 0 and --index 1 or more")
+    if args.contour < 1 or args.index < 1:
+        ap.error("--contour wants a step of 1 metre or more and --index 1 or more")
+    if not (args.road_width > 0 and args.rail_width > 0 and args.min_width >= 0):
+        ap.error("--road-width and --rail-width want a width above 0, --min-width 0 or more")
+    if not args.grid_dot_step > 0:
+        ap.error("--grid-dot-step wants a distance above 0")
     if args.mpp is None:
         args.mpp = 8 if vector and not args.crop else 4
     if args.mpp not in (1, 2) and (args.mpp < 4 or args.mpp % 4):
         ap.error("--mpp must be 1, 2 or a multiple of 4 (the heightmap spacing)")
-    if (args.label or args.vehicles or args.depots or args.coverage or args.stations) and args.png:
-        ap.error("--label, --vehicles, --depots, --stations and --coverage only work with the SVG")
     if args.no_grid and args.grid:
         ap.error("--no-grid and --grid exclude each other")
     labels = {}
@@ -1702,14 +1724,12 @@ def main():
         except ValueError:
             ap.error("--label wants A>B[=TEXT] with hex node ids, not %r" % item)
         labels[frozenset((a, b))] = text or None
-    if args.vehicles and not args.crop:
-        ap.error("--vehicles needs --crop")
     try:
         names = {int(k): v for k, v in (n.split("=", 1) for n in args.name)}
     except ValueError:
         ap.error("--name wants SLOT=TEXT, with a number for the slot")
-    if args.grid is not None and (args.grid < 1 or args.png):
-        ap.error("--grid wants a step of 1 metre or more, and only works with the SVG")
+    if args.grid is not None and args.grid < 1:
+        ap.error("--grid wants a step of 1 metre or more")
     if args.grid_lines != "auto" and args.no_grid:
         ap.error("--grid-lines needs a grid")
     if args.grid_lines == "dots" and args.grid_dot_step < GRID_MIN_DOT_PX * args.mpp:
@@ -1726,7 +1746,7 @@ def main():
         ap.error("--industry-size wants a diameter above 0")
     os.makedirs(args.out_dir, exist_ok=True)
     content = find_content(args.game)
-    widths = read_profile_widths(content) if content else {}
+    widths = {"street": args.road_width, "track": args.rail_width}      # an edge whose lanes do not read
     depot_specs = read_depot_specs(content, args.mods) if args.depots or args.coverage else {}
     station_boxes = read_station_boxes(content) if args.stations else {}
     if args.stations and not station_boxes:
@@ -1734,8 +1754,6 @@ def main():
     industry_faces = dict(MEASURED_FACES, **read_industry_faces(content)) if args.industries and not args.png else {}
     if (args.depots or args.coverage) and not depot_specs:
         print("no install found (--game DIR): no depot layers drawn")
-    print("widths: %s" % (("%d templates read from the install" % len(widths)) if widths else
-                          "no install found (--game DIR), roads drawn 16 m wide and tracks 4 m"))
     step, fine = max(1, args.mpp // 4), (4 // args.mpp if args.mpp < 4 and not vector else 1)
     spacing = GRID_STEP * step                            # metres between the points the vector terrain is cut from
     for path in args.saves:
@@ -1772,6 +1790,8 @@ def main():
                 img = b""
             else:
                 img, size = render(rows, step, off_z, unit, water, args.mpp, args.north)
+                if args.no_terrain:
+                    img = bytearray(b"\xff" * len(img))
             x_lo, x_hi, y_lo, y_hi = fr.box(size, args.mpp)
             roads = rails = 0
             edges = [] if args.no_network else read_edges(data)
@@ -1791,7 +1811,7 @@ def main():
                             and max(q[1] for q in c) >= y_lo and min(q[1] for q in c) <= y_hi)
                 edges = [e for e in edges if touches(e)]
             vehicles = []
-            if args.vehicles and crop:
+            if args.vehicles:
                 vehicles = [v for v in read_instances(data)
                             if x_lo <= v["x"] <= x_hi and y_lo <= v["y"] <= y_hi]
             depot_rows, station_rows = [], []
@@ -1811,7 +1831,7 @@ def main():
                     spec = next((depot_specs[k[0]] for k in DEPOT_KINDS if k[4] == i["model"] and k[0] in depot_specs), None)
                     if not spec:
                         continue
-                    r = spec["radius"] if args.coverage else 40       # the circle or the footprint may reach the picture
+                    r = (spec["radius"] or 40) if args.coverage else 40       # the circle or the footprint may reach the picture
                     if x_lo - r <= i["x"] <= x_hi + r and y_lo - r <= i["y"] <= y_hi + r:
                         depot_rows.append(i)
             industry_rows = []
@@ -1837,6 +1857,9 @@ def main():
                     print("no industry layer: %s" % e)
             if args.edge_ids and labels:
                 edge_ids(edges, read_strips(data))
+            unread = sum(not e.get("width") for e in edges)
+            if unread:
+                print("%d edges whose lanes did not read are drawn at the fallback width" % unread)
             if not args.png:
                 roads = sum(e["family"] != "track" for e in edges)
                 rails = len(edges) - roads
@@ -1853,7 +1876,10 @@ def main():
         if not args.png:
             dest = dest[:-len(".png")] + ".svg"
             terrain, extra = None, ()
-            if vector:
+            if args.no_terrain:
+                terrain = []                              # no terrain layer at all
+                extra = (("terrain", "off"),)
+            elif vector:
                 tol = args.tolerance if args.tolerance is not None else 0.4 * args.mpp
                 terrain, (n_rings, n_lines, n_bands) = vector_terrain(picked, spacing, size, args.mpp, off_z, unit, water,
                                                                       args.contour, args.index, tol, not args.no_bands)
@@ -1892,7 +1918,7 @@ def main():
                       % (i["slot"], short_model(i["model"]), i["x"], i["y"], i["fx"], i["fy"]))
             for i in industry_rows:
                 print("industry slot %-6d %-18s x %8.1f y %8.1f" % (i["slot"], i["key"], i["x"], i["y"]))
-            for v in vehicles:
+            for v in vehicles if crop else ():                # a whole map has too many to list
                 print("vehicle slot %-6d %-28s x %8.1f y %8.1f facing %5.2f %5.2f"
                       % (v["slot"], short_model(v["model"]), v["x"], v["y"], v["fx"], v["fy"]))
         else:

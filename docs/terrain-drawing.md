@@ -6,7 +6,7 @@
 
 - **The tool found the heightmap and gave a sensible picture in one catalog save of each of 568, 585, 599, 601 and 604 and in our own 604 saves (Observed).** The test of the frame is the roads: towns lie on land, roads keep out of the lakes and follow valleys, with x right, y up, not flipped.
 - **The vector terrain is the water below `waterLevel` as one even-odd shape (rivers included), a filled band every 20 m above it, and a height line at each band's edge (Observed, 604).** It is small (0.34 MB for a 14,336 m map with bands, against 81 MB for the raster SVG of a Giant map) but has no hill shading.
-- **Roads and tracks are drawn as wide as their template's profile, in metres (a small town street 16 m, a track 4 m);** a whole-map picture shows a track as a hairline unless `--min-width` raises the floor.
+- **Roads and tracks are drawn as wide as the sum of their own lanes, in metres (a small town street 16 m, a track 4 m);** a whole-map picture shows a track as a hairline unless `--min-width` raises the floor.
 - **A map drawn with only part of its roads, the rest in dashes, means the edge reader stopped early (Observed, 8,043 of 21,154 records until the fixed 16 MiB limit was removed).**
 - **The SVG records its placement in `<metadata>` (map size, metres per pixel, top-left corner, covered range, which way north is drawn, the crop), so a compass word read off a picture can be tied to its frame.**
 

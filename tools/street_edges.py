@@ -64,8 +64,12 @@ def _u32(data, p):
     return struct.unpack_from("<I", data, p)[0]
 
 
-def _lane_modes(data, start, tpl_at):
-    """The transport-mode bits of all the record's lanes together, or None when the bytes from the tangents up
+MAX_LANE_WIDTH = 500.0       # metres: a sum of lane widths above this is not a width
+
+
+def _lanes(data, start, tpl_at):
+    """(the transport-mode bits of all the record's lanes together, the lanes' widths added up in metres or
+    None when that is no sensible width), or None when the bytes from the tangents up
     to the street type's `str` at `tpl_at` do not read as: u32, u32, vec<(u32 id, u32 value)> (the objects on
     the edge), vec<(u32, u8)>, vec<lane>, 9 bytes, str (a mod name, empty for the game's own type). A lane
     is 21 bytes: f32 speed, f32 width, f32 height, u8, u32 modes, f32 offset."""
@@ -82,42 +86,46 @@ def _lane_modes(data, start, tpl_at):
     if not 1 <= lanes <= 32:
         return None
     p += 4
-    modes = 0
+    modes, width = 0, 0.0
     for k in range(lanes):
         modes |= _u32(data, p + 21 * k + 13)
+        width += struct.unpack_from("<f", data, p + 21 * k + 4)[0]
     p += 21 * lanes
-    return modes if p + 13 + _u32(data, p + 9) == tpl_at else None
+    if p + 13 + _u32(data, p + 9) != tpl_at:
+        return None
+    return modes, (width if 0 < width < MAX_LANE_WIDTH else None)
 
 
 def _record_type(data, start):
-    """(type, family, template) of the record whose first node id is at `start`, as `read_edges` describes
-    them, or three Nones. The street type is the record's first `.street_template` string after the tangents,
+    """(type, family, template, width) of the record whose first node id is at `start`, as `read_edges` describes
+    them, or four Nones. The street type is the record's first `.street_template` string after the tangents,
     and the next two strings (a mod name and the base type) must follow it; no later string is tried, as that
     is the next record's."""
     j = data.find(_SUFFIX, start + 56, start + TEMPLATE_WINDOW)
     if j < 0:
-        return None, None, None
+        return None, None, None, None
     end = j + len(_SUFFIX)
     q = j
     while q > start + 60 and data[q - 1] >= 0x20:  # back over the text to the length word, whose top byte is 0
         q -= 1
     q -= 4
     if _u32(data, q) != end - q - 4:
-        return None, None, None
+        return None, None, None, None
     mod = _u32(data, end)
     if mod > 256:
-        return None, None, None
+        return None, None, None, None
     base = _u32(data, end + 4 + mod)
     if base > 512 or not data[end + 8 + mod:end + 8 + mod + base].endswith(b".street"):
-        return None, None, None
+        return None, None, None, None
     path = data[q + 4:j].decode("utf-8", "replace")
     template = path[len("infrastructure/"):] if path.startswith("infrastructure/") else path
-    modes = _lane_modes(data, start, q)
+    lanes = _lanes(data, start, q)
+    modes, width = lanes if lanes else (None, None)
     if modes is not None:
         family = "track" if modes & TRAIN_MODES else "street"
     else:
         family = template.split("/")[0] if path.startswith(("infrastructure/street/", "infrastructure/track/")) else None
-    return template.split("/")[-1], family, template
+    return template.split("/")[-1], family, template, width
 
 
 def _plausible(a, b, p0, p1, t0, t1):
@@ -146,7 +154,8 @@ def read_edges(data):
     folder when the lanes do not read, None if that is not `infrastructure/street` or `track`),
     `template` (the type's resource path without `.street_template`, and without `infrastructure/`
     for the types under it: `street/town/town_old_small`, but `industries/shared/industry_track/industry`;
-    None with the type) and `offset` (of the record's first node id in the stream)."""
+    None with the type), `width` (the sum of the record's lane widths in metres, sidewalks and shoulders included, so the strip
+    the road is built on; None when the lanes do not read) and `offset` (of the record's first node id in the stream)."""
     out = []
     for m in _START.finditer(data):
         a, b = struct.unpack("<II", m.group(1) + m.group(2))
@@ -154,9 +163,9 @@ def read_edges(data):
         if not _plausible(a, b, p0, p1, t0, t1):
             continue
         start = m.start() + len(b".street")
-        t, family, template = _record_type(data, start)
+        t, family, template, width = _record_type(data, start)
         out.append({"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
-                    "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
+                    "template": template, "width": width, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     out = _largest_cluster(out)
     first = _record_before(data, out[0]["offset"]) if out else None
     return [first] + out if first else out
@@ -169,9 +178,9 @@ def _parse_record(data, start):
     p0, p1, t0, t1 = (_vec3(data[start + 8 + 12 * i:start + 20 + 12 * i]) for i in range(4))
     if not _plausible(a, b, p0, p1, t0, t1):
         return None
-    t, family, template = _record_type(data, start)
+    t, family, template, width = _record_type(data, start)
     return {"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
-            "template": template, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}
+            "template": template, "width": width, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}
 
 
 def _record_before(data, offset):

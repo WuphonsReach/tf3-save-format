@@ -32,7 +32,8 @@ def _cut(rows, buckets, level_of, spacing, offset, kmin, padded=False):
     `level_of(k)` is its height. Only levels from `kmin` up are cut. `offset` is the grid index of the
     picture's origin (1 when the grid is padded; `padded` says the outer ring of points is padding, and a cut
     on an edge that ends in one lies at that padding point). An edge key is the grid index of its first corner times 2,
-    plus 1 for a vertical edge, so two cells that share an edge agree on it."""
+    plus 1 for a vertical edge, so two cells that share an edge agree on it; with the level it is the key of a
+    cut point, which each level has of its own."""
     h, w = len(rows), len(rows[0])
     band_rows = [[buckets[v] for v in r] for r in rows]
     adj, pos = {}, {}
@@ -48,6 +49,7 @@ def _cut(rows, buckets, level_of, spacing, offset, kmin, padded=False):
             key, a, b, u, v, du, dv = (j * w + i) * 2 + 1, z[0], z[3], i, j, 0, 1
         else:
             key, a, b, u, v, du, dv = (j * w + i + 1) * 2 + 1, z[1], z[2], i + 1, j, 0, 1
+        key = (level, key)                                   # one point per level: a steep slope is cut by several
         if key not in pos:
             t = (level - a) / (b - a)
             if padded:                                       # an edge from a real point to a padding point

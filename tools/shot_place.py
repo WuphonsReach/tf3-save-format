@@ -182,7 +182,7 @@ def make_map(save, out_dir, centre, radius=800):
     here = os.path.dirname(os.path.abspath(__file__))
     cmd = [sys.executable, "-I", os.path.join(here, "terrain_map.py"), out_dir, save,
            "--crop", "%d,%d,%d" % (round(centre[0]), round(centre[1]), radius), "--mpp", "1",
-           "--png", "--rose", "off", "--no-grid"]
+           "--png"]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode:
         sys.exit("terrain_map.py failed: " + res.stderr.strip()[-300:])
