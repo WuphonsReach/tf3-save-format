@@ -11,6 +11,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 - Calendar: the mapping from year to clock units at any speed other than 1.00x is untested, and what the autosave interval counts is unclear.
 - Settings and mods: whether a change acts on what already exists, and what happens to a removed mod's options.
 - Script states, animals and platform: mostly reading work on saves we hold.
+- Format 605 (newer than 604): what it changed after the header, and which build brought it. See [Format versions and builds](#format-versions-and-builds).
 
 ## Seed, terrain and the map
 
@@ -27,6 +28,12 @@ Everything here is **Open**, seen on 604 unless a range is given.
 - **The terrain values after the header** (604) What `baseLevels` and `highLevels` mean, what the float-like record stretch holds, and whether the list after the heightmap is the per-tile brush record. Home: [terrain.md](../terrain.md#open). Needs: existing saves and game files (`TerrainTileBrush` in the API definitions).
 - **The 13 records of 16 floats** (604) Sites move between saves of one seed; whether the 13 are the first kind in a longer list (count prefix 0x27 or 0x4e) is unknown. Home: [terrain.md](../terrain.md). Needs: existing saves.
 - **What the climate changes on load** (604) Whether the terrain and existing industries change when the climate is switched on the Load Game screen. Home: [settings.md](../settings.md#open). Needs: new save pair.
+
+## Format versions and builds
+
+- **What format 605 changed after the header** (604 to 605) The header reads the same on both; the stream after it is not compared. Our only before and after pair is a play-confounded one (weeks of game play between the saves). Home: [versions.md](../versions.md#game-releases-and-builds-2026-10-24). Needs: new save (load a 604 save on the current build and save at once, nothing else changed), then a structural comparison; or existing saves, a coarse comparison of section sizes and record counts across the 604 and 605 saves of one game.
+- **Which build introduced 605, and whether the later builds write it** (605) 40423 fits the dates, but no save or screenshot names the build in use when the first 605 save was made, and no save has been made on 40425 yet. Home: [versions.md](../versions.md#game-releases-and-builds-2026-10-24). Needs: new save on 40425 (header version), and mod.io uploads made after the 40423 release, whose `buildVersion` in the local cache names the build, once catalog saves from then are downloaded.
+- **Console format after the updates** (601 and 605) Console uploads were still 601 after the 40420 update; whether the console builds move to 605 is unknown. Home: [versions.md](../versions.md). Needs: existing saves (new console uploads in the catalog).
 
 ## Settings
 

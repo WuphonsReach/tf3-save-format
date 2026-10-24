@@ -4,7 +4,8 @@ The u32 after the `tf**` magic. The game reads older versions. When it re-saves 
 
 ## In short
 
-- **604 is the PC release format and 601 the console format (Observed).** 568 to 599 are pre-release builds. A re-saved older save comes back as 604, keeping the old number in the header's `value` field.
+- **604 is the PC release format and 601 the console format (Observed).** 568 to 599 are pre-release builds. A re-saved older save comes back as the current version (604, now 605), keeping the old number in the header's `value` field.
+- **605 is a newer PC format, first seen on 23 October 2026 (Observed).** In our own saves, a 604 save and the first 605 save sit 28 minutes apart, between the 22 October build 40423 release and the 24 October build 40425. The header reads the same way on 605. The rest of the stream has not been compared with 604, and no catalog save is 605 yet. Details under [Game releases and builds](#game-releases-and-builds-2026-10-24).
 - **568 and 585 headers differ after the preview** (Open); everything after the header was read on all five versions except the money journal and entity data (604 only).
 - **No field names the platform** ([platform.md](platform.md)).
 - The sections below are dated counts of the catalog; they are exempt from the Confirmed / Observed / Open labels.
@@ -88,6 +89,24 @@ An upload date is the latest date a save could have been made, not the date it w
 - **There are older numbers in the header's `value` field** (see [header.md](header.md)). Some 604 saves hold 543, 555 or 596 there, which suggests their games were started under those versions, so the pre-release numbers seen run at least 543, 555, 568, 585, 596, 599 and 601. No save at 543, 555 or 596 is in the catalog.
 - **Builds before release** (**Open**). Mods other than saves carry builds 40358 (uploaded 15 September) and 40380 (22 September), before launch, possibly from early access. Builds 40419 (2 uploads) and 40420 appear from 6 October, two days before the update was released, possibly from a test branch.
 - **The game's own build line on Linux** (**Observed**, 2026-10-11). The Linux client's main screen shows "Build 40420 Linux 64-bit", the same number as the stability update's `buildVersion` above, so Linux runs the same build number as the PC uploads. The header does not store it: a save made on that install reads 604, as before the update.
+
+## Game releases and builds (2026-10-24)
+
+PC releases as Urban Games' [release notes](https://wiki.transportfever3.com/doku.php?id=releasenotes) list them (read 2026-10-24):
+
+| Build | Date | What the notes say |
+|---|---|---|
+| 40408 (Steam), 40393 (Epic, GOG) | 29 September 2026 | Initial release |
+| 40420 | Steam 8 October, Epic and GOG 15 October | Rendering and video memory, modding tool and API updates, crash and bug fixes |
+| 40423 | 22 October | Performance and graphics memory, modding validation, many crash and bug fixes; save fixes (a crash loading a save after a vehicle's capacity was cut, corrupt saves when the disk filled up, a crash on corrupt saves) |
+| 40425 (Steam) | 24 October | A crash on RTX 50 cards with one NVIDIA driver version |
+
+The notes name no save format change for any of them. Our saves say otherwise for 40423 or later:
+
+- **The format went from 604 to 605 between two saves of one game** (**Observed**, 604 and 605). Of the user's saves made since 19 October, every one up to 23 October 02:37 (local time) reads 604, and every one from 23 October 03:05 on reads 605. The first 605 save has a game date between the 604 save at 02:01 and the one at 02:37, so it was played on from the 02:01 save: a manual before and after pair across the change, but with about eight game weeks of play in between.
+- **The header parses unchanged** (**Observed**, 605). `save_header.py` reads a 605 header with the same layout, and the preview, mod list and resources look the same. The stream after the header is not compared, so a 605 change inside it is **Open**.
+- **Build 40425 is on the main screen on 24 October** (**Observed**, Linux): "Build 40425 Linux 64-bit", read from a zoomed screenshot taken as Steam finished the update. Until 18 October the same line read 40420. No save made on 40425 is read yet: the newest one was written just before the update, so 605 on 40425 is **Open**.
+- **Which build brought 605 is Open.** The dates fit 40423, but no screenshot or save names the build in use on 23 October.
 
 ## Platform in the save (2026-10-10)
 

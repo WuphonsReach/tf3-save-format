@@ -9,6 +9,7 @@ These are gaps in the repo's tools and worked examples, not in the format.
 - Missing tools: a reader for the entity-name table, the trip array, cargo-unit records, and town and stock records (each was read with a throwaway script), and a way to tie a statistics group to a stop or station.
 - Defect: `KNOWN_IDS` in `tools/tf3save.py` labels cargo ids wrongly in games with a cargo mod. The fix is to read each caller and switch it to the save's own cargo list, keeping function names and return shapes.
 - Saves not yet compared: the catalog game of 6425796 re-saved at several play speeds.
+- Tools not yet run on a 605 save beyond the header: `tf3save.py` readers, `mine_saves.py`, `street_edges.py`.
 
 ## Steps that still need a private script
 

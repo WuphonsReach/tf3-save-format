@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read the header of a TF3 .sav. Full on formats 599, 601 and 604; up to the preview on 568 and 585.
+"""Read the header of a TF3 .sav. Full on formats 599, 601 and 604 (the 605 header reads the same, 2026-10-24); up to the preview on 568 and 585.
 
 Usage: save_header.py SAVE.sav [...]
 
