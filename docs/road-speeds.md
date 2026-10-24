@@ -4,7 +4,7 @@ The number the game's speed-limit layer draws on each road or rail edge, where i
 
 ## In short
 
-- **One number per edge (Observed, 604, one Tiny game).** The layer draws one number at each edge's middle. On a straight edge it is the type's speed, stored as the sixth `f32` after the two tangents of the edge record (30, 50, 80 km/h for town and country types; 100 and 160 for tracks).
+- **One number per edge (Observed, 604, one Tiny game).** The layer draws one number at each edge's middle. On a straight edge it is the type's speed, stored as the speed of the edge record's first lane (30, 50, 80 km/h for town and country types; 100 and 160 for tracks).
 - **Bends lower it, slopes do not.** The shown speed is the smaller of the type's speed and 3.6 times the square root of A divided by k, with k the largest curvature of the Hermite curve through the edge's end positions and tangents and A near 2.5 m/s^2, rounded; it fits road and rail alike.
 - **The lower number is saved** in a path record per rail edge ([lane-paths.md](lane-paths.md#the-stored-speed-is-the-layers-number)); the label is the stored value rounded, and the same rule with A about 2.47 fits it.
 - **Open.** Why a 3 m edge reads 4 percent high, how the number is computed across a junction, where the `high_speed_catenary` and barrier types keep theirs, the other road families, and whether vehicles drive at the shown number.
@@ -16,7 +16,7 @@ The number the game's speed-limit layer draws on each road or rail edge, where i
 
 ## The stored speed is the type's
 
-The sixth `f32` after the two tangents of the edge record (inside the lane data, 56 bytes after the record's first node id) is the type's speed in m/s, the same for every edge of a type, on street and track edges alike:
+The speed of the edge record's first lane ([road-network.md](road-network.md#the-street-edge-table); the sixth `f32` after the two tangents when the record carries no objects and no decorations) is the type's speed in m/s, the same for every edge of a type, on street and track edges alike:
 
 | Type | Stored | km/h |
 |---|---|---|

@@ -6,7 +6,7 @@ What one change per save did to the street-edge table and its neighbours: a stub
 
 - **A deleted road's record stays in the street-edge table for at least one save, and is removed with a later edit (Observed, also across a reload).** The junction table and the ground polygons show a deletion at once; the edge table does not. Counting edges, buildings or towns in a save can include ones the game no longer has.
 - **Deleting a town removed none of its edge, building or strip records (Observed, once):** only the per-town counters, the junction records at the country road's end and some ground polygons changed. A later edit cleared three, then six, then two of its eleven leftover edges; whether the cleanup follows the edit's place or only the number of edits is Open.
-- **A long road is cut into the fewest equal pieces that are 100 m or shorter, `ceil(length / 100)`, and a bend is a node (Observed, seven roads, four street types).** A curved road is several straight-chord edges whose tangents match at the shared node, so the curve is smooth across nodes.
+- **A long road is cut into the fewest equal pieces that are 100 m or shorter, `ceil(length / 100)`, and a bend is a node (Observed, seven roads, four street types).** A curved road is several edges, each bent along its tangents ([edge-curves.md](edge-curves.md)), whose tangents match at the shared node, so the curve is smooth across nodes.
 - **A new road of n edges takes n + 1 node ids and n edge ids from the free-id list at the end of the stream,** plus a few extras; freed ids can reach the list only when the game loads and saves again.
 - **Open:** what the new junction record ids after a town deletion are, which leftovers a later edit clears, and the order of the free-id list.
 
