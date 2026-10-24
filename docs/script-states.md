@@ -11,6 +11,7 @@ Checked on 604 ([one game](test-games.md#the-2061-game) played into 2061, and ca
 - **Weather and time of day (Observed, 585 and 604).** `game_time.gs` holds the modes, targets and next change as a snapshot at save time. The settings table keeps only the starting settings, so read the state for the mode.
 - **Counters (Confirmed, 604).** `passengerTransportedCount` and `cargoDeliveredCount` match the bottom bar when the game is paused. Achievement Done marks are not in the save.
 - **Mods (Observed, 601 and 604).** A mod's id sits just before its script path, and a mod can keep a Lua error whose chunk name is a full local path. Check a save for `[string "` before sharing it.
+- **A new build can change script-state content (Observed, 604 and 605).** The three-key difference between a 604 and a 605 save of one game is in script states: `mission/mission.gs` and `mission/guide_system.gs` hold `version` 5 on 604 and 6 on 605, and `game_mechanics/industries/industries.gs` gains `pauseIndustryClosure` (false) and `version` (1) on 605, with a command name `setPauseIndustryClosure` after the state. The key is in the installed `game_mechanics/industries/industries.script.tl` (`base/content/game_mechanics.zip`). Checked on nine 604 and three 605 saves of two games. Details and the rest of the 604 to 605 comparison: [versions.md](versions.md#game-releases-and-builds-2026-10-24).
 - **Open.** See the end of the note.
 
 ## Finding a table
