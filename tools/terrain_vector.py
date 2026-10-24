@@ -138,7 +138,7 @@ def level_rings(rows, spacing, water_v, step_v, min_perimeter=0.0):
     # `_cut` calls m is the one between bands m - 1 and m, so ring set k of the result is cut m = k + 1
     table = [0 if v < water_v else 1 + int(math.floor((v - water_v) / step_v)) for v in range(65536)]
     adj, pos = _cut(padded, table, lambda m: water_v + (m - 1) * step_v, spacing, PAD, 1, padded=True)
-    right, bottom = w * spacing, h * spacing                        # the padding's own column and row
+    right, bottom = (w - 1) * spacing, (h - 1) * spacing            # the last real point; the padding beyond is clamped onto it, as on the left and top
     out = {}
     for m, lines in sorted(adj.items()):
         rings = []

@@ -629,9 +629,12 @@ def to_picture(rows, step, kind="game"):
 
 def render(rows, step, off_z, unit, water, spacing=None, kind="game"):
     """RGB bytes (top row first) and (width, height) of the grid sampled every `step` points,
-    turned north up and east right. Hill shading from the north-west, vertical scale doubled."""
+    turned north up and east right. Hill shading from the north-west, vertical scale doubled. Pixel (i, j) shows
+    point (i, j) at its top-left corner, so the picture is one point fewer each way than the grid and covers exactly
+    the map or crop: the last column and row are read only for the shading."""
     picked = to_picture(rows, step, kind)
-    w, h = len(picked[0]), len(picked)
+    full_w, full_h = len(picked[0]), len(picked)
+    w, h = full_w - 1, full_h - 1
     spacing = spacing or GRID_STEP * step
     water_v = (water - off_z) / unit
     cache = {}
@@ -653,12 +656,12 @@ def render(rows, step, off_z, unit, water, spacing=None, kind="game"):
     for j in range(h):
         row = picked[j]
         up = picked[j - 1] if j else row                     # north of it
-        down = picked[j + 1] if j + 1 < h else row
+        down = picked[j + 1]
         o = j * w * 3
         for i in range(w):
             is_land, col = base(row[i])
             if is_land:
-                dzdx = (row[i + 1 if i + 1 < w else i] - row[i - 1 if i else i]) * k
+                dzdx = (row[i + 1] - row[i - 1 if i else i]) * k
                 dzdy = (up[i] - down[i]) * k                 # rises towards the top of the picture
                 s = (-dzdx * lx - dzdy * ly + lz) / (1 + dzdx * dzdx + dzdy * dzdy) ** 0.5
                 f = max(0.55, min(1.25, 0.5 + 0.75 * s))
@@ -733,6 +736,8 @@ def auto_grid_step(short_side, cropped):
     """The default major grid step in metres: a third of the picture's shorter side (map metres) rounded down to 1, 2 or
     5 times a power of ten. A whole map is never finer than 1000 m, so the smallest maps get a mark every km."""
     third = short_side / 3
+    if third < 1:                                                # a crop under 3 m across: 1 m, so the step stays a whole number
+        return 1 if cropped else 1000
     power = 10 ** math.floor(math.log10(third))
     step = max(m * power for m in (1, 2, 5) if m * power <= third)
     return step if cropped else max(step, 1000)
@@ -1193,18 +1198,25 @@ def station_layers(mpp, fr, instances, boxes):
     partly transparent as a whole, so overlapping boxes do not darken) and the kind's outline, `station-outer`, at `STATION_OUTLINE`,
     the width of an industry's: a stretch of a box's edge with another box of the kind just outside it is inside the group and is
     not drawn, so touching boxes show no line between them. `instances` are `read_instances` rows. Units are metres like the other
-    layers; kinds are drawn in the table's order, so buildings lie over platforms."""
+    layers; kinds are drawn in the table's order, so buildings lie over platforms. The outlines are worked out in map metres and only
+    then moved into the picture, so a crop or `--north sun` draws the same outline as the whole map."""
     k = max(1.0, mpp / 2.0)
     out, top = [], []
     deck_polys, deck_outer = [], []
     border_polys = []
+
+    def corners(i):                                      # the piece's box in map metres
+        x0, y0, x1, y1 = boxes[i["model"]]
+        h = math.hypot(i["fx"], i["fy"]) or 1.0
+        fx, fy = i["fx"] / h, i["fy"] / h
+        return [(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))]
+
+    def to_pic(lines):
+        return [[fr.pic(*q) for q in ln] for ln in lines]
     for i in instances:
         if i["model"].startswith("stations/street/") and STREET_BORDER.match(i["model"][len("stations/"):]) and i["model"] in boxes:
-            x0, y0, x1, y1 = boxes[i["model"]]
-            h = math.hypot(i["fx"], i["fy"]) or 1.0
-            fx, fy = i["fx"] / h, i["fy"] / h
-            border_polys.append([fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))])
-    border_loops = _closed_outline(border_polys) if border_polys else []
+            border_polys.append(corners(i))
+    border_loops = to_pic(_closed_outline(border_polys)) if border_polys else []
 
     def loops_d(loops):
         return "".join("M" + "L".join("%.2f %.2f" % q for q in lp) + "Z" for lp in loops)
@@ -1213,10 +1225,7 @@ def station_layers(mpp, fr, instances, boxes):
         polys, rows = [], []
         for i in instances:
             if i["model"] in models and i["model"] in boxes:
-                x0, y0, x1, y1 = boxes[i["model"]]
-                h = math.hypot(i["fx"], i["fy"]) or 1.0
-                fx, fy = i["fx"] / h, i["fy"] / h
-                polys.append([fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))])
+                polys.append(corners(i))
                 rows.append(i)
         if not polys:
             continue
@@ -1234,7 +1243,7 @@ def station_layers(mpp, fr, instances, boxes):
         for i, c in zip(rows, polys):
             out_kind.append('<g class="station-piece" data-slot="%s" data-model=%s data-x="%.1f" data-y="%.1f"><polygon points="%s" fill="%s" '
                        'stroke="%s" stroke-width="%g"/></g>'    # a same-colour edge hides the seam between two boxes
-                       % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % q for q in c), colour, colour, 0.5 * k))
+                       % (i["slot"], quoteattr(i["model"]), i["x"], i["y"], " ".join("%.2f,%.2f" % fr.pic(*q) for q in c), colour, colour, 0.5 * k))
         out_kind.append("</g>")
         if lid == "station-street-platforms" and border_loops:
             outer = _outer_runs([c for i, c in zip(rows, polys) if "/small_stops/" in i["model"]] or [])
@@ -1242,6 +1251,7 @@ def station_layers(mpp, fr, instances, boxes):
             outer = _outer_runs(polys)
         if lid == "station-water-decks":
             deck_polys, deck_outer = polys, outer
+        outer = to_pic(outer)
         if outer:
             d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in outer)
             out_kind.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
@@ -1265,7 +1275,9 @@ def station_layers(mpp, fr, instances, boxes):
         for i in landings:
             size = LANDING_MODELS[i["model"].rsplit("/", 1)[-1][:-4]]
             d = LANDING_SIZE[size]
-            (cx, cy), edge = _clear_of_edge(fr.pic(i["x"], i["y"]), LANDING_CLEARANCE[size] * d + 0.75 * k, deck_polys, deck_outer)
+            pt, edge = _clear_of_edge((i["x"], i["y"]), LANDING_CLEARANCE[size] * d + 0.75 * k, deck_polys, deck_outer)
+            cx, cy = fr.pic(*pt)
+            edge = edge and fr.pic(*edge)
             turn = ""
             if edge:                                         # the ring at the top of an anchor points at its dock
                 turn = ' transform="rotate(%.1f %.2f %.2f)"' % (math.degrees(math.atan2(edge[0] - cx, cy - edge[1])) - LANDING_TILT[size], cx, cy)
@@ -1302,16 +1314,17 @@ def depot_layers(mpp, fr, instances, specs, footprints, coverage):
             for i in rows:
                 n = math.hypot(i["fx"], i["fy"]) or 1.0
                 fx, fy = i["fx"] / n, i["fy"] / n
-                local = lambda a, b: fr.pic(i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
+                on_map = lambda a, b: (i["x"] + a * fx - b * fy, i["y"] + a * fy + b * fx)
+                local = lambda a, b: fr.pic(*on_map(a, b))
                 pts = " ".join("%.2f,%.2f" % local(a, b) for a, b in spec["face"])
                 over.append("<g %s>" % attrs(i))
                 if pts and spec["boxes"]:                # a building that reaches into the water: the outline of the face and the boxes together
                     fa = [a for a, _ in spec["face"]]
                     fb = [b for _, b in spec["face"]]
                     parts = [(min(fa), max(fa), min(fb), max(fb))] + list(spec["boxes"])
-                    loops = _closed_outline([[local(a, b) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))] for x0, x1, y0, y1 in parts], 0.05)
-                    over.append('<path d="%s" fill="%s" stroke="#000" stroke-width="%g" stroke-linejoin="round"/>'
-                                % ("".join("M" + "L".join("%.2f %.2f" % q for q in lp) + "Z" for lp in loops), colour, STATION_OUTLINE * k))
+                    loops = _closed_outline([[on_map(a, b) for a, b in ((x0, y0), (x1, y0), (x1, y1), (x0, y1))] for x0, x1, y0, y1 in parts], 0.05)
+                    over.append('<path d="%s" fill="%s" stroke="#000" stroke-width="%g" stroke-linejoin="round"/>'     # worked out in map metres
+                                % ("".join("M" + "L".join("%.2f %.2f" % fr.pic(*q) for q in lp) + "Z" for lp in loops), colour, STATION_OUTLINE * k))
                 elif pts:                                  # the ground face: opaque, so it hides the ends of the road lanes under it
                     over.append('<polygon points="%s" fill="%s" stroke="#000" stroke-width="%g" stroke-linejoin="round"/>'
                                 % (pts, colour, STATION_OUTLINE * k))
@@ -1754,8 +1767,8 @@ def main():
                 rows = upsample(rows, fine)
             if vector:
                 picked = to_picture(rows, step, args.north)
-                size = (int(math.ceil((len(picked[0]) - 1) * spacing / args.mpp)) + 1,
-                        int(math.ceil((len(picked) - 1) * spacing / args.mpp)) + 1)
+                size = (int(math.ceil((len(picked[0]) - 1) * spacing / args.mpp)),   # the exact box: one pixel fewer
+                        int(math.ceil((len(picked) - 1) * spacing / args.mpp)))      # than the grid has points
                 img = b""
             else:
                 img, size = render(rows, step, off_z, unit, water, args.mpp, args.north)

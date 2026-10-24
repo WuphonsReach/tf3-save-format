@@ -33,6 +33,7 @@ Somewhere after the header (2.7 to 3.9 MB in the animal test saves) there is one
 
 - An instance is 137 bytes. It starts with the `u32` model id, then two 4 x 4 `f32` matrices one byte apart, with the translation in floats 12 to 14. In the instances read, both matrices held the same translation. The other bytes of an instance are **Open**.
 - In the animal records the count is one for the animal plus one per flock offset, and 9 bytes separate one record's last instance from the next count (146 bytes for an animal without a flock). The first instance's translation equals the animal's `worldPosition`.
+- A **slot** in these notes and in `tools/` is an instance's index, in stream order, among the instances whose model path starts with the prefixes asked for (`model_instances.read_instances`; `vehicle/` for a vehicle). A reader that numbers every instance record gives the same instance another number, so a slot quoted from another tool needs its count named.
 - **Find a record** by searching for the 12 bytes of a known position (as `f32` x, y, z) and reading the model id as the `u32` 52 bytes before it. The balloon's record was found this way.
 - The records of the animals are in the order of the animal list. A record for a thing that has left the map is gone: no instance used the balloon's model after it had flown off.
 
