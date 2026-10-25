@@ -24,7 +24,7 @@ ls -d <mod.io mods dir>/*/ | xargs -P8 -n4 python3 -I tools/mine_saves.py --no-m
 python3 -I tools/mine_saves.py --no-maps local/mined        # once, alone, after the batch
 ```
 
-- Own corpora (the user's saves and map-editor maps; the folders are `<game local>/save` and `<game local>/save_maps`, path in `local/README.md`, never in a committed file): `python3 -I tools/mine_saves.py local/mined <game local>/save` and the same with `save_maps`, which `xargs` cannot split by folder, so give the files: `ls <game local>/save/*.sav | xargs -d '\n' -P8 -n4 python3 -I tools/mine_saves.py local/mined`, likewise `save_maps/*.sav`. A bare `.sav` is an own save unless its folder is named `save_maps`. Re-run it after the user makes new saves: only new or changed files are read. Autosaves are mined too; the game prunes them (20 in all), so their folders outlive the files and the index keeps their rows (delete a folder by hand to drop it).
+- Own corpora (the user's saves and map-editor maps; the folders are `<game local>/save` and `<game local>/save_maps`, path in `local/README.md`, never in a committed file): `python3 -I tools/mine_saves.py local/mined <game local>/save` and the same with `save_maps`, which `xargs` cannot split by folder, so give the files: `ls <game local>/save/*.sav | xargs -d '\n' -P8 -n4 python3 -I tools/mine_saves.py local/mined`, likewise `save_maps/*.sav`. A bare `.sav` is an own save unless its folder is named `save_maps`. Re-run it after the user makes new saves: only new or changed files are read (with the Rust reader the whole own set, ~520 files, takes minutes: first full run 2026-10-24). Both own folders in one pipe: `ls <game local>/save_maps/*.sav <game local>/save/*.sav | xargs -d '\n' -P8 -n4 python3 -I tools/mine_saves.py local/mined`. Autosaves are mined too; the game prunes them (20 in all), so their folders outlive the files and the index keeps their rows (delete a folder by hand to drop it).
 - The mods dir is the mod.io `10640/mods` folder (`local/saves.txt` shows the paths; `tools/terrain_map.py` `MOD_DIRS` lists the usual places). Do not write the path into a committed file.
 - `-P8` is the settled default (timed: `-P12` is only 1.27x faster than `-P6`; the user finds `-P10` and up disruptive). Keep `-n4`.
 - The script lowers its own priority (nice 19, idle I/O; `--no-nice` turns it off), so no `nice` prefix is needed. Parallel runs race on `index.csv`; that is why the last call runs alone.
@@ -36,7 +36,7 @@ python3 -I tools/mine_saves.py --no-maps local/mined        # once, alone, after
 
 - The last line of the log: `N read, M unchanged, K failed; R rows`. A failed save is reported; `error` rows in `index.csv` have `header` = `error`.
 - Row count equals the number of summaries, and the `corpus` column of each row is its first folder under `local/mined/` (`find local/mined -name tf3-save-summary.json | wc -l`).
-- Every `tools_commit` in the index is the same (a mixed column means a partial run: run the batch again).
+- Every `tools_commit` in the index is the same (a mixed column means a partial run: run the batch again). Known exception: summaries of catalog mods whose folders are gone from the mod.io folder (unsubscribed; 23 on 2026-10-24) keep their old commit, and nothing re-reads them; that is not a partial run.
 - `mods` count equals the number of keys in `mod_list` on each row.
 
 ## Use the result
