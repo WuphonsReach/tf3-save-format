@@ -1,0 +1,23 @@
+[package]
+name = "mine-summary"
+description = "Print the JSON summary of a Transport Fever 3 save, as tools/mine_summary.py does. Unofficial."
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.99"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/WuphonsReach/tf3-save-format"
+publish = false
+
+[[bin]]
+name = "mine-summary"
+path = "src/main.rs"
+
+[dependencies]
+memchr = "2.8"
+# No legacy-format or dictionary support: a save is one plain zstd stream.
+zstd = { version = "0.14", default-features = false }
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

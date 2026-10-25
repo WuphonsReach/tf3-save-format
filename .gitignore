@@ -32,3 +32,6 @@ __pycache__/
 *~
 .DS_Store
 Thumbs.db
+
+# Rust build output (tools/mine-summary-rs)
+target/

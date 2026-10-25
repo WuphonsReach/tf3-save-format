@@ -1,0 +1,136 @@
+{
+  "$schema": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v8.schema.json",
+  "schema_version": 8,
+  "name": "synthetic",
+  "mod_id": null,
+  "kind": "savegame",
+  "source_name": "synthetic.tf3",
+  "source_size": 1506,
+  "author": null,
+  "tags": [],
+  "url": null,
+  "tools_commit": "0a02f59",
+  "error": null,
+  "version": 604,
+  "first_version": 601,
+  "map_seed": "SyntheticS",
+  "start_year": 1900,
+  "map_w_m": 4096,
+  "map_h_m": 8192,
+  "header_money": 123456,
+  "header_counter": 7,
+  "climate": "dry.clima",
+  "economy": null,
+  "name_list": "::/names/europe/europe.names",
+  "is_map_editor": false,
+  "header_partial": null,
+  "stream_bytes": 5473,
+  "calendar": {
+    "date": "1900-01-03",
+    "start_date": "1900-01-01",
+    "calendar_speed": "2000 (2.00x)",
+    "play_speed": "2 (2x)",
+    "clock": 5000,
+    "day_table_entries": 3,
+    "day_table_regular": true
+  },
+  "journal": {
+    "bookings": 3,
+    "balance_stored": 123456,
+    "balance_sum": 123456,
+    "last_time": 4383005,
+    "first_play_time": 1000,
+    "last_play_time": 4383005,
+    "play_periods": 4,
+    "active_periods": 2,
+    "income_periods": 1,
+    "income_total": 28456
+  },
+  "vehicles": {
+    "from_install": false,
+    "road": {
+      "unknown": {
+        "unknown": 1
+      }
+    },
+    "rail": {
+      "unpowered": {
+        "unknown": 2
+      }
+    },
+    "ambient": {
+      "car": 1
+    },
+    "models_unread": 2
+  },
+  "industries": {
+    "count": 2,
+    "by_key": {
+      "farm": 2
+    }
+  },
+  "company": {
+    "rank_earned": "3 (Engineer)",
+    "rank_claimed": "2 (Mechanic)",
+    "experience": 12.5,
+    "base_population": 1500
+  },
+  "counters": {
+    "averageSpeed": 1e-05,
+    "moneyEarned": 100000000000000000000,
+    "vehiclesUsed": 2
+  },
+  "cycles": {
+    "time_of_day": "Automatic (Continuous)",
+    "weather": "Dynamic"
+  },
+  "subsidies": {
+    "proposed": 0,
+    "active": 1,
+    "completed": 0,
+    "failed": 0
+  },
+  "town_states": 0,
+  "town_records": {
+    "records": 2,
+    "starting_layout": 1,
+    "longest_78_byte_run": 2,
+    "table_count": 4008636142,
+    "com_cargo": {
+      "fish": 1
+    },
+    "ind_cargo": {
+      "sugar": 1
+    },
+    "capacity_totals": [
+      100,
+      200,
+      300
+    ]
+  },
+  "towns": {
+    "count": 2,
+    "names": [
+      "Alpha",
+      "Beta"
+    ]
+  },
+  "settings": {
+    "advancedOptions.cargoIncome": 2.5,
+    "isMapEditor": false,
+    "map.format": "2 (1 : 2)",
+    "map.size": "3 (Medium, default)",
+    "townConfig.sensitivityNoise": 9
+  },
+  "mods": [
+    "mod_a_1"
+  ],
+  "cargo_list": [
+    "passengers",
+    "fish",
+    "sugar"
+  ],
+  "cargo_from_mods": {
+    "sugar": "sugar_mod_1"
+  }
+}
