@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
-Usage: mine_saves.py [--no-maps] [--no-nice] [--mapper tf3map|python] [--tf3map BIN] [--game DIR] [--mods DIR]
+Usage: mine_saves.py [--no-maps] [--no-nice] [--summary rust|python] [--summary-bin BIN] [--mapper tf3map|python]
+                     [--tf3map BIN] [--game DIR] [--mods DIR]
                      OUT_DIR SAVE_MODDIR_OR_SAVEDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<corpus>/<c>/<seed>/<leaf>/tf3-save-summary.json
@@ -20,7 +21,10 @@ with no save arguments moves every summary, removes the folders that left empty 
 column is the corpus). A summary.json left by an older version in the same folder is removed. Catalog name, tags, author and link come from mod.io's metadata/state.json
 when it is found next to the mods directory.
 
-The summary is built by mine_summary.py (what is read from a save is described there; run alone it prints one).
+The summary is built by `--summary`: `rust` (the default) runs the mine-summary binary of tools/mine-summary-rs (about
+100 times faster; `--summary-bin BIN`, else $MINE_SUMMARY, else the PATH, else tools/mine-summary-rs/target/release/;
+build it with cargo build --release there) and fills the mod.io fields (name, author, tags, url) itself; `python` runs
+mine_summary.py (what is read from a save is described there; run alone it prints one). Both write the same summary.
 Next to each summary this script also writes terrain-map.svg, the default map of the drawer `--mapper` names (the
 vector terrain, the roads and rails, the stations, depots and industries when the game install is found, the default
 grid and compass rose; docs/terrain-drawing.md), so the picture follows that drawer's current defaults:
@@ -43,8 +47,10 @@ priority at start (nice 19, and idle I/O when `ionice` is installed; the map-dra
 a long run leaves the machine usable; `--no-nice` keeps the normal priority.
 
 Two things are rebuilt separately, each when the save changed or its own scripts did:
-- the summary, when the commit of mine_summary.py and the modules it imports (save_header.py, tf3save.py) differs
-  from the one in the summary's `tools_commit`;
+- the summary, when the reader's key differs from the one in the summary's `tools_commit`: for `rust` the commit named
+  by `mine-summary --version` (the last commit that changed tools/mine-summary-rs; the build must be made from a git
+  checkout, and a -dirty build is read again on each run), for `python` the commit of mine_summary.py and the modules
+  it imports (save_header.py, tf3save.py). A change to the Python summary code must be made in the crate too;
 - the map, when the drawer's key differs from the one in .map_state.json. For `python` the key is the commit of
   terrain_map.py and the modules it imports; for `tf3map` it is the git commit the binary names in `tf3map --version`
   (`tf3map 0.5.0 (bfe77c7388)`): use a build of the mapper's main branch, so the key is main's commit, and a new
@@ -75,8 +81,8 @@ import sys
 import tempfile
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from mine_summary import (INDEX_COLS, OLD_SUMMARY_FILE, SUMMARY_FILE, catalog_profiles, index_row,  # noqa: E402
-                          summarise_save)
+from mine_summary import (FIELDS, INDEX_COLS, OLD_SUMMARY_FILE, SCHEMA_URL, SCHEMA_VERSION, SUMMARY_FILE,  # noqa: E402
+                          catalog_profiles, index_row, summarise_save)
 from script_commits import TOOLS_DIR, closure_commit  # noqa: E402
 
 SUMMARY_SCRIPT = "mine_summary.py"
@@ -173,6 +179,44 @@ def on_mapper_main(commit):
     run = subprocess.run(["git", "-C", MAPPER_REPO, "merge-base", "--is-ancestor", commit.replace("-dirty", ""), "main"],
                          capture_output=True)
     return run.returncode != 1
+
+
+SUMMARY_BIN_DIR = os.path.join(TOOLS_DIR, "mine-summary-rs", "target", "release")
+
+
+def summary_binary(given=None):
+    """The mine-summary to run: the one given, else $MINE_SUMMARY, else mine-summary on the PATH, else the release
+    build in tools/mine-summary-rs; None when there is none."""
+    b = given or os.environ.get("MINE_SUMMARY")
+    if b:
+        return shutil.which(os.path.expanduser(b))
+    return shutil.which("mine-summary") or shutil.which(os.path.join(SUMMARY_BIN_DIR, "mine-summary"))
+
+
+def rust_summary(binary, path, mod_id, mods_dir, kind, game=None):
+    """The summary of one save from the Rust mine-summary, with the mod.io fields filled in the way
+    mine_summary.summarise_save does. A run that fails outright gives an error summary."""
+    profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
+    cmd = [binary, path, "--kind", kind]
+    cmd += ["--mod-id", mod_id] if mod_id else []
+    cmd += ["--game", game] if game else []
+    run = subprocess.run(cmd, capture_output=True, text=True)
+    try:
+        summary = json.loads(run.stdout)
+        if run.returncode != 0:
+            raise ValueError(f"exit status {run.returncode}")
+    except ValueError as e:
+        summary = dict.fromkeys(FIELDS)
+        reason = (run.stderr.strip().splitlines() or [str(e)])[-1]
+        summary.update({"$schema": SCHEMA_URL, "schema_version": SCHEMA_VERSION, "mod_id": mod_id, "kind": kind,
+                        "source_name": os.path.basename(path), "source_size": os.stat(path).st_size,
+                        "tags": [], "name": os.path.splitext(os.path.basename(path))[0],
+                        "error": "mine-summary failed: " + mask(reason, path)})
+    summary["name"] = profile.get("name") or summary["name"]
+    summary["author"] = (profile.get("submitted_by") or {}).get("username")
+    summary["tags"] = [t["name"] for t in profile.get("tags", [])]
+    summary["url"] = profile.get("profile_url")
+    return summary
 
 
 def mask(text, path, dirs=()):
@@ -331,13 +375,37 @@ def parse_args(argv):
     ap.add_argument("--no-nice", action="store_true", help="keep the normal priority")
     ap.add_argument("--mapper", choices=("python", "tf3map"), help="the map drawer (default tf3map)")
     ap.add_argument("--tf3map", metavar="BIN", help="the tf3map binary (selects --mapper tf3map)")
-    ap.add_argument("--game", metavar="DIR", help="the game's install folder, passed to the drawer")
+    ap.add_argument("--summary", choices=("rust", "python"), help="the summary reader (default rust)")
+    ap.add_argument("--summary-bin", metavar="BIN", help="the mine-summary binary (selects --summary rust)")
+    ap.add_argument("--game", metavar="DIR", help="the game's install folder, passed to the drawer and the summary reader")
     ap.add_argument("--mods", metavar="DIR", help="the mod.io game's mods folder, passed to the drawer")
     a = ap.parse_intermixed_args(argv)
     if a.tf3map and a.mapper == "python":
         ap.error("--tf3map names the tf3map drawer; leave out --mapper python")
     a.mapper = "tf3map" if a.tf3map else (a.mapper or "tf3map")
+    if a.summary_bin and a.summary == "python":
+        ap.error("--summary-bin names the rust reader; leave out --summary python")
+    a.summary = "rust" if a.summary_bin else (a.summary or "rust")
     return a
+
+
+def summary_key(a):
+    """(binary, key) of the summary reader: the mine-summary binary and the commit its --version names, or
+    (None, the commit of mine_summary.py and its imports)."""
+    if a.summary == "python":
+        return None, closure_commit(SUMMARY_SCRIPT)
+    binary = summary_binary(a.summary_bin)
+    if not binary:
+        sys.exit("mine_saves.py: no mine-summary found (give --summary-bin BIN, set MINE_SUMMARY, put it on the PATH "
+                 "or run cargo build --release in tools/mine-summary-rs; or use --summary python)")
+    version = subprocess.run([binary, "--version"], capture_output=True, text=True, check=True).stdout.strip()
+    key = tf3map_commit(version)
+    if key == version:
+        sys.exit(f"mine_saves.py: {version!r} names no commit: build mine-summary inside the git checkout")
+    if "-dirty" in key:
+        print(f"note: {version} is a build with uncommitted changes: every summary is read again on each run",
+              file=sys.stderr)
+    return binary, key
 
 
 def mapper_key(a):
@@ -372,7 +440,7 @@ def main():
     out_dir, args = a.out_dir, a.saves
     os.makedirs(out_dir, exist_ok=True)
     done = skipped = failed = drawn = unmapped = 0
-    scommit = closure_commit(SUMMARY_SCRIPT)
+    sbinary, scommit = summary_key(a) if args else (None, None)
     binary, mcommit = mapper_key(a) if maps and args else (None, None)
     for arg in args:
         for path, mod_id, mods_dir, kind in find_saves(arg):
@@ -394,7 +462,10 @@ def main():
                 skipped += readable
             if not readable:
                 print("reading", os.path.basename(path), file=sys.stderr)
-                summary = summarise_save(path, mod_id, mods_dir, kind)
+                if sbinary:
+                    summary = rust_summary(sbinary, path, mod_id, mods_dir, kind, a.game)
+                else:
+                    summary = summarise_save(path, mod_id, mods_dir, kind)
                 new = place(out_dir, corpus, leaf, summary["map_seed"])
                 if d:
                     move_to(d, new)

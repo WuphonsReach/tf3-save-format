@@ -12,10 +12,10 @@ description: Rebuild or refresh local/mined (the summary JSON per save, in four 
 | Goal | Command |
 |---|---|
 | Index only (a new `index_row` column built from fields the summaries already hold) | `python3 -I tools/mine_saves.py --no-maps local/mined` (no save arguments: moves summaries to their seed folder, rewrites `index.csv`; reads no save, takes seconds) |
-| Summaries only (new summary field, new tools commit) | the batch below with `--no-maps`, then the index-only command once |
+| Summaries only (new summary field, new tools commit) | rebuild the crate, then the batch below with `--no-maps`, then the index-only command once |
 | Summaries and maps | the batch below without `--no-maps` (the default drawer is the Rust `tf3map`, about a second a save: `--tf3map BIN`, else `$TF3MAP`, else the PATH, else the sibling mapper's `target/release/tf3map`; build main first with `cargo build --release` there, and the key is that build's commit). `--mapper python` draws with `terrain_map.py` instead (a Giant map takes about 40 s and 2.5 GB). A change of drawer or of the tf3map commit redraws every map |
 
-A change to `mine_summary.py` or what it imports changes `tools_commit`, so every save is read again: that is a full rebuild. Ask the user before starting one unless they just asked for it. Only saves whose tools commit or file changed are read again, so a repeat run is cheap.
+The summaries come from the Rust `tools/mine-summary-rs` (build: `cargo build --release` there, from a git checkout so `--version` names a commit; `--summary python` runs `mine_summary.py` instead, about 100 times slower). A change to the crate (or, with `--summary python`, to `mine_summary.py` or what it imports) changes `tools_commit`, so every save is read again: that is a full rebuild, about 8 minutes for ~1,100 saves with the Rust reader. The two readers must give the same summary: a change to one is made in the other in the same commit, and checked by comparing both over a few saves. Ask the user before starting a full rebuild unless they just asked for it. Only saves whose tools commit or file changed are read again, so a repeat run is cheap.
 
 ## The batch
 
@@ -30,7 +30,7 @@ python3 -I tools/mine_saves.py --no-maps local/mined        # once, alone, after
 - The script lowers its own priority (nice 19, idle I/O; `--no-nice` turns it off), so no `nice` prefix is needed. Parallel runs race on `index.csv`; that is why the last call runs alone.
 - Run it in the background with the output in the scratchpad (`> $SCRATCH/mine.log 2>&1`) and wait for the completion notice; do not poll.
 - Back up `index.csv` into the scratchpad first if a column changed.
-- Do not edit `tools/` files while the batch runs (each worker starts a fresh `python3`, so a half-finished edit is read mid-run). Do not `pkill -f` or `pgrep -f` a pattern that is in your own shell command line (it kills the shell); kill by PID, and kill the `xargs` parent and its children both.
+- Do not edit `tools/` files while the batch runs (each worker starts a fresh `python3`, so a half-finished edit is read mid-run; do not rebuild the crate either). Do not `pkill -f` or `pgrep -f` a pattern that is in your own shell command line (it kills the shell); kill by PID, and kill the `xargs` parent and its children both.
 
 ## Check afterwards
 
