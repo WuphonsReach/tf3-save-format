@@ -10,6 +10,8 @@ Early. Expect gaps and corrections.
 
 The notes are the product. [tools/](tools/) has the small read-only Python scripts used to check them, as reference code with no support. For a working reader and writer, see [tf3-save-editor](https://github.com/TBK/tf3-save-editor).
 
+For a tool that draws a save as an SVG map (terrain, roads, rails, stations, depots and industries), see [tf3-save-mapper](https://github.com/WuphonsReach/tf3-save-mapper), a read-only Rust command-line tool built from these notes; `tools/terrain_map.py` is its Python prototype.
+
 ## What is covered
 
 Start at [docs/README.md](docs/README.md).
