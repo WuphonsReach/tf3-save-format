@@ -551,9 +551,13 @@ pub fn summarise(path: &Path, opts: &Options) -> Value {
         }
     };
     set("source_size", size.into());
-    let result = std::fs::read(path)
+    // Decompressed straight from the file, so the compressed bytes are never held whole beside the stream.
+    let result = std::fs::File::open(path)
         .map_err(|e| format!("{}: {e}", io_error_name(&e)))
-        .and_then(|raw| crate::reader::container::decompress(&raw[..]).map_err(|e| zstd_error(&e)))
+        .and_then(|file| {
+            crate::reader::container::decompress(std::io::BufReader::with_capacity(1 << 20, file))
+                .map_err(|e| zstd_error(&e))
+        })
         .and_then(|data| read_fields(&data, opts));
     match result {
         Ok(fields) => {
