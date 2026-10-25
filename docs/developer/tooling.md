@@ -14,7 +14,7 @@ Not a format note: this is about working in the repo. The scripts in `tools/` ne
 ## Pitfalls
 
 - **Killing a stray browser.** `pkill -f` or `pgrep -f` with the profile name in the pattern matches the shell that runs it (the pattern is in its own command line) and kills it. Look the process up by id instead, or skip it and take a fresh profile folder.
-- **A slow step in the foreground.** A Giant map takes about 40 s and a render of a crop up to a minute with a large save; wrap long runs in `timeout` below the tool's limit, or run them in the background.
+- **A slow step in the foreground.** For a map, use `tf3map` from the sibling `tf3-save-mapper` (0.1 to 2.6 s on 14 to 394 MB saves, about 100 times faster than `terrain_map.py`, 2026-10-24); the rest of this line is the Python script. A Giant map takes about 40 s and a render of a crop up to a minute with a large save; wrap long runs in `timeout` below the tool's limit, or run them in the background.
 - **Where pictures go.** Pictures of a test map under `local/games/...` (gitignored), checking pictures under the scratchpad. Nothing from a catalog save goes into the repo ([CLAUDE.md](../../CLAUDE.md)).
 
 ## Why tesseract for OCR
