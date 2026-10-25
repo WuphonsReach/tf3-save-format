@@ -99,11 +99,19 @@ def corpus_of(mod_id, kind):
     return ("catalog" if mod_id else "own") + ("-maps" if kind == "map" else "-saves")
 
 
+def is_autosave(name):
+    """The game's own autosaves are named `autosave_<game> <date>.sav`; the player's saves (and catalog saves, which
+    may be called anything) are not mined from them."""
+    return name.startswith("autosave_")
+
+
 def find_saves(arg):
     """(path, mod id, mods dir, kind) for each save in arg: a .sav (own save, or own map when its folder is
     `save_maps`), a mod.io mod directory (.../mods/<id>, with savegames/ and maps/), or a folder of .sav files (the
-    game's `save/` or `save_maps/`, own saves or own maps)."""
+    game's `save/` or `save_maps/`, own saves or own maps). The game's autosaves are left out of the own ones."""
     if arg.endswith(".sav"):
+        if is_autosave(os.path.basename(arg)):
+            return []
         return [(arg, None, None, "map" if os.path.basename(os.path.dirname(os.path.abspath(arg))) == "save_maps" else "savegame")]
     mods_dir = os.path.dirname(os.path.abspath(arg.rstrip("/")))
     mod_id = os.path.basename(os.path.abspath(arg.rstrip("/")))
@@ -115,7 +123,8 @@ def find_saves(arg):
                       for f in sorted(os.listdir(sav_dir)) if f.endswith(".sav")]
     if not found and os.path.isdir(arg):
         kind = "map" if mod_id == "save_maps" else "savegame"
-        found = [(os.path.join(arg, f), None, None, kind) for f in sorted(os.listdir(arg)) if f.endswith(".sav")]
+        found = [(os.path.join(arg, f), None, None, kind) for f in sorted(os.listdir(arg))
+                 if f.endswith(".sav") and not is_autosave(f)]
     return found  # empty for a content mod
 
 
