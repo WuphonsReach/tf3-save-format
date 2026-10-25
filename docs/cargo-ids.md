@@ -7,7 +7,7 @@ Checked on 604 (the town-record counts in [climates-economies.md](climates-econo
 - **The id is the cargo's position in the save's own cargo list** (Observed, 604; the list sits near the start of the stream, 37 entries in a base-only game). With base cargo only, the id is the cargo's `order` value divided by 10. A save with a cargo mod has a longer list and every base cargo after an inserted one moves up, so an id means nothing without that save's list (Observed, 6 of 244 catalog saves carry mod cargo).
 - **Ids are the same in every economy** (Observed, 599 to 604); an economy leaves cargo out of town lines but does not renumber.
 - **Town cargo.** The weight in a town record is the economy's `townConsumptionFactor` by tier (1.0, 0.5, 0.25). A town gets cargo slots at levels 0, 5, 7, 9 and 11, and the pick rule favours the cargo the fewest towns use. This was read from the 604 game files, not tested in the game (Observed).
-- **Open.** Whether steel is 10 or 11 (the cargo list says sheet metal 10; one statistics reading says the reverse), ties in `order`, what `cargoNeedsPerTown` does to the slots, and the statistics-list ids in a mod game.
+- **Open.** Whether steel is 10 or 11 (the cargo list says sheet metal 10, and a 605 mod log of each id's delivery time agrees; one statistics reading says the reverse), ties in `order`, what `cargoNeedsPerTown` does to the slots, and the statistics-list ids in a mod game.
 
 ## The id is the position in the cargo list
 
@@ -99,7 +99,7 @@ A new town starts with one commercial and one industrial cargo. In a 34-town gam
 
 ## Open
 
-- **Steel and sheet metal.** In the list, sheet metal (`order` 100) comes before steel (110), so sheet metal is 10 and steel is 11. That is the other way round from the statistics-lists reading in the [evidence](#ids-from-the-statistics-lists), a flatbed warehouse window (steel 411 and sheet metal 420). The list is the stronger evidence, but neither was tested in the game. A game's steel mill makes 3 steel for 4 sheet metal, so its `itemsProduced10` against `itemsProduced11` would settle it. A subarctic save with a steel mill had no `itemsProduced` list for either id, so it did not.
+- **Steel and sheet metal.** In the list, sheet metal (`order` 100) comes before steel (110), so sheet metal is 10 and steel is 11. That is the other way round from the statistics-lists reading in the [evidence](#ids-from-the-statistics-lists), a flatbed warehouse window (steel 411 and sheet metal 420). The list is the stronger evidence. A mod's log on 605 supports it: id 10 logged a delivery time of 3,000 s, the `sheet_metal` file's, and id 11 logged 4,500 s, the `steel` file's ([evidence](#ids-from-the-games-cargo-types-at-run-time-605)). That ties each id to a file time, not to a name, and the two cargo have different times, so it points the same way as the list without being a test of what the industry makes. A game's steel mill makes 3 steel for 4 sheet metal, so its `itemsProduced10` against `itemsProduced11` would settle it. A subarctic save with a steel mill had no `itemsProduced` list for either id, so it did not.
 - **Ties and mods with equal `order`.** Where two cargo share an `order` value the list position is not known.
 - **The statistics lists in a mod game.** The list stores each id, and the town records of the one mod game agree with it. The ids in `itemsUnloaded<id>` and `itemsProduced<id>` of a mod game were not read.
 
@@ -119,3 +119,11 @@ The statistics lists in [statistics-lists.md](statistics-lists.md) carry the car
 - Id 29 sat on a purple-cube goods icon in a second game (above); plastic is `order` 290.
 - Town records in the 244 catalog summaries with a known economy used these ids 379 times, and 376 fall in an economy that has the named cargo. Ids 34 (paper) and 35 (books) turn up only in subarctic and all-industries games, 36 (tires) in a tropical one. The three misfits are one town each, in an editor map, in a map with 45 mods, and in the sugar mod map above (where the base table does not apply).
 - `cargoDemandsSorted` (above) lists its ids in rising order.
+
+### Ids from the game's cargo types at run time (605)
+
+**Observed**, 605, the [Giga temperate game](test-games.md#giga-temperate-game-wr26a) (temperate economy, base cargo only); source as in [delivery-times.md](delivery-times.md#the-factor-follows-the-game-year). A mod listed the cargo types with `api.res.cargoTypeRep.getAll()` and logged each id's file `timeToDeliverInSeconds`.
+
+- **31 ids, not 37.** Ids 4, 15, 17, 34, 35 and 36 (sawdust, cement, rubber, paper, books, tires) were absent: the six cargo whose files leave out the temperate economy ([industry-chains.md](industry-chains.md#which-climates-have-which-industry)). So the run-time list is cut down to the economy, while the save's own list holds all 37, and the ids keep their numbers with gaps.
+- **Each logged time equals the file time of the cargo the table names,** checked against the install's `cargos/*.zip`. Only grain (1,286 s) and meat (900 s) have times no other cargo shares, so every other id is matched only to its time class. Steel and sheet metal are the one pair the times tell apart (see [Open](#open)).
+

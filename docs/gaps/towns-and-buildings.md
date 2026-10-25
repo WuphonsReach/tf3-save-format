@@ -21,7 +21,7 @@ Everything here is **Open**, seen on 604, mostly in one game.
 - **Town windows against records and script states** (604, one game) Population, growth levels and XP-to-next were checked for the first town record only. Home: [town-states.md](../town-states.md), [town-records.md](../town-records.md). Needs: game window.
 - **What `constructionBoni` holds** (604) Home: [town-states.md](../town-states.md). Needs: existing saves.
 - **The Town Authority label** (604, one game) A town with an `authorityScore` of 0.859 read "None" in the window, so the label is not the score alone. Home: [town-states.md](../town-states.md). Needs: game window.
-- **What else moves the Delivery Time factor** (604 and 605, two games) The tooltips equal the cargo files' `timeToDeliverInSeconds` times a factor that was 1.5 in 1900 and shrinks with the game year (605, one game); delivery sensitivity did not change it at 1900. Whether anything besides the year moves it, and its formula between the years sampled, are open. Home: [delivery-times.md](../delivery-times.md). Needs: existing saves of other years or games.
+- **What else moves the Delivery Time factor** (605, one game) The factor is `1.5 - (year - 1900) / 160` of the calendar year to 2019 and 0.75 from 2020 to 2032; the difficulty level and delivery sensitivity did not move it. Open: years after 2032, the other difficulty options one at a time, other calendar speeds, and 61 readings 1 s under the rule. Home: [delivery-times.md](../delivery-times.md). Needs: existing saves of later years, new save per option.
 - **What the economy and climate do to town cargo slots** (604) See [cargo-and-warehouses.md](cargo-and-warehouses.md#cargo-ids).
 
 ## Town buildings

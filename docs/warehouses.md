@@ -4,13 +4,14 @@ Each warehouse is a construction record with a list of modules, and each module 
 
 ## In short
 
-All 604; the record was read in two games and a slot filter in a re-save of a third.
+All 604 except where marked; the record was read in two games and a slot filter in a re-save of a third.
 
 - **A warehouse is one construction record (`warehouses/warehouse.con`) with a Lua table of named values, and each module in `modules` is one cargo slot (Observed, 38 and 23 warehouses).** Module types are `wh_bulk`, `wh_flatbed`, `wh_goods`, `wh_liquid` and once `wh_universal`; the window's "Specialization" is the module type, and a record holds 1 to 15 modules.
 - **Capacity is 500 times the module count and the yearly upkeep is the sum over the modules (Observed, four warehouses; the per-module price depends on the date, [inflation.md](inflation.md#upkeep-and-prices-at-the-1920-step)).** A universal module costs half of a specialized one.
 - **Which cargo a module is set to is not always in the record (Observed).** The first game's records had `tagToCargoType`; the second game's records had none. A player-set slot filter adds a pair to `tagToCargoType` (module key to cargo path), in ascending key order, and it survives a load and re-save. A slot the game claimed by use has no tag.
 - **A full set of goods modules blocks another goods cargo (Observed, one game):** plastic filled all three goods modules and the wool lines could not unload; a wool filter on one emptied slot fixed it.
 - **The stock levels and the yearly totals are not in the record;** they are differences of running totals ([statistics-lists.md](statistics-lists.md)). After "Discard All Cargo" the unloaded-minus-loaded stock overstates the real stock by the amount discarded.
+- **A specialized warehouse pauses the spoil timer of the cargo it holds (Observed, 605, one game; universal warehouses untested).** The detail is in [spoilage.md](spoilage.md#the-spoiled-flag-against-the-paused-age-605).
 - **Open:** where the cargo a module is set to is kept in a record without `tagToCargoType`, what the module keys encode (packed two-part positions?), what the leading entity-id list holds, what `year` and `upgrade` are, and the claiming rule for an empty goods slot, and whether "the warehouse's truck stop" in the player's account of the planks wool line ([A slot filter is saved as a tag](#a-slot-filter-is-saved-as-a-tag-604-observed-one-game)) is a `small_*` road stop or a warehouse stop (the player is not sure).
 
 ## The construction record
