@@ -32,7 +32,8 @@ grid and compass rose; docs/terrain-drawing.md), so the picture follows that dra
   save (well under 2 s a save). The binary is `--tf3map BIN`, else $TF3MAP, else `tf3map` on the PATH, else the
   release build in the sibling tf3-save-mapper checkout (target/release/tf3map). It needs a build whose SVG carries
   the `tf3map:view` metadata record and whose exit status tells a refused save (3) from other failures (1, 2):
-  mapper 0.5.0 or later;
+  mapper 0.5.0 or later (0.7.0 adds class="layer" and data-layer to the layer groups and the non-default settings
+  and the build's commit to the view record);
 - `python`: terrain_map.py with no options, one `python3 -I terrain_map.py` child per save (44 to 310 s a save).
 `--game DIR` (the install folder that holds base/) and `--mods DIR` (the mod.io game's mods folder) are passed to
 the drawer, for the footprints and a mod depot's catchment, when its child would not find the usual Steam folders on
@@ -53,7 +54,7 @@ Two things are rebuilt separately, each when the save changed or its own scripts
   it imports (save_header.py, tf3save.py). A change to the Python summary code must be made in the crate too;
 - the map, when the drawer's key differs from the one in .map_state.json. For `python` the key is the commit of
   terrain_map.py and the modules it imports; for `tf3map` it is the git commit the binary names in `tf3map --version`
-  (`tf3map 0.5.0 (bfe77c7388)`): use a build of the mapper's main branch, so the key is main's commit, and a new
+  (`tf3map 0.7.0 (c38017b6f6)`): use a build of the mapper's main branch, so the key is main's commit, and a new
   main commit redraws the maps. Changing drawer redraws them too. The run says so when the commit is not on main
   of the sibling mapper checkout.
 A change to tf3save.py is in both sets and rebuilds both; one to terrain_map.py, terrain_vector.py or street_edges.py
@@ -68,7 +69,7 @@ summary and is retried next run. The size and mtime are kept in a
 .mine_state.json (summary) and .map_state.json (map) next to each summary, not in the summary, so summaries hold
 no local paths or timestamps. The summary takes about 8 s for a small save; the map with tf3map about 0.1 s for
 a small save and 1.3 s for a busy 190 MB one, with terrain_map.py minutes (2026-10-24, tf3map at 0c82fa4). For
-many saves run several at once, for example with `xargs -P8 -n4`.
+many saves run several at once, for example with `xargs -P4 -n4`.
 """
 import argparse
 import csv
@@ -161,7 +162,7 @@ def tf3map_binary(given=None):
 
 
 def tf3map_version(binary):
-    """`tf3map --version`: `tf3map 0.5.0 (bfe77c7388)` or, with uncommitted changes, `(bfe77c7388-dirty)`."""
+    """`tf3map --version`: `tf3map 0.7.0 (c38017b6f6)` or, with uncommitted changes, `(c38017b6f6-dirty)`."""
     return subprocess.run([binary, "--version"], capture_output=True, text=True, check=True).stdout.strip()
 
 

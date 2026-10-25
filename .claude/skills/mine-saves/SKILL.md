@@ -20,13 +20,13 @@ The summaries come from the Rust `tools/mine-summary-rs` (build: `cargo build --
 ## The batch
 
 ```
-ls -d <mod.io mods dir>/*/ | xargs -P8 -n4 python3 -I tools/mine_saves.py --no-maps local/mined
+ls -d <mod.io mods dir>/*/ | xargs -P4 -n4 python3 -I tools/mine_saves.py --no-maps local/mined
 python3 -I tools/mine_saves.py --no-maps local/mined        # once, alone, after the batch
 ```
 
-- Own corpora (the user's saves and map-editor maps; the folders are `<game local>/save` and `<game local>/save_maps`, path in `local/README.md`, never in a committed file): `python3 -I tools/mine_saves.py local/mined <game local>/save` and the same with `save_maps`, which `xargs` cannot split by folder, so give the files: `ls <game local>/save/*.sav | xargs -d '\n' -P8 -n4 python3 -I tools/mine_saves.py local/mined`, likewise `save_maps/*.sav`. A bare `.sav` is an own save unless its folder is named `save_maps`. Re-run it after the user makes new saves: only new or changed files are read (with the Rust reader the whole own set, ~520 files, takes minutes: first full run 2026-10-24). Both own folders in one pipe: `ls <game local>/save_maps/*.sav <game local>/save/*.sav | xargs -d '\n' -P8 -n4 python3 -I tools/mine_saves.py local/mined`. Autosaves are mined too; the game prunes them (20 in all), so their folders outlive the files and the index keeps their rows (delete a folder by hand to drop it).
+- Own corpora (the user's saves and map-editor maps; the folders are `<game local>/save` and `<game local>/save_maps`, path in `local/README.md`, never in a committed file): `python3 -I tools/mine_saves.py local/mined <game local>/save` and the same with `save_maps`, which `xargs` cannot split by folder, so give the files: `ls <game local>/save/*.sav | xargs -d '\n' -P4 -n4 python3 -I tools/mine_saves.py local/mined`, likewise `save_maps/*.sav`. A bare `.sav` is an own save unless its folder is named `save_maps`. Re-run it after the user makes new saves: only new or changed files are read (with the Rust reader the whole own set, ~520 files, takes minutes: first full run 2026-10-24). Both own folders in one pipe: `ls <game local>/save_maps/*.sav <game local>/save/*.sav | xargs -d '\n' -P4 -n4 python3 -I tools/mine_saves.py local/mined`. Autosaves are mined too; the game prunes them (20 in all), so their folders outlive the files and the index keeps their rows (delete a folder by hand to drop it).
 - The mods dir is the mod.io `10640/mods` folder (`local/saves.txt` shows the paths; `tools/terrain_map.py` `MOD_DIRS` lists the usual places). Do not write the path into a committed file.
-- `-P8` is the settled default (timed: `-P12` is only 1.27x faster than `-P6`; the user finds `-P10` and up disruptive). Keep `-n4`.
+- `-P4` is the default (2026-10-24: the user halved it from `-P8` after a run bogged the system down; timed earlier, `-P12` is only 1.27x faster than `-P6`). Keep `-n4`.
 - The script lowers its own priority (nice 19, idle I/O; `--no-nice` turns it off), so no `nice` prefix is needed. Parallel runs race on `index.csv`; that is why the last call runs alone.
 - Run it in the background with the output in the scratchpad (`> $SCRATCH/mine.log 2>&1`) and wait for the completion notice; do not poll.
 - Back up `index.csv` into the scratchpad first if a column changed.

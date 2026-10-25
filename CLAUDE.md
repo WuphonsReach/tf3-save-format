@@ -7,7 +7,7 @@ Public documentation of the Transport Fever 3 `.sav` format. Licensed MIT OR Apa
 | Repo | Role |
 |---|---|
 | `../tf3-save-editor` | Fork of TBK/tf3-save-editor (MIT OR Apache-2.0, used here under both). Its `docs/FORMAT.md` is the base layout for container, header and Lua states. Code in `tools/` follows its readers (`header.rs`, `lua.rs`); the notice is in `THIRD_PARTY_NOTICES.md`. |
-| `../tf3-save-mapper` | `tf3map`, the Rust map drawer built from these notes (MIT OR Apache-2.0); `tools/terrain_map.py` is its Python prototype. Mining (`mine_saves.py`) draws with it by default and keys a map on the commit of its `main` branch (`tf3map --version`); build it with `cargo build --release` there. Edit only through a handoff in `local/handoff-mapper-*.md`, never in that repo from here. `terrain_map.py` takes the same options and defaults and stays for `shot_place.py` and the area-map and shot-place skills until the differences in the memory note are closed. |
+| `../tf3-save-mapper` | `tf3map`, the Rust map drawer built from these notes (MIT OR Apache-2.0); `tools/terrain_map.py` is its Python prototype. Mining (`mine_saves.py`) draws with it by default and keys a map on the commit of its `main` branch (`tf3map --version`; the SVG's `tf3map:view` record names the same commit and the non-default settings, so a stored map ties to its build); build it with `cargo build --release` there. Edit only through a handoff in `local/handoff-mapper-*.md`, never in that repo from here. `terrain_map.py` takes the same options and defaults and stays for `shot_place.py` and the area-map and shot-place skills until the differences in the memory note are closed. |
 
 ## Rules for what goes in
 
