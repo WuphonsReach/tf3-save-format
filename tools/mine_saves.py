@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
-Usage: mine_saves.py [--no-maps] [--no-nice] [--mapper python|tf3map] [--tf3map BIN] [--game DIR] [--mods DIR]
+Usage: mine_saves.py [--no-maps] [--no-nice] [--mapper tf3map|python] [--tf3map BIN] [--game DIR] [--mods DIR]
                      OUT_DIR SAVE_OR_MODDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
@@ -24,13 +24,12 @@ The summary is built by mine_summary.py (what is read from a save is described t
 Next to each summary this script also writes terrain-map.svg, the default map of the drawer `--mapper` names (the
 vector terrain, the roads and rails, the stations, depots and industries when the game install is found, the default
 grid and compass rose; docs/terrain-drawing.md), so the picture follows that drawer's current defaults:
-- `python` (the default): terrain_map.py with no options, one `python3 -I terrain_map.py` child per save
-  (44 to 310 s a save);
-- `tf3map`: the Rust mapper of the tf3-save-mapper repo, one `tf3map SAVE -o terrain-map.svg` child per save (well
-  under 2 s a save). The binary is `--tf3map BIN` (which also selects this drawer), else $TF3MAP, else `tf3map` on
-  the PATH. It needs a build whose SVG carries the `tf3map:view` metadata record and whose exit status tells a
-  refused save (3) from other failures (1, 2): the mapper's branch svg-view-record (commit 0c82fa4) or a release made
-  after it.
+- `tf3map` (the default): the Rust mapper of the tf3-save-mapper repo, one `tf3map SAVE -o terrain-map.svg` child per
+  save (well under 2 s a save). The binary is `--tf3map BIN`, else $TF3MAP, else `tf3map` on the PATH, else the
+  release build in the sibling tf3-save-mapper checkout (target/release/tf3map). It needs a build whose SVG carries
+  the `tf3map:view` metadata record and whose exit status tells a refused save (3) from other failures (1, 2):
+  mapper 0.5.0 or later;
+- `python`: terrain_map.py with no options, one `python3 -I terrain_map.py` child per save (44 to 310 s a save).
 `--game DIR` (the install folder that holds base/) and `--mods DIR` (the mod.io game's mods folder) are passed to
 the drawer, for the footprints and a mod depot's catchment, when its child would not find the usual Steam folders on
 its own (a different HOME); the summary does not use them. `--no-maps` skips the pictures. A save the drawer cannot
@@ -47,12 +46,13 @@ Two things are rebuilt separately, each when the save changed or its own scripts
 - the summary, when the commit of mine_summary.py and the modules it imports (save_header.py, tf3save.py) differs
   from the one in the summary's `tools_commit`;
 - the map, when the drawer's key differs from the one in .map_state.json. For `python` the key is the commit of
-  terrain_map.py and the modules it imports; for `tf3map` it is the whole `tf3map --version` text, which ends in
-  the build's git commit (`tf3map 0.4.0 (0c82fa451d)`), so every new mapper commit redraws the maps, and changing
-  drawer redraws them too.
+  terrain_map.py and the modules it imports; for `tf3map` it is the git commit the binary names in `tf3map --version`
+  (`tf3map 0.5.0 (bfe77c7388)`): use a build of the mapper's main branch, so the key is main's commit, and a new
+  main commit redraws the maps. Changing drawer redraws them too. The run says so when the commit is not on main
+  of the sibling mapper checkout.
 A change to tf3save.py is in both sets and rebuilds both; one to terrain_map.py, terrain_vector.py or street_edges.py
 redraws the python maps and leaves the summaries; one to mine_summary.py rebuilds the summaries only. A set with
-uncommitted changes ("-dirty", also inside the tf3map version text) is always rebuilt. A tf3map built without git
+uncommitted changes ("-dirty", also after the tf3map commit) is always rebuilt. A tf3map built without git
 prints only its version, so its maps are redrawn only when the version changes: mine one set with one kind of
 build. `script_commits.py SCRIPT` lists a set and its commit.
 
@@ -81,6 +81,7 @@ from script_commits import TOOLS_DIR, closure_commit  # noqa: E402
 
 SUMMARY_SCRIPT = "mine_summary.py"
 MAP_SCRIPT = "terrain_map.py"
+MAPPER_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "tf3-save-mapper"))
 
 
 def find_saves(arg):
@@ -133,13 +134,31 @@ def map_up_to_date(d, path, commit):
 
 def tf3map_binary(given=None):
     """The tf3map to run: the one given, else $TF3MAP, else tf3map on the PATH; None when there is none."""
-    b = given or os.environ.get("TF3MAP") or "tf3map"
-    return shutil.which(os.path.expanduser(b))
+    b = given or os.environ.get("TF3MAP")
+    if b:
+        return shutil.which(os.path.expanduser(b))
+    return shutil.which("tf3map") or shutil.which(os.path.join(MAPPER_REPO, "target", "release", "tf3map"))
 
 
 def tf3map_version(binary):
-    """`tf3map --version`, the rebuild key of its maps: `tf3map 0.4.0 (0c82fa451d)`, the build's commit at the end."""
+    """`tf3map --version`: `tf3map 0.5.0 (bfe77c7388)` or, with uncommitted changes, `(bfe77c7388-dirty)`."""
     return subprocess.run([binary, "--version"], capture_output=True, text=True, check=True).stdout.strip()
+
+
+def tf3map_commit(version):
+    """The rebuild key of tf3map's maps: the build's commit from its version text (with `-dirty` kept), or the whole
+    text when it names none (a build without git)."""
+    m = re.search(r"\(([0-9a-f]{7,40}(?:-dirty)?)\)\s*$", version)
+    return m.group(1) if m else version
+
+
+def on_mapper_main(commit):
+    """False when the sibling mapper checkout is there and its main branch does not hold `commit`; True otherwise."""
+    if not os.path.isdir(os.path.join(MAPPER_REPO, ".git")):
+        return True
+    run = subprocess.run(["git", "-C", MAPPER_REPO, "merge-base", "--is-ancestor", commit.replace("-dirty", ""), "main"],
+                         capture_output=True)
+    return run.returncode != 1
 
 
 def mask(text, path, dirs=()):
@@ -274,14 +293,14 @@ def parse_args(argv):
     ap.add_argument("saves", nargs="*", help=".sav files or mod.io mod directories")
     ap.add_argument("--no-maps", action="store_true", help="summaries only")
     ap.add_argument("--no-nice", action="store_true", help="keep the normal priority")
-    ap.add_argument("--mapper", choices=("python", "tf3map"), help="the map drawer (default python)")
+    ap.add_argument("--mapper", choices=("python", "tf3map"), help="the map drawer (default tf3map)")
     ap.add_argument("--tf3map", metavar="BIN", help="the tf3map binary (selects --mapper tf3map)")
     ap.add_argument("--game", metavar="DIR", help="the game's install folder, passed to the drawer")
     ap.add_argument("--mods", metavar="DIR", help="the mod.io game's mods folder, passed to the drawer")
     a = ap.parse_intermixed_args(argv)
     if a.tf3map and a.mapper == "python":
         ap.error("--tf3map names the tf3map drawer; leave out --mapper python")
-    a.mapper = "tf3map" if a.tf3map else (a.mapper or "python")
+    a.mapper = "tf3map" if a.tf3map else (a.mapper or "tf3map")
     return a
 
 
@@ -291,16 +310,21 @@ def mapper_key(a):
         return None, closure_commit(MAP_SCRIPT)
     binary = tf3map_binary(a.tf3map)
     if not binary:
-        sys.exit("mine_saves.py: no tf3map found (give --tf3map BIN, set TF3MAP or put it on the PATH)")
+        sys.exit("mine_saves.py: no tf3map found (give --tf3map BIN, set TF3MAP, put it on the PATH or build the "
+                 "sibling tf3-save-mapper with cargo build --release; or use --mapper python)")
     try:
-        key = tf3map_version(binary)
+        version = tf3map_version(binary)
     except (OSError, subprocess.CalledProcessError) as e:
         sys.exit(f"mine_saves.py: tf3map --version did not run: {e}")
-    if not key.endswith(")"):
+    key = tf3map_commit(version)
+    if key == version:
         print(f"note: {key!r} names no commit (a build without git): its maps are redrawn only when the version "
               "changes", file=sys.stderr)
-    if "-dirty" in key:
-        print(f"note: {key} is a build with uncommitted changes: every map is redrawn on each run", file=sys.stderr)
+    elif "-dirty" in key:
+        print(f"note: {version} is a build with uncommitted changes: every map is redrawn on each run", file=sys.stderr)
+    elif not on_mapper_main(key):
+        print(f"note: commit {key} is not on main of the tf3-save-mapper checkout: the key is not main's commit",
+              file=sys.stderr)
     return binary, key
 
 
