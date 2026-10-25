@@ -12,6 +12,7 @@ All 604, mostly one played game (the Small subarctic game) plus catalog save 642
 - **`tracked` is the negation of the type's `ignored.types` value at the time of the entry (Confirmed from the script, Observed).** 11 types are ignored by default; ignored types still get entries.
 - **An entry expires when its timestamp plus `autoDismissDuration` has passed or its entities changed; expiring sets `dismissed` too (Observed).**
 - **The bookkeeping tables decide when a warning is raised:** a vehicle enters `wastedVehicles` at maintenance 0.2 or less and leaves above 0.3; a stuck-vehicle warning needs 300,000 units standing still; a line warning's timestamp is in `line2problemTimestamp` and ties it to a line entity (Observed, rules from the script).
+- **A shown notification of a mod's type breaks loading without the mod (Observed, 605, one game):** "Failed during startup" until it is taken down; the History tab keeps the entry ([Persistent warnings](#persistent-warnings)).
 - **Open:** what the second and third numbers of an entity revision are, what `line_warning` issue types other than 1 mean, what `status` is on a subsidy entry, why a group that already had an overcrowding entry gets a new one, and whether the balloon entry has the same layout.
 
 ## The state and its entries
@@ -86,6 +87,8 @@ Path strings for notification scripts under `::/game_mechanics/notifications/typ
 ### Persistent warnings
 
 A warning that follows a state (a vehicle in poor condition, a full station, an industry about to close) is made with a `persisting` list naming its entities. The game's script re-checks the state periodically, sets the list when it makes the warning and clears it when the problem is gone or the parameters change; if the problem returns it makes a new entry. **Observed** on 604: 10 of the 100 entries had one (5 vehicle condition, 2 overcrowding, 1 town rating, 1 industry closing, 1 industry subsidy offer), and an entry that has one is not dropped when the table is trimmed.
+
+**A mod's notification type in the save (Observed, 605, one game).** A shown persistent notification whose type a mod registers is kept in the save. Loaded without that mod the game stopped with "Failed during startup" (Lua error `Resource not found`, naming the mod's `...script@useDataState`, raised in `game_mechanics/notifications/gui/notification_popups.tl`), offering only Reload UI and Back to Main Menu. Taking it down first, by sending the Notifications game script's `updatePersistent` with an empty `entitiesAndParam` list for that type, removed it from the Active tab; the History tab kept the old entry, and the save then loaded without the mod. Clicking that History entry without the mod was not tried (**Open**). Steps and test table: the Best Before mod's `docs/removing-the-mod.md` and `docs/stale-line-warnings.md`.
 
 ### Bookkeeping tables
 

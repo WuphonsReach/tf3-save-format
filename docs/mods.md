@@ -7,7 +7,9 @@ What a save records about the mods a game uses: the entry in the header's mod li
 - **Three places in the header (Observed, 568 to 604).** A mod has an entry in the `mods` list, its id in the config-mods list, and a keyed entry in the config params list that holds its options (an empty table when it has none). Mods that add content also leave their id in the model table's source field, in a script-state path and in notification types.
 - **Switching on or off at load (Confirmed, 604, one load each).** The Mods tab on the Load Game screen adds a mod to, or drops it from, all three places in the next save, so a save's mod list reflects the last load. A deactivated mod left no trace elsewhere in the stream. Tested only on mods with no options and no models in use.
 - **Removal warnings** follow the manifest's `severityRemove` (Observed, 306 manifests read).
-- **Open.** Mods with a script state or models in use, a mod that has options, what `flags` means (0, 1 or 2), and whether mod options follow the position-plus-1 rule of the settings.
+- **A mod with options and a game script drops out whole (Observed, 605, one load).** Deactivated on Load Game and saved, it left no `params` entry (mods 21 to 20), so re-activating it later starts from its defaults. A `CheckBox` option is stored like a slider: a 1-based position, 1 unticked, 2 ticked ([Mod options](#mod-options)).
+- **Loading without a mod that had a game script removes the script's entity (Observed, 605, twice),** state and event subscriptions with it ([below](#mod-script-states-and-stored-errors)).
+- **Open.** Models in use, what `flags` means (0, 1 or 2), and whether slider options of mods follow the position-plus-1 rule of the settings (a `CheckBox` does).
 
 ## What a save records about a mod
 
@@ -34,7 +36,7 @@ The header field `mods` is a `vec<mod>`. Each mod is five `str` and a u32: id, s
 
 ## Mod options
 
-- **Mods keep their options in the config params list** (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). Besides the empty key there is exactly one entry per mod, keyed by the mod's id, so the list has one more entry than the config mods. All 3,002 mod entries matched an id in that save's mod list. A mod without options has an empty table; one with options holds its own keys, for example a toll mod's `toll` or a train mod's `acceleration`, `braking` and `curves`. The values are Lua numbers (f64), like the game settings, which are numbers apart from the bool `isMapEditor`. Whether mod values follow the same position-plus-1 rule is **Open**. The order is neither the mod list's order (it matched in 39 of 110 saves) nor sorted, so look entries up by key.
+- **Mods keep their options in the config params list** (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). Besides the empty key there is exactly one entry per mod, keyed by the mod's id, so the list has one more entry than the config mods. All 3,002 mod entries matched an id in that save's mod list. A mod without options has an empty table; one with options holds its own keys, for example a toll mod's `toll` or a train mod's `acceleration`, `braking` and `curves`. The values are Lua numbers (f64), like the game settings, which are numbers apart from the bool `isMapEditor`. A `CheckBox` option (`"uiType": "CheckBox"`, values `["Off","On"]`, `defaultIndex` 1) is stored as a list position plus 1 like a settings slider: 1 unticked, 2 ticked (**Observed**, 605, one save: a mod's `...staleWarnings` key held 1.0 for unticked). The mod manager shows it that way (`gui/menu/mod_manager_react_util.tl`, `gui/main/script_param_util.tl` in `gui.zip`: the shown value is the stored one minus 1). A save without the key shows the option's default. Whether slider options of mods follow the same rule is **Open**. The order is neither the mod list's order (it matched in 39 of 110 saves) nor sorted, so look entries up by key.
 - The entry with the empty key holds the game settings, not a mod's options. See [settings.md](settings.md).
 
 ## Switching mods on and off when loading
@@ -49,6 +51,8 @@ A switch reaches the load through the params table: the dialog script (`gui/menu
 
 A mod with scripts keeps its state in the same layout as the game's scripts: the script's path string, then its table. How to find and read one is in [script-states.md](script-states.md#finding-a-table), and the mod-specific part is [there too](script-states.md#mod-script-states-and-stored-errors): the mod's id sits just before the path, and a mod can keep a Lua error message whose chunk name is a path on the player's machine. That path can hold an account name. Don't copy it into notes; write it as `<path>/mod.io/10640/mods/<id>/...`.
 
+**Without its mod (Observed, 605, twice).** Loading a save made without a mod that had a game script logs `Removing entity <id> for GameScript <mod id>::/<script>.gs which is no longer available`. The script's state and its event subscriptions go with the entity and nothing else fails. A shown notification of a type that mod registered is the exception ([notifications.md](notifications.md#persistent-warnings)).
+
 ## Mods with notes of their own
 
 - **Deluxe Upgrade** (`urbangames_deluxe_upgrade_pack`): the hot air balloon's script state, notification and model instance in [fun-elements.md](fun-elements.md); its music playlist in [script-states.md](script-states.md#the-music-player-state); its 31 models in [models.md](models.md#the-model-table); the bison, boar and Komodo dragon it adds to the animal list in [animals.md](animals.md).
@@ -60,8 +64,8 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 
 ## Open
 
-- Whether mods with a script state, or with models in use on the map, drop out the way the no-option ones did.
-- Whether a deactivated mod with options is dropped together with its options. Only mods with no options were switched on and off.
+- Whether mods with models in use on the map drop out the way the no-option ones did (a mod with a game script did, on 605).
+- A deactivated mod with options was tested once, on 605 ([In short](#in-short)), a mod without a game script and with options not at all.
 - What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
 - Whether mod options follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)).
 - What `flags` in a mod entry means (0, 1 or 2).
