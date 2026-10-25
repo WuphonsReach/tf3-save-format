@@ -1,6 +1,6 @@
 # Spoiled cargo
 
-How a save shows cargo that went bad on the way: the spoiled counters of the game's windows, the `itemsLost` statistics lists, and what a warehouse does with spoiled cargo. The "unsatisfied" lists at stops and edges are in [unsatisfied-lists.md](unsatisfied-lists.md). Where the spoiled count itself is kept is **Open**. Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game) and its fish chain ([fish-chain.md](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604)).
+How a save shows cargo that went bad on the way: the spoiled counters of the game's windows, the `itemsLost` statistics lists, and what a warehouse does with spoiled cargo. The "unsatisfied" lists at stops and edges are in [unsatisfied-lists.md](unsatisfied-lists.md). Where the spoiled count itself is kept is **Open**. Checked on 604 in one game, the [Small subarctic game](test-games.md#small-subarctic-game) and its fish chain ([fish-chain.md](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604)), and the full pay at 0% freshness on 605 in the [Giga temperate game](test-games.md#giga-temperate-game-wr26a).
 
 ## In short
 

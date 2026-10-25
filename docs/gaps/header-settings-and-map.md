@@ -9,7 +9,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 - The biggest block is the seed, terrain and map size: whether the seed alone rebuilds a map, what the width and height rule does outside the sizes seen, and what the water sliders change. Each needs a pair of New Game saves taken at once.
 - The sun against the compass is a quarter turn off, and the town centre the name words use is not stored anywhere found.
 - Calendar: the mapping from year to clock units at any speed other than 1.00x is untested, and what the autosave interval counts is unclear.
-- Settings and mods: whether a change acts on what already exists, and what happens to a removed mod's options.
+- Settings and mods: whether a change acts on what already exists, and what happens to a removed mod's options when it has no game script (one with a script lost them on 605).
 - Script states, animals and platform: mostly reading work on saves we hold.
 - Format 605 (newer than 604): what it changed after the header, and which build brought it. See [Format versions and builds](#format-versions-and-builds).
 
@@ -31,7 +31,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 
 ## Format versions and builds
 
-- **Two changes in the tail of a 605 save, and the build that brought 605** (604 to 605) No binary layout change was found after the header; the script states carry new values. The free-id list gains one id and one record about 1.27 MB before the end changes, but both came with a mod's removal. Home: [versions.md](../versions.md#game-releases-and-builds-2026-10-24). Needs: new save (a 604 save with no mods, loaded paused and re-saved on the current build, compared with the same save re-saved again); what the float records that grew by 82 KB in a plain 605 re-save hold is a separate question.
+- **Two changes in the tail of a 605 save** (604 to 605) No binary layout change was found after the header; the script states carry new values. The free-id list gains one id and one record about 1.27 MB before the end changes, but both came with a mod's removal. Home: [versions.md](../versions.md#game-releases-and-builds-2026-10-24). Needs: new save (a 604 save with no mods, loaded paused and re-saved on the current build, compared with the same save re-saved again); what the float records that grew by 82 KB in a plain 605 re-save hold is a separate question.
 - **Which build introduced 605** (605) 40423 fits the dates, but no save or screenshot names the build in use when the first 605 save was made; 40425 writes 605 too. Home: [versions.md](../versions.md#game-releases-and-builds-2026-10-24). Needs: mod.io uploads made after the 40423 release, whose `buildVersion` in the local cache names the build, once catalog saves from then are downloaded.
 - **Console format after the updates** (601 and 605) Console uploads were still 601 after the 40420 update; whether the console builds move to 605 is unknown. Home: [versions.md](../versions.md). Needs: existing saves (new console uploads in the catalog).
 
@@ -41,7 +41,6 @@ Everything here is **Open**, seen on 604 unless a range is given.
 - **Whether a loaded save stays byte for byte as it was** (604) The first test save was not hashed before its load. Home: [settings.md](../settings.md#open). Needs: new save (hash first, load, hash the same file again).
 - **What `sensitivityUrbanCare`, `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen** (604) `sensitivityUrbanCare` is the unverified pairing for the Reputation toggle. Home: [settings.md](../settings.md#open). Needs: new save with the toggle changed.
 - **Whether the other presets change the sliders at 100%** (604) Population, passenger and cargo income stayed at 100% across all four presets, and only Easy moved them. Home: [settings.md](../settings.md). Needs: game window.
-- **A mod with options removed on load** (604) Whether the options go with it. Home: [mods.md](../mods.md#open). Needs: new save.
 
 ## Calendar and clock
 
@@ -55,8 +54,8 @@ Everything here is **Open**, seen on 604 unless a range is given.
 
 ## Mods
 
-- **Whether a deactivated mod with options loses them** (604) Only mods without options were switched. Home: [mods.md](../mods.md#open). Needs: new save.
-- **Whether mod options follow the position-plus-1 rule** (604) And what `flags` in a mod entry (0, 1 or 2) means. Home: [mods.md](../mods.md#open). Needs: new save with a mod that has options.
+- **Whether a deactivated mod with options but no game script loses them** (604 and 605) A mod with options and a game script lost its params entry on 605 (one load); one without a script was not switched. Home: [mods.md](../mods.md#open). Needs: new save.
+- **Whether mod slider options follow the position-plus-1 rule** (604 and 605) A `CheckBox` option does (605, one save). And what `flags` in a mod entry (0, 1 or 2) means. Home: [mods.md](../mods.md#open). Needs: new save with a mod that has options.
 - **What a mod adds to the script states once it has run** (604) Whether any stream difference in the Overpass Builder test is mod related was not checked. Home: [mods.md](../mods.md#open). Needs: existing saves.
 
 ## Script states and the stream

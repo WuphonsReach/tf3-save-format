@@ -71,7 +71,7 @@ A game made with the stock **Temperate** generator while the mod was installed (
 - The list that follows the heightmap. It starts with the tile count and a small `u32`, then (2 to 38 times, in a few saves none) a 78-byte record: `f32 f32`, three `u32` from 0 to 360, four `f32` near 1.0, fixed bytes; the rest is mixed. **Observed**, 568 to 604, a pattern scan. It is not one fixed record per tile. That it is the API's `TerrainTileBrush` is a guess.
 - Whether the tile count is always the map's metres divided by 256 on sizes not seen (it held on every size in [Drawing the map](terrain-drawing.md#drawing-the-map)).
 - Whether the Ocean and Islands sliders change the same stretches as Mountains, and what Lakes and Rivers do. The Desert (dry) generator in the game's `climates` data lists exactly three sliders, keyed `lakes`, `water` (shown as Rivers) and `mountains`, five steps each with Medium the default, and its node graph has nodes named for lakes, so the Lakes slider is wired in, but moving it from Medium to Packed changed nothing on the desert map (see F against G); whether any desert map ever shows a lake is **Open**.
-- Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen.
+- Whether the seed alone, with sliders at their defaults, gives the same map as the New Game screen: see [seed.md](seed.md).
 
 ## Evidence and tests
 

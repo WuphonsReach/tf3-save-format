@@ -52,7 +52,7 @@ Reading it:
 
 - **Raw resources, by climate.** Extractive rows with an `x`: temperate has farm, fishing_grounds, oil_platform, clay_pit, quarry, forest, sand_excavator, sand_pit, iron_ore_mine, coal_mine, oil_well and cotton_farm. Dry has farm, oil_platform, clay_pit, quarry, forest, sand_pit, iron_ore_mine, coal_mine and oil_well. Tropical has the temperate list without clay_pit and with rubber_farm. Subarctic has the temperate list without clay_pit and cotton_farm.
 - **Water and shore industries.** fishing_grounds, oil_platform and sand_excavator are the extractive ones without the `TYPE_RAW` tag the others carry. Each economy also sets `waterIndustryFraction`; its use is Open ([industry-chains.md](industry-chains.md#which-climates-have-which-industry)).
-- **Stand-ins.** Temperate and tropical map an oil_platform to an oil_well, and temperate, tropical and subarctic map a sand_excavator to a sand_pit, through `industryPlacementFallbacks`. Dry has none, and also lacks the excavator, so dry glassworks use sand_pit.
+- **Stand-ins.** Temperate and tropical map an `oil_platform` to an `oil_well`, and temperate, tropical and subarctic map a `sand_excavator` to a `sand_pit`, through `industryPlacementFallbacks`. Dry has none, and also lacks the excavator, so a dry `glass_works` uses `sand_pit`.
 - **Livestock_farm** counts as processing here because it takes grain; the economy table puts it with the farms (order 90, needs a farm).
 
 ## Town cargo by climate

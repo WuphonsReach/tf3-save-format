@@ -62,7 +62,7 @@ State of `game_mechanics/game_time/game_time.gs`. **Observed** on 585 and 604.
 | `currentTimeOfDayState`, `currentWeatherState` | Small whole numbers |
 | `nextChange`, `nextTimeOfDayChange` | Times (game clock). `nextTimeOfDayChange` was 0 with `Automatic` |
 
-- The Calendar Speed row of the same window is covered in [calendar.md](calendar-speed.md#calendar-speed-in-the-games-windows).
+- The Calendar Speed row of the same window is covered in [calendar-speed.md](calendar-speed.md#calendar-speed-in-the-games-windows).
 - The settings table (see [settings.md](settings.md)) has `gameTimeConfig.timeOfDayMode` and `weatherConfig.dynamicWeather`. Both were 1 in saves whose state said `Constant`, `Automatic` and `Dynamic`, and they did not change when the cycles were changed in the game, so they hold the game's starting settings and don't mirror the state. Read the state for the mode.
 
 ## Counters and achievements

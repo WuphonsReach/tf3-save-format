@@ -8,7 +8,7 @@ The conclusions, with their labels and what is still **Open**, are in [In short]
 
 ## What editing in the map editor writes
 
-Observed on 604, one Giant temperate editor map, twelve saves one change apart. Road edits (a deleted segment, a split road, a new road, a new street type) are in the street-edge table and the tables around it: [road-network.md](road-network.md). Ticking Historic Preservation on three buildings changed three flag bytes and nothing else in their records ([town-buildings.md](editor-map-buildings.md)). The animal list was the same in the saves compared, and changed by one bird's height after a town was deleted, so its positions can serve as landmarks. Deleting a town left its roads, buildings and town record in the stream ([road-edits.md](road-edits.md#deleting-the-town)).
+Observed on 604, one Giant temperate editor map, twelve saves one change apart. Road edits (a deleted segment, a split road, a new road, a new street type) are in the street-edge table and the tables around it: [road-network.md](road-network.md). Ticking Historic Preservation on three buildings changed three flag bytes and nothing else in their records ([editor-map-buildings.md](editor-map-buildings.md)). The animal list was the same in the saves compared, and changed by one bird's height after a town was deleted, so its positions can serve as landmarks. Deleting a town left its roads, buildings and town record in the stream ([road-edits.md](road-edits.md#deleting-the-town)).
 
 ### Loading an editor save and saving it at once
 

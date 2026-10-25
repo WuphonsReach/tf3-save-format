@@ -5,7 +5,7 @@ What a save records about the mods a game uses: the entry in the header's mod li
 ## In short
 
 - **Three places in the header (Observed, 568 to 604).** A mod has an entry in the `mods` list, its id in the config-mods list, and a keyed entry in the config params list that holds its options (an empty table when it has none). Mods that add content also leave their id in the model table's source field, in a script-state path and in notification types.
-- **Switching on or off at load (Confirmed, 604, one load each).** The Mods tab on the Load Game screen adds a mod to, or drops it from, all three places in the next save, so a save's mod list reflects the last load. A deactivated mod left no trace elsewhere in the stream. Tested only on mods with no options and no models in use.
+- **Switching on or off at load (Confirmed, 604, one load each).** The Mods tab on the Load Game screen adds a mod to, or drops it from, all three places in the next save, so a save's mod list reflects the last load. A deactivated mod left no trace elsewhere in the stream. On 604 tested only on mods with no options and no models in use; a mod with options on 605 (next bullet but one).
 - **Removal warnings** follow the manifest's `severityRemove` (Observed, 306 manifests read).
 - **A mod with options and a game script drops out whole (Observed, 605, one load).** Deactivated on Load Game and saved, it left no `params` entry (mods 21 to 20), so re-activating it later starts from its defaults. A `CheckBox` option is stored like a slider: a 1-based position, 1 unticked, 2 ticked ([Mod options](#mod-options)).
 - **Loading without a mod that had a game script removes the script's entity (Observed, 605, twice),** state and event subscriptions with it ([below](#mod-script-states-and-stored-errors)).
@@ -67,7 +67,7 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 - Whether mods with models in use on the map drop out the way the no-option ones did (a mod with a game script did, on 605).
 - A deactivated mod with options was tested once, on 605 ([In short](#in-short)), a mod without a game script and with options not at all.
 - What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
-- Whether mod options follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)).
+- Whether slider options of mods follow the position-plus-1 rule that the game settings follow ([settings.md](settings.md#how-a-setting-is-stored)); a `CheckBox` option does (605, one save).
 - What `flags` in a mod entry means (0, 1 or 2).
 
 ## Evidence and tests
@@ -84,7 +84,7 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 
 ### Switching a mod off
 
-**Confirmed** on 604, one load: on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. Whether a mod that has options loses them (the params table) the same way was not tested, as these two mods had none.
+**Confirmed** on 604, one load: on that three-mod save the built-in script mod Vehicles: No End Year was deactivated (`urbangames_vehicles_no_end_year_1`, source `BuiltInMods`) and the game saved again. All three places lost it: the mod list went from three entries to two, the config-mods list lost the id, and the params entry keyed by it was dropped. The other entries kept their order, the settings and everything else in the header were unchanged, and the header shrank by 218 bytes. Its id (and its path string) occurs nowhere in the stream afterwards, so a deactivated mod leaves no trace behind. These mods had no options; a mod with options and a game script lost its params entry the same way on 605 ([In short](#in-short)).
 
 ### Two loads of one 14-mod save
 

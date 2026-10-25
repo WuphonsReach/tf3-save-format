@@ -14,6 +14,8 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 - **The money copy usually equals the account but can lag, read 0 against a negative balance, or be 0 in a game with no starting capital (Observed).** The real balance is in the money journal ([finances.md](finances.md#finding-the-journal)).
 - **Open:** the meaning of most statistics blocks, what the `stats3` number that rose by one in a vehicle swap counts, why money is stored as 0 in some saves, what sets the flag to 0 besides a non-cosmetic mod, and the editor map whose `value` was 256.
 
+## Fields
+
 | Field | Type | Meaning |
 |---|---|---|
 | magic | 4 bytes | `tf**` |

@@ -66,7 +66,7 @@ Position and population are not in the table, and the town record has neither ([
 
 ## Not found
 
-- How a line refers to its vehicles. (For road vehicles in 604 the records that name a line and a vehicle are trip records whose owner is not found, [lines.md](trip-plans.md#trip-plans-line-stops-and-vehicle-or-a-building-604); a vehicle's own line assignment was not found. The tram case below was not rechecked.) The tram's id appeared 34 times in the first save, mostly in sorted lists of u64 entity ids (an id then four zero bytes), none close to a candidate line id.
+- How a line refers to its vehicles. (For road vehicles in 604 the records that name a line and a vehicle are trip records whose owner is not found, [trip-plans.md](trip-plans.md#trip-plans-line-stops-and-vehicle-or-a-building-604); a vehicle's own line assignment was not found. The tram case below was not rechecked.) The tram's id appeared 34 times in the first save, mostly in sorted lists of u64 entity ids (an id then four zero bytes), none close to a candidate line id.
 - A table of resource paths mapped to numbers (cargos first, then vehicle models) sits late in the stream as a Lua table. The number for each model is not the model id. **Open**.
 
 ## Vehicles: model, name slot and entity id
