@@ -13,7 +13,7 @@ description: Rebuild or refresh local/mined (the summary JSON per mod.io catalog
 |---|---|
 | Index only (a new `index_row` column built from fields the summaries already hold) | `python3 -I tools/mine_saves.py --no-maps local/mined` (no save arguments: moves summaries to their seed folder, rewrites `index.csv`; reads no save, takes seconds) |
 | Summaries only (new summary field, new tools commit) | the batch below with `--no-maps`, then the index-only command once |
-| Summaries and maps | the batch below without `--no-maps` (a Giant map takes about 40 s and 2.5 GB) |
+| Summaries and maps | the batch below without `--no-maps` (with `terrain_map.py`, the default drawer, a Giant map takes about 40 s and 2.5 GB); add `--tf3map BIN` (or `--mapper tf3map` with `tf3map` on the PATH or in `$TF3MAP`) to draw with the Rust mapper, about a second a save. Which build to mine with is the user's call; a change of drawer or of tf3map commit redraws every map |
 
 A change to `mine_summary.py` or what it imports changes `tools_commit`, so every save is read again: that is a full rebuild. Ask the user before starting one unless they just asked for it. Only saves whose tools commit or file changed are read again, so a repeat run is cheap.
 
