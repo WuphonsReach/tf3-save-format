@@ -2,6 +2,7 @@
 """Rank mined saves by play periods, keeping only those whose mods you have; or list which mods you have.
 
 Usage: top_saves.py INDEX_CSV [-n 10] [--out FILE.md] [--lack KEY ...] [--have KEY ...] [--mods DIR] [--game DIR]
+                    [--corpus NAME[,NAME] | all]
        top_saves.py INDEX_CSV --owned [--prefix urbangames_ --prefix ug_]
 
 INDEX_CSV is the `index.csv` that mine_saves.py writes (columns `play_periods`, `mod_list`, `header`, `map_seed`,
@@ -13,6 +14,10 @@ What "have" means (read at run time from the folders, nothing stored):
   `dlcs/` (a pack you own has a folder here; the pre-order pack has none unless you own it) (`--game`, default the
   usual Steam places). Only `modId` is read.
 `--have KEY` adds a key by hand, `--lack KEY` removes one (for a pack the folders cannot show).
+
+Corpus: `index.csv` has a `corpus` column (`catalog-saves`, `catalog-maps`, `own-saves`, `own-maps`). The default
+is `catalog-saves,catalog-maps`, the mod.io catalog (the own saves are many re-saves of a few games and would crowd
+the ranking); `--corpus all` or a list picks others.
 
 Ranking: rows with `header` ok only (a partial header gives no mod list); a save needing a mod you lack is left
 out; one save per map seed (the one with most periods, the lower mod id on a tie; a save with no seed stands alone). The table gives both
@@ -116,9 +121,12 @@ def main():
     ap.add_argument("--game", help="the install folder (default: the usual Steam places)")
     ap.add_argument("--owned", action="store_true", help="list the prefixed mod keys and whether you have them")
     ap.add_argument("--prefix", action="append", help="key prefix for --owned (default urbangames_ and ug_)")
+    ap.add_argument("--corpus", default="catalog-saves,catalog-maps", help="corpora to use, comma-separated, or all")
     args = ap.parse_args()
 
     rows = read_index(args.index)
+    if args.corpus != "all" and rows and "corpus" in rows[0]:
+        rows = [r for r in rows if r["corpus"] in args.corpus.split(",")]
     if rows and "mod_list" not in rows[0]:
         sys.exit("index.csv has no mod_list column: rewrite it with `mine_saves.py OUT_DIR` (no save arguments)")
     have, src = installed(args.mods, args.game)

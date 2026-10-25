@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Print the two tables of docs/map-sizes.md from a folder of mine_saves.py summaries.
 
-Usage: map_size_tables.py MINED_DIR [--extra SIZE,FORMAT,WxH ...]
+Usage: map_size_tables.py MINED_DIR [--extra SIZE,FORMAT,WxH ...] [--corpus NAME[,NAME] | all]
 
 Read only, no saves. MINED_DIR is the OUT_DIR of mine_saves.py (it is searched for
-tf3-save-summary.json). A summary with no `settings` (versions 568 and 585) is skipped.
+tf3-save-summary.json). Only the corpus folders named by --corpus are read (default `catalog-saves,catalog-maps`;
+`all` adds the player's own saves and maps). A summary with no `settings` (versions 568 and 585) is skipped.
 
 Table 1 has a row for each of the 40 combinations of `map.size` (1 to 8) and `map.format`
 (1 to 5) in that order. The width and height of a combination is the one most saves with those
@@ -35,10 +36,12 @@ def position(label):
     return int(str(label).split()[0])
 
 
-def read(mined, extra):
+def read(mined, extra, corpora):
     seen = defaultdict(Counter)
     odd_candidates = []
-    for path in glob.glob(os.path.join(mined, '**', 'tf3-save-summary.json'), recursive=True):
+    for path in glob.glob(os.path.join(mined, '*', '**', 'tf3-save-summary.json'), recursive=True):
+        if corpora and os.path.relpath(path, mined).split(os.sep)[0] not in corpora:
+            continue
         d = json.load(open(path))
         s = d.get('settings')
         if not s or 'map.size' not in s or not d.get('map_w_m'):
@@ -73,16 +76,18 @@ def cell(key, usual):
 
 
 def main(argv):
-    extra, args = [], []
+    extra, args, corpus = [], [], 'catalog-saves,catalog-maps'
     it = iter(argv)
     for a in it:
         if a == '--extra':
             extra.append(next(it))
+        elif a == '--corpus':
+            corpus = next(it)
         else:
             args.append(a)
     if len(args) != 1:
         sys.exit(__doc__)
-    seen, cands = read(args[0], extra)
+    seen, cands = read(args[0], extra, None if corpus == 'all' else corpus.split(','))
     usual = modal(seen)
     head = '| `map.size` | `map.format` | Size | Format | Width x height, m | Area, km² |'
     print(head + '\n|---|---|---|---|---|---|')

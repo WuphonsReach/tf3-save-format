@@ -2,22 +2,22 @@
 """Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
 Usage: mine_saves.py [--no-maps] [--no-nice] [--mapper tf3map|python] [--tf3map BIN] [--game DIR] [--mods DIR]
-                     OUT_DIR SAVE_OR_MODDIR [...]
+                     OUT_DIR SAVE_MODDIR_OR_SAVEDIR [...]
 
-Reads only. For every save it writes OUT_DIR/<c>/<seed>/<id>-<name>/tf3-save-summary.json
+Reads only. For every save it writes OUT_DIR/<corpus>/<c>/<seed>/<leaf>/tf3-save-summary.json
 (layout: schema/tf3-save-summary.v<N>.schema.json next to this script) and rebuilds
 OUT_DIR/index.csv from every summary there (it has the map's size name and format ratio as stored in the
 settings, with their positions, next to the width and height in metres, the save's file name in `source_name` (the load list shows it, not the
-catalog `name`), and the mod keys as a `;`-separated list in `mod_list`). <seed> is the map seed from the header and <c>
-its first character, so OUT_DIR holds few folders and the saves of one game (and the editor
-maps made from the same seed) sit together. A save without a seed (truncated, or a format
-that has none) goes to OUT_DIR/_noseed/<id>-<name>. A summary found in another place (an
-older flat layout, or after a changed seed) is moved, not read again; a run with no save
-arguments moves every summary and rewrites index.csv. A summary.json left by an older
-version in the same folder is removed. A SAVE_OR_MODDIR can be a
-.sav or a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/
-folder holds one. A map-editor map (maps/) is written to <id>-<name>-map, so a
-mod that ships both a savegame and a map keeps two summaries. Catalog name, tags, author and link come from mod.io's metadata/state.json
+catalog `name`), and the mod keys as a `;`-separated list in `mod_list`). <corpus> says what was mined (CORPORA):
+catalog-saves and catalog-maps for a mod.io mod directory (.../mods/<id>) whose savegames/ or maps/ folder holds the
+save (leaf <id>-<name>, a map <id>-<name>-map, so a mod that ships both keeps two summaries); own-saves and own-maps
+for the player's own files (leaf <file name slug>): a folder of .sav files (the game's save/, or save_maps/ for
+map-editor maps) or a single .sav (an own save unless its folder is named save_maps). <seed> is the map seed from the
+header and <c> its first character, so a corpus holds few folders and the saves of one game sit together. A save
+without a seed (truncated, or a format that has none) goes to OUT_DIR/<corpus>/_noseed/<leaf>. A summary found in
+another place (an older layout without the corpus folder, or after a changed seed) is moved, not read again; a run
+with no save arguments moves every summary, removes the folders that left empty and rewrites index.csv (its last
+column is the corpus). A summary.json left by an older version in the same folder is removed. Catalog name, tags, author and link come from mod.io's metadata/state.json
 when it is found next to the mods directory.
 
 The summary is built by mine_summary.py (what is read from a save is described there; run alone it prints one).
@@ -84,9 +84,20 @@ MAP_SCRIPT = "terrain_map.py"
 MAPPER_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "tf3-save-mapper"))
 
 
+CORPORA = ("catalog-saves", "catalog-maps", "own-saves", "own-maps")
+
+
+def corpus_of(mod_id, kind):
+    """The corpus folder of a save: a mod.io mod's savegame or map, or one the player made (no mod id)."""
+    return ("catalog" if mod_id else "own") + ("-maps" if kind == "map" else "-saves")
+
+
 def find_saves(arg):
+    """(path, mod id, mods dir, kind) for each save in arg: a .sav (own save, or own map when its folder is
+    `save_maps`), a mod.io mod directory (.../mods/<id>, with savegames/ and maps/), or a folder of .sav files (the
+    game's `save/` or `save_maps/`, own saves or own maps)."""
     if arg.endswith(".sav"):
-        return [(arg, None, None, "savegame")]
+        return [(arg, None, None, "map" if os.path.basename(os.path.dirname(os.path.abspath(arg))) == "save_maps" else "savegame")]
     mods_dir = os.path.dirname(os.path.abspath(arg.rstrip("/")))
     mod_id = os.path.basename(os.path.abspath(arg.rstrip("/")))
     found = []
@@ -95,6 +106,9 @@ def find_saves(arg):
         if os.path.isdir(sav_dir):
             found += [(os.path.join(sav_dir, f), mod_id, mods_dir, kind)
                       for f in sorted(os.listdir(sav_dir)) if f.endswith(".sav")]
+    if not found and os.path.isdir(arg):
+        kind = "map" if mod_id == "save_maps" else "savegame"
+        found = [(os.path.join(arg, f), None, None, kind) for f in sorted(os.listdir(arg)) if f.endswith(".sav")]
     return found  # empty for a content mod
 
 
@@ -233,34 +247,56 @@ def draw_map(d, path, commit, mapper="python", binary=None, game=None, mods=None
 
 
 def seed_parts(seed):
-    """Folders under OUT_DIR for a map seed: (first character, seed), or ("_noseed",) without one."""
+    """Folders under a corpus for a map seed: (first character, seed), or ("_noseed",) without one."""
     seed = re.sub(r"[^A-Za-z0-9]", "_", seed or "")
     return (seed[0], seed) if seed else ("_noseed",)
 
 
+def legacy_corpus(leaf):
+    """The corpus of a summary in the layout before the corpus folders (OUT_DIR/<c>/<seed>/<leaf>), from its leaf name."""
+    if leaf.startswith("local-"):
+        return "own-maps" if leaf.endswith("-map") else "own-saves"
+    return "catalog-maps" if leaf.endswith("-map") else "catalog-saves"
+
+
 def summary_dirs(out_dir):
-    """Folders under out_dir that hold a summary, by leaf name, in any layout this script has written."""
+    """Folders under out_dir that hold a summary, as {(corpus, leaf): folder}, in any layout this script has written:
+    OUT_DIR/<corpus>/<c>/<seed>/<leaf> and <corpus>/_noseed/<leaf>, or the older ones without the corpus folder."""
     found = {}
     for top in os.listdir(out_dir):
         t = os.path.join(out_dir, top)
         if not os.path.isdir(t):
             continue
+        if top in CORPORA:
+            for mid in os.listdir(t):
+                m = os.path.join(t, mid)
+                if not os.path.isdir(m):
+                    continue
+                for leaf in os.listdir(m):
+                    l = os.path.join(m, leaf)
+                    if os.path.isfile(os.path.join(l, SUMMARY_FILE)):  # _noseed/<leaf>
+                        found[(top, leaf)] = l
+                    elif os.path.isdir(l):
+                        for leaf2 in os.listdir(l):
+                            if os.path.isfile(os.path.join(l, leaf2, SUMMARY_FILE)):
+                                found[(top, leaf2)] = os.path.join(l, leaf2)
+            continue
         if os.path.isfile(os.path.join(t, SUMMARY_FILE)):  # flat layout
-            found[top] = t
+            found[(legacy_corpus(top), top)] = t
             continue
         for mid in os.listdir(t):
             m = os.path.join(t, mid)
             if os.path.isfile(os.path.join(m, SUMMARY_FILE)):  # _noseed/<leaf>
-                found[mid] = m
+                found[(legacy_corpus(mid), mid)] = m
             elif os.path.isdir(m):
                 for leaf in os.listdir(m):
                     if os.path.isfile(os.path.join(m, leaf, SUMMARY_FILE)):
-                        found[leaf] = os.path.join(m, leaf)
+                        found[(legacy_corpus(leaf), leaf)] = os.path.join(m, leaf)
     return found
 
 
-def place(out_dir, leaf, seed):
-    return os.path.join(out_dir, *seed_parts(seed), leaf)
+def place(out_dir, corpus, leaf, seed):
+    return os.path.join(out_dir, corpus, *seed_parts(seed), leaf)
 
 
 def move_to(old, new):
@@ -270,7 +306,7 @@ def move_to(old, new):
     os.makedirs(os.path.dirname(new), exist_ok=True)
     shutil.move(old, new)
     up = os.path.dirname(old)
-    for _ in range(2):
+    for _ in range(3):
         try:
             os.rmdir(up)
         except OSError:
@@ -290,7 +326,7 @@ def lower_priority():
 def parse_args(argv):
     ap = argparse.ArgumentParser(description="Summarise many saves and draw each one's default map.")
     ap.add_argument("out_dir")
-    ap.add_argument("saves", nargs="*", help=".sav files or mod.io mod directories")
+    ap.add_argument("saves", nargs="*", help=".sav files, mod.io mod directories or folders of .sav files")
     ap.add_argument("--no-maps", action="store_true", help="summaries only")
     ap.add_argument("--no-nice", action="store_true", help="keep the normal priority")
     ap.add_argument("--mapper", choices=("python", "tf3map"), help="the map drawer (default tf3map)")
@@ -342,15 +378,16 @@ def main():
         for path, mod_id, mods_dir, kind in find_saves(arg):
             profile = catalog_profiles(mods_dir).get(mod_id, {}) if mods_dir else {}
             name = profile.get("name") or os.path.splitext(os.path.basename(path))[0]
-            leaf = f"{mod_id or 'local'}-{slug(name)}" + ("-map" if kind == "map" else "")
-            d = summary_dirs(out_dir).get(leaf)
+            corpus = corpus_of(mod_id, kind)
+            leaf = (f"{mod_id}-" if mod_id else "") + slug(name) + ("-map" if mod_id and kind == "map" else "")
+            d = summary_dirs(out_dir).get((corpus, leaf))
             readable = False                          # the summary is there and the save could be read
             if d:
                 try:
                     seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
                 except (OSError, ValueError):
                     seed = None
-                new = place(out_dir, leaf, seed)
+                new = place(out_dir, corpus, leaf, seed)
                 move_to(d, new)
                 d = new
                 readable = up_to_date(d, path, scommit)
@@ -358,7 +395,7 @@ def main():
             if not readable:
                 print("reading", os.path.basename(path), file=sys.stderr)
                 summary = summarise_save(path, mod_id, mods_dir, kind)
-                new = place(out_dir, leaf, summary["map_seed"])
+                new = place(out_dir, corpus, leaf, summary["map_seed"])
                 if d:
                     move_to(d, new)
                 d = new
@@ -390,16 +427,22 @@ def main():
                 else:
                     drawn += 1
     if not args:  # alone at the end of a run: put every summary where its seed says
-        for leaf, d in summary_dirs(out_dir).items():
+        for (corpus, leaf), d in summary_dirs(out_dir).items():
             seed = json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8")).get("map_seed")
-            move_to(d, place(out_dir, leaf, seed))
+            move_to(d, place(out_dir, corpus, leaf, seed))
+        for top, _, _ in sorted(os.walk(out_dir), key=lambda t: -len(t[0])):  # folders the moves emptied
+            if top != out_dir:
+                try:
+                    os.rmdir(top)
+                except OSError:
+                    pass
     rows = []
-    for d in sorted(summary_dirs(out_dir).values(), key=lambda d: os.path.relpath(d, out_dir)):
-        rows.append(index_row(json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8"))))
+    for (corpus, _), d in sorted(summary_dirs(out_dir).items(), key=lambda kd: os.path.relpath(kd[1], out_dir)):
+        rows.append(index_row(json.load(open(os.path.join(d, SUMMARY_FILE), encoding="utf-8"))) + [corpus])
     idx = os.path.join(out_dir, "index.csv")
     with open(idx, "w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
-        w.writerow(INDEX_COLS)
+        w.writerow(INDEX_COLS + ["corpus"])
         w.writerows(rows)
     print(f"{done} read, {skipped} unchanged, {failed} failed; {len(rows)} rows in {idx}", file=sys.stderr)
     if maps:
