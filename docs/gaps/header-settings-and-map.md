@@ -55,7 +55,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 ## Mods
 
 - **Whether a deactivated mod with options but no game script loses them** (604 and 605) A mod with options and a game script lost its params entry on 605 (one load); one without a script was not switched. Home: [mods.md](../mods.md#open). Needs: new save.
-- **Whether mod slider options follow the position-plus-1 rule** (604 and 605) A `CheckBox` option does (605, one save). And what `flags` in a mod entry (0, 1 or 2) means. Home: [mods.md](../mods.md#open). Needs: new save with a mod that has options.
+- **What `flags` in a mod entry means** (568 to 604) 0, 1 or 2; always 1 for `DLC`. Home: [mods.md](../mods.md#open). Needs: existing saves.
 - **What a mod adds to the script states once it has run** (604) Whether any stream difference in the Overpass Builder test is mod related was not checked. Home: [mods.md](../mods.md#open). Needs: existing saves.
 
 ## Script states and the stream

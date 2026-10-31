@@ -7,6 +7,7 @@ How the game sorts its vehicles, and how `tools/vehicle_counts.py` turns a save'
 - **Five carriers (Confirmed against the 604 install, Observed in saves 568 to 604).** Every base vehicle model names a carrier, `ROAD`, `TRAM`, `RAIL`, `WATER` or `AIR`, and the folder under `vehicle/` always agrees with it. A save records only the model path, so the folder is all it says about the carrier.
 - **Power and load come from the model file (Observed, install).** A unit with an empty engine list (every wagon, a multiple unit's middle and end cars) is unpowered; its `cargoClassesIncluded` make it `passenger`, `cargo`, `mixed` or `none`. A mod's vehicle is counted by folder only, so its power and load are `unknown`.
 - **The instance count is a good check, not an exact one (Observed, four saves).** The header's road vehicle, aircraft and ship counts equal the folder counts in some saves and fall short in others; private cars are town traffic, not the player's.
+- **A specialized car loads and unloads twice as fast as a universal one (Observed, 605, one line).** A grain train of Gondola Car (Bulk) cars took 31.6 s to load and to unload 64 units, one of Cargo Car (All Cargo) cars 63.0 s, on the same line ([Load times](#load-times-by-car-type)).
 - **Open.** Whether one line can mix carriers, whether a line or depot cares which track a tram uses, what the extra instances are, and whether a bus or truck can be town traffic.
 
 ## Five carriers
@@ -54,6 +55,10 @@ A train or a tram is one model instance per unit ([models.md](models.md#vehicles
 - Whether a line or depot cares which of the two track kinds a tram uses ([depots.md](depots.md)), and whether one line can mix carriers.
 - What the extra instances are where the header count is lower (vehicles not the player's, a stale record), and whether a bus or truck can be town traffic.
 - Whether a vehicle is on a line: not in the instance ([entity-names.md](entity-names.md)).
+
+## Load times by car type
+
+**Observed** on 605, the [Giga temperate game](test-games.md#giga-temperate-game-wr26a), from a mod's log of each unit's pickup and arrival time. Two trains on one grain line (64 units, 10 t cars, 50 km/h): a specialized train of Gondola Car cars (the vehicle window reads "Specialization: Bulk") and a universal train of Cargo Car 1899 cars (All Cargo). The specialized train's load and unload windows were 31.6 s each, the universal train's 63.0 s each. The same held on Hard and on Easy and with the game year set to 1900 or 1919. The delivery limit is the same for both: it takes only the cargo type ([delivery-times.md](delivery-times.md)). The slower loading adds up to about 30 s to the age of the units loaded first. A "Speed: 200%" label showed on both trains' panels, so it does not tell them apart (meaning **Open**). Source: the Best Before mod's [delivery-limit-tests.md](https://github.com/WuphonsReach/tf3-best-before-mod/blob/5f4b203e701cda7de243e0d16bdc8997e298dadc/docs/future/delivery-limit-tests.md) (tf3-best-before-mod, at commit 5f4b203).
 
 ## Evidence and tests
 
