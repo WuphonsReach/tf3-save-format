@@ -16,6 +16,11 @@ Commands:
   find TERM..   shots whose OCR text holds every term (case-insensitive), with the cluster's label
   check         label facts (quoted names, "Name (123)" town labels, dates, dollar figures) that no
                 shot of the cluster shows in its OCR text, and the share found
+  classify [TERM..]
+                bucket every shot by what UI the OCR text shows (category, subcategory) and whether
+                the picture is full screen or cropped, into DIR/categories.csv; prints the counts, or
+                with TERMs the shots whose category or subcategory holds every term. `build` adds a
+                "Find by category" section and refreshes the csv. Rules: CATEGORY_RULES
   hud           DIR/hud.csv: game date, account, earnings, people delivered and cargo delivered (totals
                 since the game started) read off each shot's bottom bar
 
@@ -694,11 +699,196 @@ def cmd_build(work, shots, saves):
                      + (f" Points: {n[5]}." if n[5] else ""))
         L.append("- ids (UTC): " + " ".join(f"{s[9:]}={shots[pos[s]].utc:%H%M%S}" for s in ids))
         L.append("")
+    L += category_lines(shots, classify_all(work, shots))
     if loads:
         L += loading_section(work, shots, loads, saves)
     with open(os.path.join(work, "INDEX.md"), "w") as fh:
         fh.write("\n".join(L) + "\n")
     print(f"wrote INDEX.md: {len(shots)} shots, {len(covered)} labelled, {len(top)} clusters, {len(loads)} loading screens")
+
+
+# ---- categories: what UI a shot shows -------------------------------------------------------------------
+# Ordered rules (first match wins) on the lower-cased OCR text of a shot: (category, subcategory, test).
+# A test is a regex that must be found in the joined text. Tune them against the "other" bucket that
+# `classify` prints. Subcategories of building panels come from BUILDING_WORDS.
+BUILDING_WORDS = ("roundhouse", "maintenance building", "depot", "station", "landing", "dredger", "warehouse",
+                  "platform", "industrial building", "grounds", "crossing")
+CATEGORY_RULES = (
+    ("crash", "error dialog", r"crash|assertion|device lost|failed during startup|reload ui|exception type"),
+    ("other program", "editor or browser", r"\bfile\b.*\bedit\b.*\bselection\b|firefox|mozilla|spectacle"),
+    ("menu", "mod hub: upload dialog", r"update metadata|re-validate|validation: "),
+    ("menu", "splash screen", r"\burban\b.*\bgames\b.*(skip|steam features)"),
+    ("tool", "construction placement", r"place the .{3,40}building|underground mode|precision mode"),
+    ("menu", "mod hub: mod page", r"\bmod hub\b.*(open mod page|open folder)"),
+    ("menu", "mod hub: browse", r"\bmod hub\b"),
+    ("menu", "mod detail (save's Mods tab)", r"\bactivate\b.*\bdescription\b|\bdescription\b.*\bactivate\b"),
+    ("menu", "mod selection (save's Mods tab)", r"disable all mods|activation order|has parameters"),
+    ("menu", "save settings", r"gameplay settings|settings are stored in the save|load preset|pollution sensitivity|noise sensitivity"),
+    ("menu", "game settings", r"\b(graphics|audio|controller|keyboard)\b.*\b(interface|advanced)\b|interface scaling|text scaling"),
+    ("menu", "load game", r"load game|saved games"),
+    ("menu", "new game", r"new game|map size|start year|map seed"),
+    ("menu", "editor", r"map editor|terrain brush|height map"),
+    ("panel", "depot-retrofits mod", r"retrofit|vehicles maintained"),
+    ("panel", "finances", r"assets.*loans|loans.*assets|earnings details"),
+    ("panel", "notifications", r"\bnotifications\b.*\bcategory\b"),
+    ("panel", "warehouse", r"no cargo currently stored|incoming.*outgoing|\bstocks\b"),
+    ("panel", "lines", r"\bnew line\b|\blines?\b.*(frequency|rate)"),
+    ("panel", "industry", r"input stocks|\bboosters\b|\bproduction\b"),
+    ("panel", "statistics", r"\bstatistics\b"),
+    ("panel", "town", r"\bpopulation\b|\bresidents\b|town rating"),
+    ("panel", "object window (Basics tab)", r"\bbasics\b"),
+    ("map layer", "pollution", r"pollution (emission|absorb|rating|source)"),
+    ("map layer", "noise or catchment", r"noise rating|catchment|coverage"),
+)
+# Several windows can be open in one shot (a vehicle, an industry and a depot window side by side), so the
+# panels of a shot are found by independent detectors, not by one rule. Each detector counts the lines
+# that anchor one window: (panel name, regex on one lower-cased OCR line, or None for "anywhere in the text",
+# regex on the joined text when the first is None).
+PANEL_DETECTORS = (
+    ("vehicle window", r"^\W*condition\W*$", None),
+    ("industry window", r"^\W*(production|input stocks|boosters)\W*$", None),
+    ("depot-retrofits mod tab", r"^\W*retrofit\W*$", None),
+    ("depot or maintenance building window", None, r"maintenance radius|vehicles maintained|vehicle stalls|maintenance pool"),
+    ("vehicle list tab", None, r"(?m)^\W*vehicles\W*$(?s:.*)\b(road vehicle|ship|train|tram|aircraft) \d+"),
+    ("finances window", None, r"assets.*loans|loans.*assets|earnings details"),
+    ("notifications window", None, r"\bnotifications\b.*\bcategory\b"),
+    ("warehouse window", None, r"no cargo currently stored|incoming.*outgoing|\bstocks\b"),
+    ("lines window", None, r"\bnew line\b|\blines?\b.*(frequency|rate)|terminals for stop|capacity.*utilization.*frequency"),
+    ("industry upgrades tab", None, r"upgrade points|throughput.*storage.*efficiency"),
+    ("statistics window", None, r"\bstatistics\b"),
+    ("town window", None, r"\bpopulation\b|\bresidents\b|town rating"),
+    ("citizen window", None, r"\blocations\b.*\bhappiness\b|\bcurrent route\b"),
+    ("pollution map layer", None, r"pollution (emission|absorb|rating|source)"),
+)
+OWNS_STATISTICS_TAB = ("depot or maintenance building window", "warehouse window", "industry window",
+                       "industry upgrades tab", "vehicle window", "other object window")
+
+
+def panels_of(lines):
+    """{panel name: count} for the windows a shot shows. A Basics tab no named window accounts for counts as an
+    'other object window' (a station, line or building window the detectors do not name yet)."""
+    low = [x.lower() for x in lines]
+    text = "\n".join(low)
+    found = {}
+    for name, line_rx, text_rx in PANEL_DETECTORS:
+        n = sum(1 for x in low if re.search(line_rx, x)) if line_rx else int(bool(re.search(text_rx, text)))
+        if n:
+            found[name] = n
+    if any(k in found for k in OWNS_STATISTICS_TAB):     # those windows have a Statistics tab of their own
+        found.pop("statistics window", None)
+    if "depot or maintenance building window" in found and found.get("vehicle window"):
+        found["vehicle window"] -= 1     # its vehicle list has a Condition column: not a vehicle window
+        if not found["vehicle window"]:
+            del found["vehicle window"]
+    if "vehicle window" not in found:
+        n = sum(1 for x in low if re.search(r"manage line|send to line", x))
+        if n:
+            found["vehicle window"] = n
+    basics = sum(1 for x in low if re.match(r"^\W*basics\W*$", x))
+    named = found.get("vehicle window", 0) + found.get("industry window", 0)
+    if basics > named:
+        found["other object window"] = basics - named
+    return found
+
+FULL_SIZE = None     # set from the shots: the most common picture size counts as "full screen"
+
+
+def picture_size(path):
+    from PIL import Image
+    with Image.open(path) as im:
+        return im.size
+
+
+def category_of(d, full):
+    """(category, subcategory, panels) of one shot from its OCR cache entry d; full says it is a full-screen
+    frame. panels is the text of panels_of() ("vehicle window x2; industry window") for in-game shots."""
+    if d.get("loading"):
+        return "loading screen", "load card", ""
+    lines = d.get("text", [])
+    t = " ".join(lines).lower()
+    for cat, sub, rx in CATEGORY_RULES:
+        if re.search(rx, t):
+            if cat in ("panel", "map layer"):
+                break
+            return cat, sub, ""
+    found = panels_of(lines)
+    shown = "; ".join(f"{k} x{n}" if n > 1 else k for k, n in found.items())
+    if found:
+        if list(found) == ["pollution map layer"]:
+            return "map layer", "pollution", shown
+        return "panel", ("several windows" if sum(found.values()) > 1 else next(iter(found))), shown
+    for w in BUILDING_WORDS:
+        if re.search(r"(?m)\b" + w + r"\b", t) and full:
+            return "panel", "building: " + w, ""
+    if d.get("date") or d.get("hud"):
+        return "game view", "map with HUD" if full else "map crop", ""
+    return "other", "unread" if not t.strip() else "text only", ""
+
+
+def classify_all(work, shots):
+    """Rows (id, framing, size, category, sub) for every shot; written to DIR/categories.csv."""
+    sizes = {}
+    for s in shots:
+        try:
+            sizes[s.id] = picture_size(s.path)
+        except Exception:
+            sizes[s.id] = (0, 0)
+    full_size = collections.Counter(sizes.values()).most_common(1)[0][0] if sizes else (0, 0)
+    rows = []
+    for s in shots:
+        sz = sizes[s.id]
+        full = sz == full_size
+        cat, sub, panels = category_of(load_ocr(work, s.id) or {}, full)
+        rows.append((s.id, "full screen" if full else "cropped", f"{sz[0]}x{sz[1]}", cat, sub, panels))
+    with open(os.path.join(work, "categories.csv"), "w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(("id", "framing", "size", "category", "subcategory", "panels"))
+        w.writerows(rows)
+    return rows
+
+
+def category_lines(shots, rows):
+    """Lines of the Find by category section."""
+    utc = {s.id: s.utc for s in shots}
+    groups = collections.defaultdict(list)
+    for r in rows:
+        groups[(r[3], r[4])].append(r)
+    L = ["## Find by category", "",
+         "What UI each shot shows, by the rules in `CATEGORY_RULES` (the OCR text decides; a wrong bucket is a rule to",
+         "tune, not a label). Full = the most common picture size; cropped = anything else. The shot lists are in",
+         "`categories.csv` (`classify TERM` prints them).", "",
+         "| Category | Subcategory | Full | Cropped | First day (UTC) | Last day (UTC) |", "|---|---|---|---|---|---|"]
+    for (cat, sub), rs in sorted(groups.items()):
+        days = sorted(utc[r[0]] for r in rs)
+        L.append(f"| {cat} | {sub} | {sum(r[1] == 'full screen' for r in rs)} | {sum(r[1] == 'cropped' for r in rs)} "
+                 f"| {days[0]:%m-%d} | {days[-1]:%m-%d} |")
+    L += ["", "### Windows seen (a shot can show several)", "",
+          "| Window | Shots | Shots with two or more of it | First day (UTC) | Last day (UTC) |", "|---|---|---|---|---|"]
+    seen = collections.defaultdict(list)
+    for r in rows:
+        for part in filter(None, r[5].split("; ")):
+            m = re.match(r"(.+?)(?: x(\d+))?$", part)
+            seen[m.group(1)].append((utc[r[0]], int(m.group(2) or 1)))
+    for k in sorted(seen):
+        ds = sorted(d for d, _ in seen[k])
+        L.append(f"| {k} | {len(ds)} | {sum(n > 1 for _, n in seen[k])} | {ds[0]:%m-%d} | {ds[-1]:%m-%d} |")
+    return L + [""]
+
+
+def cmd_classify(work, shots, terms):
+    rows = classify_all(work, shots)
+    if terms:
+        for r in rows:
+            h = " ".join(r[3:]).lower()
+            if all(t.lower() in h for t in terms):
+                print("\t".join(r))
+        return
+    c = collections.Counter((r[3], r[4], r[1]) for r in rows)
+    for (cat, sub, fr), n in sorted(c.items()):
+        print(f"{n:5d}  {cat} / {sub}  [{fr}]")
+    w = collections.Counter(re.sub(r" x\d+$", "", x) for r in rows for x in r[5].split("; ") if x)
+    print("windows seen (shots): " + ", ".join(f"{k} {n}" for k, n in sorted(w.items())))
+    print(f"wrote categories.csv: {len(rows)} shots")
 
 
 CONT_MAX_GAP = 1800  # seconds: past this a shot is not offered as a continuation of the one before
@@ -889,7 +1079,7 @@ def cmd_sheets(shots, out, per=12, cols=4, tw=392, th=221):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("command", choices=("ocr", "todo", "sheets", "build", "find", "check", "hud"))
+    ap.add_argument("command", choices=("ocr", "todo", "sheets", "build", "find", "check", "hud", "classify"))
     ap.add_argument("terms", nargs="*", help="terms for `find`")
     ap.add_argument("--work")
     ap.add_argument("--shots")
@@ -920,6 +1110,8 @@ def main():
         cmd_check(work, shots)
     elif a.command == "hud":
         cmd_hud(work, shots)
+    elif a.command == "classify":
+        cmd_classify(work, list_shots(shots_dir(a.shots), set()), a.terms)
 
 
 if __name__ == "__main__":
