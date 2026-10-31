@@ -16,7 +16,7 @@ This note is a log by nature: each of our own test games described once, so anot
 The game most notes use, played from a new game for the purpose of these tests.
 
 - Seed `XNGDTtYKhe` (typed), subarctic climate and economy, Small 1 : 3 (4608 x 13824 m), start year 1900, Normal difficulty. Terrain sliders Water Small, Swamps Medium, Mountains Dense ([terrain.md](terrain.md#a-small-subarctic-map)).
-- Seven mods: Deluxe Upgrade, Early Road Vehicles, Early Trams, Early Wagons, Early European Locomotives, Boathouse and Vehicles: No End Year ([mods.md](mods.md#seven-mods-in-one-new-game)).
+- Seven mods: Deluxe Upgrade, Early Road Vehicles, Early Trams, Early Wagons, Early European Locomotives, Boathouse and Vehicles: No End Year ([mods.md](mods-tests.md#seven-mods-in-one-new-game)).
 - Three towns, Retford, Bromsgrove and Todmorden, entities 17,912 to 17,914 (the company is 17,911, [entity-names.md](entity-names.md#layout)).
 - The calendar stood at 1 January 1900 until about clock 17.25 million and then ran at several speeds; its day table holds that history ([calendar-speed.md](calendar-speed.md#speed-changes-and-stops)).
 - The main thread is a fish chain: fishing lines to a port at Todmorden, a warehouse beside it and a road line into the town, horse carts first and trucks from 1912 ([fish-chain.md](fish-chain.md#a-fish-chain-read-end-to-end-windows-groups-a-truck-queue-604)).
