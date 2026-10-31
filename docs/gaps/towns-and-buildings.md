@@ -56,6 +56,13 @@ What a map of tinted lot footprints (residential, commercial, industrial, shaded
 - **How the Towns layer derives a water industry's outline** (604) Measured for the fishing grounds and sand excavator (two boxes and three boxes of their terminal and platform models, good to about 2 m) and, for the oil platform, a box and discs standing in for tinted meshes ([models.md](../models.md#industry-footprints-the-ground-face-from-the-industrys-script)); not known is whether it uses the full or the `_sm` bounding boxes, and nothing was checked for a mod's water industry. Needs: game window (a top-down Towns-layer picture of a sand excavator and a fishing ground at about 1 pixel per 0.3 m, with the buoys in view, one per angle).
 - **Zone and level for a building whose path is missing** (604) A share of the records of a played game had no construction path string whose id matched in the check that was made; the others were not looked at. Home: [building-construction-paths.md](../building-construction-paths.md). Needs: existing saves.
 
+## Pollution and noise
+
+- **Whether the wind changes** (605) It read 2.27 m/s in every shot of one session; a command to set it exists but no base script sends it. Home: [emissions.md](../emissions.md#wind). Needs: game window (the pollution layer's wind figure) years apart in one game.
+- **Whether the map's average follows game time or the calendar** (605) Fitted in clock units on a save whose calendar barely moved. Home: [emissions.md](../emissions.md#one-building-in-an-open-field-605). Needs: the same cut on one isolated building at two calendar speeds.
+- **What each sensitivity step multiplies by** (605) The rating adds 10 log10(sensitivity) dB; the values for Very Low to Extreme were not read. Home: [emissions.md](../emissions.md#town-ratings). Needs: game files.
+- **A busy depot's own share against its vehicles'** (605) Home: [emissions.md](../emissions.md). Needs: game window (live reading beside a depot with and without vehicles).
+
 ## Roads
 
 - **A building's position, and what the `town` value is** (604) A building record has no position, and its entity ids (the construction `d`, the parcels) did not lead to one in an editor map. A lot's ground polygon gives a place, but only a screenshot ties it to a record; in a regular game the cells a building took can be read from the parcel flags when it is bulldozed ([parcels.md](../parcels.md#deleting-a-building-604)). The record's `town` value had 18 distinct values for 18 towns and was not the same for buildings the player put in one town. Home: [editor-map-buildings.md](../editor-map-buildings.md). Needs: new save (ticks in different towns and in one town, each with its place noted).

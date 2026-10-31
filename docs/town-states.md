@@ -12,7 +12,7 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 - **The numbers (Observed, 58 entries).** `authorityScore` is the lowest of the cached ratings; `urban_care` follows `eventFactors.score`, which falls as penalties rise.
 - **The window's Reputation is `eventFactors.score` (Observed, one town).** Its Demolished Buildings row is the `DemolishedTownBuilding` penalty, and the penalty recovers with the game clock, about 5e-7 per clock unit, whatever the calendar speed. The Reputation chart's history is not a record of past scores.
 - **Terraforming near a town can take its Reputation to zero (Confirmed, one catalog save).**
-- **Open.** `constructionBoni`, why the score is not always one minus the penalties, the window's noise sources, what `growth_level` 2 is, and the chart's merge rule.
+- **Open.** `constructionBoni`, why the score is not always one minus the penalties, the window's noise sources (the window splits noise by district, [emissions.md](emissions.md#town-ratings)), what `growth_level` 2 is, and the chart's merge rule.
 
 ## Fields per town
 
@@ -20,7 +20,7 @@ The script state of `game_mechanics/towns/town.gs` holds a `townStates` table. C
 |---|---|
 | `townEntity.entity` | The town's entity id |
 | `authorityScore` | Number from 0 to 1 |
-| `cachedRatings` | Six ratings, each `{value, critical}`: `cargo_delivery`, `noise`, `people_happiness`, `pollution`, `traffic_congestion`, `urban_care`. A seventh, `growth_level`, was present in the played saves of the [new Small game](#a-new-games-three-towns-against-their-windows-604) (see below) |
+| `cachedRatings` | Six ratings, each `{value, critical}`: `cargo_delivery`, `noise`, `people_happiness`, `pollution`, `traffic_congestion`, `urban_care`. A seventh, `growth_level`, was present in the played saves of the [new Small game](#a-new-games-three-towns-against-their-windows-604) (see below). How `pollution` and `noise` are worked out from the emission grid: [emissions.md](emissions.md#town-ratings) |
 | `eventFactors.score` | Number from 0 to 1 |
 | `eventFactors.reasonToPenalty` | Penalties by reason: `DemolishedTownBuilding`, `Rocks`, `TerrainModification`, `Trees` |
 | `constructionBoni` | **Open** |

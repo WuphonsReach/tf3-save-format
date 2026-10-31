@@ -1,13 +1,16 @@
-# Maintenance buildings and depots: origin, facing, footprint and coverage
+# Maintenance buildings and depots: footprint, coverage, upkeep and vehicle links
 
-**Observed** on 604 in the Small subarctic game (save `1930`: eight maintenance buildings and two road depots; the footprint checked against the player's top-down screenshots of two maintenance buildings). Footprints, radii and pools are from the construction scripts in `base/content/depots/road.zip` (`road/road_maint_station.script.lua`, `road/road_depot/road_depot.script.lua`, `road/tram_depot/tram_depot.script.lua`).
+**Observed** on 604 in the Small subarctic game (save `1930`: eight maintenance buildings and two road depots; the footprint checked against the player's top-down screenshots of two maintenance buildings). Footprints, radii and pools are from the construction scripts in `base/content/depots/road.zip` (`road/road_maint_station.script.lua`, `road/road_depot/road_depot.script.lua`, `road/tram_depot/tram_depot.script.lua`). The upkeep, the depot entity and the vehicle links (605) are from the Depot Retrofits mod's [findings.md](https://github.com/WuphonsReach/tf3-depot-retrofits/blob/4d35bf96b195c42aed55bc8fd15d0ade44139499/docs/design/findings.md) (tf3-depot-retrofits, at commit 4d35bf9). A depot's pollution and noise are in [emissions.md](emissions.md#emitters-and-their-states), and how its construction is built and rebuilt in [construction-scripts.md](construction-scripts.md).
 
 ## In short
 
 - **One instance per building (Observed, 604).** The instance's translation is the construction's origin, and its matrix gives the facing. The ground face is a rectangle off centre from the origin: 26.3 by 26.05 m for a maintenance building, 56.2 by 40.0 m for a road depot, 32.0 by 72.4 m for a tram depot (the tram depot unchecked). A ship depot stands out over the water past its face.
 - **Radius, pool and modes (from the construction scripts, 604).** Maintenance building 600 m, pool 16; road depot 400 m, pool 12; tram depot 400 m, pool 12; rail, ship and air kinds have their own. Only the maintenance building serves buses, trucks and trams together.
+- **Upkeep and build price (from the scripts, 605).** A depot costs 6 times its yearly upkeep to build; maintenance buildings cost 60,000 (road) or 240,000 (rail, water). The Infrastructure Upkeep setting scales the upkeep ([running-costs.md](running-costs.md)).
+- **Which building maintains a vehicle is stored on the vehicle (Confirmed in the files; Observed, 605).** Each vehicle's `TRANSPORT_VEHICLE` component names its `maintenanceStation`. The game fills it within about a day when it is empty. A rebuild of the building empties it for every vehicle the building kept ([below](#which-building-maintains-a-vehicle)).
+- **A maintenance building is a depot with no in or out nodes (Confirmed in the files, 605).** Both carry a `VEHICLE_DEPOT` component on a subconstruction. In the old catalog save [6417707](https://mod.io/g/transportfever3/m/333151), first written by a pre-release build, 13 maintenance buildings list no depot in their construction (Observed, 605).
 - **The drawn ring (Observed, single pictures).** A maintenance building's ring reads 598 to 603 m round its origin. A ship depot's ring is not always centred on its origin, and the offset is no fixed local one.
-- **Open.** What decides which building lists a vehicle, a road depot's exact radius, a ship maintenance building's water part, what a ship depot's ring is centred on, and the tram depot's footprint.
+- **Open.** How the game picks the building a vehicle is assigned to, a road depot's exact radius, a ship maintenance building's water part, what a ship depot's ring is centred on, and the tram depot's footprint.
 
 ## Origin, facing and footprint
 
@@ -18,11 +21,38 @@
 ## Radius, pool and modes
 
 - **Each kind declares a catchment radius, a maintenance pool and the vehicle modes it serves.** The maintenance building: 600 m (the script's default; it can be overridden), pool 16, `BUS`, `TRUCK`, `TRAM`, `ELECTRIC_TRAM`. The road depot: 400 m, pool 12, `BUS`, `TRUCK`. The tram depot: 400 m, pool 12, `TRAM`, `ELECTRIC_TRAM`. So a depot has a pool for its own modes, and only the maintenance building serves buses, trucks and trams together. The other carriers have their own: rail depot 800 m, pool 6, and rail maintenance building 800 m, pool 12 (`TRAIN`, `ELECTRIC_TRAIN`); ship depot 1000 m, pool 8, and ship maintenance building 1400 m, pool 12; air: hangar modules of the airfield and airport 550 m, pool 16, and the heliport 800 m, pool 4. The 16 matches the "0/16" and "2/16" in the windows.
+- **Upkeep and build price.** From the same scripts (605):
+
+  | Building | Upkeep per year | Build price |
+  |---|---|---|
+  | Road depot | 30,000 | 6 × upkeep |
+  | Tram depot | 60,000 | 6 × upkeep |
+  | Rail depot | 100,000 | 6 × upkeep |
+  | Water (ship) depot | 100,000 | 6 × upkeep |
+  | Road maintenance building | 10,000 | 60,000 |
+  | Rail maintenance building | 40,000 | 240,000 |
+  | Water maintenance building | 40,000 | 240,000 |
+
+  The rail depot's upkeep and price are multiplied by its template's era coefficient (1, 3 or 9, in `rail/rail_depot.con.lua`), as the road depot's are ([running-costs.md](running-costs.md#a-road-depots-upkeep-against-its-window-604)). The charged figure is this times the Infrastructure Upkeep setting: at 125% the depot list showed $37,500 for a road depot and $12,500 for a road maintenance building (605, the Giga temperate game).
 - **The modes are vehicle modes, not lane modes.** Street templates list `TRAM` and `ELECTRIC_TRAM` on tram lanes, and the rail track templates (`simple`, `standard`, `high_speed`, with catenary variants) list `TRAM_TRACK` and `ELECTRIC_TRAM_TRACK` beside `TRAIN`, so trams can run on rails. No depot script lists a `_TRACK` mode, so by the scripts a tram is served by mode and distance whichever it runs on. That the game really measures it so, and from the origin, is **Open**.
+
+## The depot entity
+
+- **One component for both kinds.** The `VEHICLE_DEPOT` component (record `VehicleDepot` in `api/tealdef/api/engine.d.tl`) holds `maintenancePool`, `catchmentArea`, the in and out nodes and pool-use statistics (`maxPoolUsage`, `averagePoolUsage`). Depots and maintenance buildings both carry it; a maintenance building is a depot with no in or out nodes (`gui/entity_window/maintenance_station/maintenance_station.tl` in `gui.zip`). The window's "5 / 12" is the count of `transportVehicleSystem.getVehiclesForMaintenanceStation(depot)` against `maintenancePool` (`gui/entity_window/entity_window_util.tl`).
+- **The depot is a subconstruction.** The construction's `CONSTRUCTION` component lists it under `depots`, and `streetConnectorSystem.getConstructionEntityForDepot` or `getConstructionEntityForSubconstruction` lead back from it (`api/tealdef/api/engine/system.d.tl`).
+- **The `depots` list can be empty.** In catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (`333`, read on 605) all 13 maintenance buildings opened (road, rail and water, built 1904 to 1998 by the game's date) list no depot. Its depots of the same years list theirs, and so does a maintenance building placed there on 605. The header's older format number says the game was started on pre-release 555 ([versions.md](versions.md)), the likely cause; which build placed each building is unknown. The base building window does not use the list: it goes through the construction's subconstructions and their `VEHICLE_DEPOT` component (`gui/entity_window/make_entity_window.tl`), so these buildings still show their pool. **Observed**, one save.
+
+## Which building maintains a vehicle
+
+- **The link is on the vehicle.** Each vehicle's `TRANSPORT_VEHICLE` component names its `maintenanceStation` (`api/tealdef/api/engine.d.tl`). No command sets it (`api/tealdef/api/cmd.d.tl`); the game alone assigns it.
+- **The game fills an empty link within about a day.** A vehicle with none names no existing station (probably the empty id). The link then mostly stays, but some vehicles lose it in normal play and are assigned again, sometimes to another building. **Observed**, 605.
+- **A rebuild empties the link of every vehicle the building kept**, even a rebuild that changes nothing ([construction-scripts.md](construction-scripts.md#rebuilds)). The vehicles keep their lines. Within a game day the game assigns each again, by its own choice, often to another building in range ([below](#a-rebuild-and-its-vehicles)).
+- **A larger pool or radius draws vehicles in over months**, and a new building takes vehicles from a full neighbour without any rebuild. **Observed**, 605.
+- How the game picks the building is **Open**: a circle does not decide alone ([below](#which-building-lists-a-vehicle)).
 
 ## Open
 
-- What decides which building a vehicle is listed under; a circle does not decide alone.
+- How the game picks the building a vehicle is assigned to; a circle does not decide alone.
 - Whether the game measures the modes by distance from the origin, and for a tram on rail track.
 - Whether a road depot's radius is exactly 400 m, and the water part of a ship maintenance building.
 - What a ship depot's ring is centred on (the script's `waterPoints` of 40 m does not fit).
@@ -41,3 +71,13 @@ Observed, 604, a Tiny subarctic game, one picture of each, the game paused. Sele
 ### A ship depot's ring
 
 **A ship depot's ring is not always centred on its origin, and the offset is not a fixed local one (604, Observed, one temperate game, about 10 m error each).** Screenshots of a selected depot show its ring and a pale light column; the column's foot marks the ring's centre. Each shot was placed on the map with `tools/shot_place.py` (ships named in the picture, the game paused so the autosave of that date holds them where the picture does; [town-centre.md](town-centre.md) has the camera limits) and the foot mapped onto the ground. Huddersfield Ship Depot's foot lay within 2 m of its origin. Kavoj Ship Depot North's lay about 66 m from its origin (21 m east, 63 m north, on the water side; local +62 along the facing and -22 across it). The three side-by-side Brentwood depots, built alike and facing alike, had feet 29, 16 and 43 m from their origins in different directions (the first two toward the group's middle, the third not). So the earlier by-eye reading of 55 to 75 m along local -x for two depots does not hold as a rule. The save holds one position per construction (the `water_depot.con` record has the origin once, no second point within 500 m), so the offset is not stored as such; what the game centres the ring on is **Open** (the script's `snapPoint.waterPoints` of 40 m in local y does not fit any of these). A road depot and a ship maintenance building had the column on the building. `terrain_map.py --coverage` draws every ring at the origin and is off by the above for some ship depots. The Transit Overlay export has no depot or maintenance records, so it cannot measure this.
+
+### A rebuild and its vehicles
+
+605, the Depot Retrofits mod's 1900 test save and the Giga temperate game; the probe tables are in the mod's findings.md ("Probe 0.2", "Probe 0.3").
+
+- **A road depot given pool 24 instead of 12.** Its 10 vehicles all left: 0 an hour after the rebuild, and after a day all 10 at a nearby maintenance building (6 of 16 before, then full). They stayed there for the year. The rebuilt depot later took 6 from a neighbour.
+- **A maintenance building given a larger pool and radius.** It went from 9 to 0, to 10 a day later (its 9 plus 1), and to 13 after one or two months.
+- **A control building rebuilt unchanged.** It went from 9 to 0, back to 9 within a day, and to 2 after a year. A group of about five vehicles moved between it and the scaled depot several times in that year.
+- **Later rebuilds.** In the Giga game, a road maintenance building went from 15 of 16 to 0 of 16, with 5 back after 30 game days. A tram depot went from 2 of 12 to 0 of 13.
+- **A new road maintenance building, with no rebuild.** It took vehicles from its full neighbour within days: the neighbour went from 16 of 16 to 14 of 16, and the new one rose to 7 of 16.

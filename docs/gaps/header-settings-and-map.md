@@ -62,7 +62,8 @@ Everything here is **Open**, seen on 604 unless a range is given.
 
 - **The tail of the script-state block, and where four states are declared** (604) Details in the home note. Home: [lua-overview.md](../lua-overview.md#open). Needs: existing saves and game files.
 - **State counts on versions other than 604, and with mods** (568 to 604) Older saves hold fewer states and which ones they lack was not looked at. Home: [lua-overview.md](../lua-overview.md#open). Needs: existing saves.
-- **Owners of the embedded `noise`/`pollution` and `name`/`variant` tables** (604) And why 604 has more `.mdl` ids than the older versions. Home: [lua-overview.md](../lua-overview.md#open). Needs: existing saves.
+- **Where a construction's stored values sit** (605) A depot's params are in its construction record, but its pool, radius, emission states and upkeep, kept from its last build, were not found (no `maintenancePool` or `emissionConfig` string in a levelled save). Home: [construction-scripts.md](../construction-scripts.md). Needs: existing saves (one depot rebuilt with a distinctive pool, searched as numbers).
+- **Owners of the embedded `noise`/`pollution` and `name`/`variant` tables** (604) The `noise`/`pollution` pairs may be the constructions' emission states ([emissions.md](../emissions.md)). And why 604 has more `.mdl` ids than the older versions. Home: [lua-overview.md](../lua-overview.md#open). Needs: existing saves.
 - **The time-of-day `Local` value, a Continuous weather option, music keys, and any game error log** (604) `Local` was seen only in catalog saves; which music keys change while a track plays; whether a mod keeps messages under another key than `error`. Home: [script-states.md](../script-states.md). Needs: new save and existing saves.
 
 ## Animals, platform, versions
