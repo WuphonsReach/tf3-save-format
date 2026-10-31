@@ -11,13 +11,14 @@ What a save records about the mods a game uses: the entry in the header's mod li
 - **Every mod option is stored as a 1-based list position (Observed, 605).** Sliders, drop-down lists and check boxes alike: the save and the mod's scripts get the position in the option's `values` list, never the shown value. A save without a value gets the option's default, so inserting an entry in a list moves old saves to another entry ([Mod options](#mod-options)).
 - **Loading without a mod that had a game script removes the script's entity (Observed, 605, twice),** state and event subscriptions with it ([below](#mod-script-states-and-stored-errors)).
 - **A mod's files are found through its `_content.json` (Observed, 605).** A file the list leaves out cannot be loaded ([Loading a mod's files](#loading-a-mods-files)). What a game script can and cannot do in play is in [game-scripts.md](game-scripts.md).
-- **Open.** Models in use, and what `flags` means (0, 1 or 2).
+- **A mod entry's last field is the mod's `severityRemove` (Observed, 599 to 605).** 0 None, 1 Warning, 2 Critical, as set in the mod's `mod.json`: the warning level shown before the mod is removed ([The mod list entry](#the-mod-list-entry)). Whether a mod may still earn achievements (`cosmetic`) is not kept per mod; it feeds the save's one achievements flag ([header.md](header.md#the-two-flags)).
+- **Open.** Models in use, and the value the game gives a mod whose `mod.json` has no `severityRemove`.
 
 ## What a save records about a mod
 
 | Where | What | Note |
 |---|---|---|
-| Header, `mods` | One entry per mod: id, source, path, display name, `extra` URL, flags | [below](#the-mod-list-entry) |
+| Header, `mods` | One entry per mod: id, source, path, display name, `extra` URL, `severityRemove` (`flags`) | [below](#the-mod-list-entry) |
 | Header, `config mods` | The ids of the same mods | [below](#the-mod-list-entry) |
 | Header, `config params` | One entry per mod keyed by its id, holding the mod's options (an empty table when it has none) | [below](#mod-options) |
 | Script states | A mod with scripts keeps its state under its own script path, with the mod id string just before it | [script-states.md](script-states.md#mod-script-states-and-stored-errors) |
@@ -31,7 +32,7 @@ A mod that is switched off before a load leaves nothing at all ([below](#switchi
 The header field `mods` is a `vec<mod>`. Each mod is five `str` and a u32: id, source, path, display name, extra, flags. Observed on the 120 catalog saves (568 to 604):
 
 - `extra` holds the mod's mod.io page URL in 2,661 of 3,019 entries. It is empty in the rest: every `DLC` entry and most `BuiltInMods` entries.
-- `flags` is 0, 1 or 2. Always 1 for source `DLC`, mostly 0 for `BuiltInMods`, any of the three for `mod.io`. Meaning **open**.
+- **`flags` is the mod's `severityRemove`** (**Observed**): 0 for `None`, 1 for `Warning`, 2 for `Critical`, the levels of `Mod.ModDesc.severityRemove` in the game's type definitions (`api/tealdef/api/type/mod.d.tl`, where `GameModDesc` lists a mod's id, source, mod hub id, name and `severityRemove`, the same fields as this entry). It matched on every mod whose installed `mod.json` sets the key: 25 mods in 60 of our own saves (605), the one `Critical` mod (`amos_weapons_industry_1`) stored as 2, and 24 mods in the catalog saves (599 to 604). Two mods with no key in their `mod.json` (`maikc_depot_modern`, `deadeye_tpf3_bus_bay`) were stored as 1 in our saves, so the default may be `Warning`, but one catalog save has 2 for the second, perhaps from an older revision (**Open**). DLC entries are always 1, `BuiltInMods` mostly 0, and four catalog mods changed value between saves, which fits a manifest changed between revisions. The tools keep the name `flags`. The removal warning itself is described [below](#switching-mods-on-and-off-when-loading).
 - The source is `DLC`, `mod.io` or `BuiltInMods` on every platform. In the one entry added by a test, source `mod.io`, the path was the mod.io id as text (see the Overpass Builder test below).
 - **The config mods list repeats the ids** (**Observed** in the 110 catalog saves whose header reads to the end, 599 to 604). It is the same set as the mod list.
 - Mods whose page URL points to modwerkstatt.com instead of mod.io occur only in PC saves (7 saves, all 604). What that says about the platform is in [platform.md](platform.md).
@@ -84,7 +85,7 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 - Whether mods with models in use on the map drop out the way the no-option ones did (a mod with a game script did, on 605).
 - A deactivated mod with options was tested once, on 605 ([In short](#in-short)), a mod without a game script and with options not at all.
 - What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
-- What `flags` in a mod entry means (0, 1 or 2).
+- What the game stores for a mod whose `mod.json` has no `severityRemove` (two mods: 1 in our saves, 2 in one catalog save).
 
 ## Evidence and tests
 

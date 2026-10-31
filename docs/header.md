@@ -27,7 +27,7 @@ The layout follows [tf3-save-editor's FORMAT.md](https://github.com/TBK/tf3-save
 | money | i64 | Copy of the company balance, shown in the load dialog |
 | counter | u32 | Copy of the company's `experience` (ours, **Observed** on 585 and 599 to 604). It can trail the state by a few points or by more, and grows with play. Details and numbers: [company.md](company.md#the-header-counter). In map editor saves it is the number of residents instead ([editor-towns.md](editor-towns.md#the-header-counter-is-the-number-of-residents)) |
 | info | Lua table | Holds `company.level` (ours). 1 to 15 in 117 of 120 catalog saves (568 to 604); empty in the other 3 and in editor saves |
-| mods | vec<mod> | Mods the save uses: per mod id, source, path, display name and extra (`str`), then flags (u32). See [mods.md](mods.md#the-mod-list-entry) |
+| mods | vec<mod> | Mods the save uses: per mod id, source, path, display name and extra (`str`), then flags (u32), which is the mod's `severityRemove` (0 None, 1 Warning, 2 Critical). See [mods.md](mods.md#the-mod-list-entry) |
 | flag before the preview | u8 | 1 if achievements can be earned, 0 if not (**Confirmed**, [below](#the-two-flags)). It does not say whether a preview follows: 0 in 60 of 120 catalog saves, all with a full preview. Always equal to the u8 `flag` further down ([below](#the-two-flags)). [tf3-save-editor.md](tf3-save-editor.md#the-flag-before-the-preview) has the name it was given elsewhere |
 | preview width, height | u32, u32 | 640 x 360 in every save checked (120 catalog saves, 568 to 604) |
 | preview | str | Raw RGB8, width x height x 3 bytes, **bottom row first** (ours) |

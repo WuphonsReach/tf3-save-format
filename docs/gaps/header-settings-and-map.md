@@ -55,7 +55,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 ## Mods
 
 - **Whether a deactivated mod with options but no game script loses them** (604 and 605) A mod with options and a game script lost its params entry on 605 (one load); one without a script was not switched. Home: [mods.md](../mods.md#open). Needs: new save.
-- **What `flags` in a mod entry means** (568 to 604) 0, 1 or 2; always 1 for `DLC`. Home: [mods.md](../mods.md#open). Needs: existing saves.
+- **The stored `severityRemove` of a mod whose `mod.json` lacks the key** (604 and 605) The mod entry's last field is `severityRemove`; two mods without the key read 1 in our saves, one of them 2 in a catalog save. Home: [mods.md](../mods.md#open). Needs: a mod without the key, saved on one revision.
 - **What a mod adds to the script states once it has run** (604) Whether any stream difference in the Overpass Builder test is mod related was not checked. Home: [mods.md](../mods.md#open). Needs: existing saves.
 
 ## Script states and the stream
