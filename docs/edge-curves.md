@@ -22,7 +22,7 @@ Five catalog saves of other sizes (mod.io 6358716, 599; 6417174 and 6429368, 601
 
 - **Shared nodes.** Where a node has exactly two edges, the two tangents point the same way through it to within 1 degree at 98 to 99 percent of the 332 to 4,380 such nodes, and the rest are corners. The curve is smooth across nodes, as in the coast road of [road-edits.md](road-edits.md#what-the-edits-did).
 - **Tangent length.** In 6429368 the mean of an edge's two tangent lengths over the length of the Hermite curve they define has median 1.000 (0.95 to 1.33 over 5,784 edges), so a tangent's length is the edge's arc length, where a straight edge's is its chord.
-- **Picture.** `terrain_map.py` draws each edge as this curve. The slip roads and a rail curve of 6429368 and the rail loop of the test game come out smooth and meet at the nodes.
+- **Picture.** `tf3map` draws each edge as this curve. The slip roads and a rail curve of 6429368 and the rail loop of the test game come out smooth and meet at the nodes.
 
 The curve is a fit, not the game's own function: the speed rule of [road-speeds.md](road-speeds.md#bends-lower-it-slopes-do-not) uses it too, and its sharpest bends come out 2 to 3 percent off.
 

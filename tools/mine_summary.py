@@ -4,9 +4,8 @@
 Usage: mine_summary.py SAVE.sav            (prints the summary as JSON)
 
 mine_saves.py imports `summarise_save` and `index_row` from here and writes the summaries into a folder; this
-script alone prints one. Reads only. It is separate from the map drawing so that a change to what the summary holds
-(this file, save_header.py, tf3save.py) rebuilds the summaries and a change to terrain_map.py (and what it imports)
-redraws the maps, with the other left alone (see mine_saves.py).
+script alone prints one. Reads only. It is separate from the map drawing (tf3map, see mine_saves.py) so that a change to what
+the summary holds (this file, save_header.py, tf3save.py) rebuilds the summaries and leaves the maps alone.
 
 Each summary records `tools_commit`, the last git commit that changed this script or a module it imports (with
 "-dirty" if one has uncommitted changes, null outside a git checkout). Changes to the README, the schema or the

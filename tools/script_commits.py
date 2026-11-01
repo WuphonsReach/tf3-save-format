@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Which git commit last changed a script, or any module it imports from this folder.
 
-Used by mine_summary.py and mine_saves.py to tell a change that needs the summaries rebuilt (mine_summary.py,
-save_header.py, tf3save.py) from one that needs the maps redrawn (terrain_map.py and what it imports), by asking
-for the commit of one script's import closure. `tools_commit()` is the whole folder's.
+Used by mine_summary.py and mine_saves.py to tell when the summaries need rebuilding (a change to mine_summary.py,
+save_header.py or tf3save.py), by asking for the commit of one script's import closure. `tools_commit()` is the whole folder's.
 
 Usage: script_commits.py [SCRIPT]       (prints the closure's files and its commit; no argument: the folder's commit)
 

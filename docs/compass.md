@@ -13,7 +13,7 @@ Labels as in [README.md](README.md): Confirmed, Observed, Open. Everything here 
 
 ## What the repo draws
 
-[terrain_map.py](../tools/terrain_map.py) takes `--north game|sun`:
+[tf3map](https://github.com/WuphonsReach/tf3-save-mapper) takes `--north game|sun`:
 
 | `--north` | Image up | Image right | Why |
 |---|---|---|---|
@@ -98,7 +98,7 @@ The third game, six of its 11 towns with a compass name, the four surest names o
 
 ### The sun, temperate game
 
-**Observed, temperate game, 18 February 1937 (a re-save of catalog game 6425796).** Top-down screenshots of one coal mine, the game paused and the camera held still, with the Time of Day slider moved in seven steps from before Morning to past Evening. A terrain map of the place ([terrain_map.py](../tools/terrain_map.py)) puts the lake south-east of the mine; on the screen it lay at the upper left, so the picture was the map turned half a turn: screen top was -y (the camera looked south, towards the town the mine is named for) and screen left was +x. The oblique shots agree, with that town's labels at the far edge, and at Morning the sun's glare lay on the lake straight ahead of the camera (towards -y) while the shadows fell towards the camera. Read from the shadows of two lone trees, to about 20 degrees:
+**Observed, temperate game, 18 February 1937 (a re-save of catalog game 6425796).** Top-down screenshots of one coal mine, the game paused and the camera held still, with the Time of Day slider moved in seven steps from before Morning to past Evening. A terrain map of the place puts the lake south-east of the mine; on the screen it lay at the upper left, so the picture was the map turned half a turn: screen top was -y (the camera looked south, towards the town the mine is named for) and screen left was +x. The oblique shots agree, with that town's labels at the far edge, and at Morning the sun's glare lay on the lake straight ahead of the camera (towards -y) while the shadows fell towards the camera. Read from the shadows of two lone trees, to about 20 degrees:
 - before Morning: long, to the lower left of the screen (sun towards -y and -x);
 - Morning: straight down the screen (sun at -y, a few degrees towards -x);
 - just before Day: short, down and a little to the right (sun at -y, a little towards +x);

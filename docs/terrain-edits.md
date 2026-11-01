@@ -6,13 +6,13 @@ What sculpting the ground in the map editor changes in the save, and what it lea
 
 - **Only heightmap values and a few parcel flags changed (Observed, 604, one editor map, one pair of saves).** A sculpting session changed 1.3% of the 52.4 million grid points inside a box about 5.4 by 4.6 km; roads, buildings and stocks were untouched, and tile edges still agreed.
 - **Ground edits can clear a parcel's "something stands on the cell" bit without a building going (Observed):** eight lone cells beside the shore, none a demolition.
-- **Find an edit by comparing the two heightmaps row by row** (`read_terrain`, `read_heightmap`), using two manual saves with one change between them.
+- **Find an edit by comparing the two heightmaps row by row** (`tools/terrain_heights.py OLD NEW`), using two manual saves with one change between them.
 - **Open.** What the extra 1.25 MB in front of the heightmap is, the rule that clears a parcel cell, and whether sculpting under a building changes its `height`.
 
 ## How to repeat the comparison
 
-- Read the heightmap of both saves with `read_terrain` and `read_heightmap` of `tools/terrain_map.py` and compare the rows. Whole rows that match can be skipped, so a session of edits is found in a few seconds even on a 400 MB stream. A point (c, r) is at x = 4c - width / 2 and y = 4r - height / 2 (the map's centre is 0, 0), with the map's own width and height from the header.
-- To look at the change, render both saves with `terrain_map.py OUT_DIR OLD NEW --crop X,Y,R --contour 5 --index 4` (add `--stream` for a stream already decompressed) and compare the two pictures. A crop of half-width 2,200 m at 4 m per pixel shows a channel of a few hundred metres clearly.
+- `tools/terrain_heights.py OLD.sav NEW.sav` reads the heightmap of both saves and compares them point by point, skipping whole rows that match: it prints how many points changed, the box they lie in and the smallest and largest change, in about 10 s for a Giant map (2026-11-01). A point (c, r) is at x = 4c - width / 2 and y = 4r - height / 2 (the map's centre is 0, 0), with the map's own width and height from the header.
+- To look at the change, draw both saves with `tf3map SAVE.sav --crop X,Y,R --contour 5 -o OUT.svg` and compare the two pictures. A crop of half-width 2,200 m at 4 m per pixel shows a channel of a few hundred metres clearly.
 - The comparison needs two manual saves, one change between them. Autosaves from the same session carry more noise.
 
 ## Open
@@ -30,7 +30,7 @@ What sculpting the ground in the map editor changes in the save, and what it lea
 **Observed**, one pair of saves. Between them the player dug a new river channel between two lakes and raised two hills beside it; the game's own screen was not photographed, so the shapes below are read from the saves.
 
 - **Only heightmap values and a few parcel flags changed.** Of the 52.4 million grid points (80 by 160 tiles of 65 by 65, 4 m apart), 698,266 (1.3%) had a different value. The changes lay in a box about 5.4 km across (x from 2.3 to 7.7 km) and 4.6 km deep (y from -20.5 to -15.9 km) in the map's metres, and the sizes ran from -1,140 to +646 units, that is -57 m to +32 m at 0.05 m per unit. The box is not filled: a river channel and two hills fill small parts of it.
-- **The picture shows it.** Drawn from the heightmap (`terrain_map.py --crop`, vector terrain with 5 m height lines, see [tools/README.md](../tools/README.md)), the new save has a channel from the north-west lake running south-east into the big lake and narrowing along the way, two new hills on its south side and a ridge on the far shore of the big lake. Nothing else in the picture moved.
+- **The picture shows it.** Drawn from the heightmap (a crop, vector terrain with 5 m height lines), the new save has a channel from the north-west lake running south-east into the big lake and narrowing along the way, two new hills on its south side and a ridge on the far shore of the big lake. Nothing else in the picture moved.
 - **The tiles still agree at their edges.** Each tile repeats the last row and column of its neighbour; in both saves all 25,360 shared edges matched, so the game rewrote the overlap on both sides of an edge it crossed.
 - **Roads, buildings and stocks were not touched.** The street edge table (0 added, removed or changed by `street_edges.py --diff`), all 1,173 building records and all 599 stock blocks ([building-stocks.md](building-stocks.md)) were the same before and after.
 - **The stream grew by 1,254,341 bytes** (400,046,708 to 401,301,049), and the heightmap sat 1,286,457 bytes later in the stream, so the extra data lies in front of the heightmap. A heightmap is a fixed size, so the growth is not the heightmap. What it is stays **Open** (the whole-stream differences of a manual editor save are noisy, see [building-stocks.md](building-stocks.md#method-pitfalls)).

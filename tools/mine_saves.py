@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Summarise TF3 savegames (for example ones from the mod.io catalog) as JSON facts and draw each one's map.
 
-Usage: mine_saves.py [--no-maps] [--no-nice] [--summary rust|python] [--summary-bin BIN] [--mapper tf3map|python]
-                     [--tf3map BIN] [--game DIR] [--mods DIR]
+Usage: mine_saves.py [--no-maps] [--no-nice] [--summary rust|python] [--summary-bin BIN] [--tf3map BIN]
+                     [--game DIR] [--mods DIR]
                      OUT_DIR SAVE_MODDIR_OR_SAVEDIR [...]
 
 Reads only. For every save it writes OUT_DIR/<corpus>/<c>/<seed>/<leaf>/tf3-save-summary.json
@@ -25,16 +25,14 @@ The summary is built by `--summary`: `rust` (the default) runs the mine-summary 
 100 times faster; `--summary-bin BIN`, else $MINE_SUMMARY, else the PATH, else tools/mine-summary-rs/target/release/;
 build it with cargo build --release there) and fills the mod.io fields (name, author, tags, url) itself; `python` runs
 mine_summary.py (what is read from a save is described there; run alone it prints one). Both write the same summary.
-Next to each summary this script also writes terrain-map.svg, the default map of the drawer `--mapper` names (the
-vector terrain, the roads and rails, the stations, depots and industries when the game install is found, the default
-grid and compass rose; docs/terrain-drawing.md), so the picture follows that drawer's current defaults:
-- `tf3map` (the default): the Rust mapper of the tf3-save-mapper repo, one `tf3map SAVE -o terrain-map.svg` child per
-  save (well under 2 s a save). The binary is `--tf3map BIN`, else $TF3MAP, else `tf3map` on the PATH, else the
-  release build in the sibling tf3-save-mapper checkout (target/release/tf3map). It needs a build whose SVG carries
-  the `tf3map:view` metadata record and whose exit status tells a refused save (3) from other failures (1, 2):
-  mapper 0.5.0 or later (0.7.0 adds class="layer" and data-layer to the layer groups and the non-default settings
-  and the build's commit to the view record);
-- `python`: terrain_map.py with no options, one `python3 -I terrain_map.py` child per save (44 to 310 s a save).
+Next to each summary this script also writes terrain-map.svg, the default map of `tf3map`, the Rust mapper of the
+tf3-save-mapper repo (the vector terrain, the roads and rails, the stations, depots and industries when the game
+install is found, the default grid and compass rose; docs/terrain-drawing.md), so the picture follows the mapper's
+current defaults. It runs one `tf3map SAVE -o terrain-map.svg` child per save (well under 2 s a save). The binary is
+`--tf3map BIN`, else $TF3MAP, else `tf3map` on the PATH, else the release build in the sibling tf3-save-mapper
+checkout (target/release/tf3map). It needs a build whose SVG carries the `tf3map:view` metadata record and whose exit
+status tells a refused save (3) from other failures (1, 2): mapper 0.5.0 or later (0.7.0 adds class="layer" and
+data-layer to the layer groups and the non-default settings and the build's commit to the view record).
 `--game DIR` (the install folder that holds base/) and `--mods DIR` (the mod.io game's mods folder) are passed to
 the drawer, for the footprints and a mod depot's catchment, when its child would not find the usual Steam folders on
 its own (a different HOME); the summary does not use them. `--no-maps` skips the pictures. A save the drawer cannot
@@ -42,8 +40,8 @@ draw gets no picture (a stale one is removed); .map_state.json beside the summar
 ended, as `status`: `ok`, `refused: REASON` (the reader refused the save) or `failed: REASON` (anything else), with
 the same text in `error` (null when ok) and the drawer's other stderr lines, warnings of a run that worked, in
 `notes`. A path in REASON or a note is cut to the save's file name or `~`; the state stays in OUT_DIR all the same.
-Pictures are other people's maps: they stay in OUT_DIR, which is never committed. terrain_map.py needs about 2.5 GB
-of memory for a Giant map, so keep the parallel runs few (xargs -P4) on a small machine. The script lowers its own
+Pictures are other people's maps: they stay in OUT_DIR, which is never committed. Keep the parallel runs few
+(xargs -P4) on a small machine. The script lowers its own
 priority at start (nice 19, and idle I/O when `ionice` is installed; the map-drawing child processes inherit it) so
 a long run leaves the machine usable; `--no-nice` keeps the normal priority.
 
@@ -52,14 +50,13 @@ Two things are rebuilt separately, each when the save changed or its own scripts
   by `mine-summary --version` (the last commit that changed tools/mine-summary-rs; the build must be made from a git
   checkout, and a -dirty build is read again on each run), for `python` the commit of mine_summary.py and the modules
   it imports (save_header.py, tf3save.py). A change to the Python summary code must be made in the crate too;
-- the map, when the drawer's key differs from the one in .map_state.json. For `python` the key is the commit of
-  terrain_map.py and the modules it imports; for `tf3map` it is the git commit the binary names in `tf3map --version`
-  (`tf3map 0.7.0 (c38017b6f6)`): use a build of the mapper's main branch, so the key is main's commit, and a new
-  main commit redraws the maps. Changing drawer redraws them too. The run says so when the commit is not on main
-  of the sibling mapper checkout.
-A change to tf3save.py is in both sets and rebuilds both; one to terrain_map.py, terrain_vector.py or street_edges.py
-redraws the python maps and leaves the summaries; one to mine_summary.py rebuilds the summaries only. A set with
-uncommitted changes ("-dirty", also after the tf3map commit) is always rebuilt. A tf3map built without git
+- the map, when the drawer's key differs from the one in .map_state.json: the git commit the binary names in
+  `tf3map --version` (`tf3map 0.7.0 (c38017b6f6)`). Use a build of the mapper's main branch, so the key is main's
+  commit, and a new main commit redraws the maps. The run says so when the commit is not on main of the sibling
+  mapper checkout. A map drawn by the old Python drawer (`mapper` terrain_map.py in .map_state.json) has another key
+  and is redrawn.
+A change to mine_summary.py or tf3save.py rebuilds the summaries only. A set with uncommitted changes ("-dirty",
+also after the tf3map commit) is always rebuilt. A tf3map built without git
 prints only its version, so its maps are redrawn only when the version changes: mine one set with one kind of
 build. `script_commits.py SCRIPT` lists a set and its commit.
 
@@ -68,7 +65,7 @@ match the last run is skipped, and a save that fails to read gets an error
 summary and is retried next run. The size and mtime are kept in a
 .mine_state.json (summary) and .map_state.json (map) next to each summary, not in the summary, so summaries hold
 no local paths or timestamps. The summary takes about 8 s for a small save; the map with tf3map about 0.1 s for
-a small save and 1.3 s for a busy 190 MB one, with terrain_map.py minutes (2026-10-24, tf3map at 0c82fa4). For
+a small save and 1.3 s for a busy 190 MB one (2026-10-24, tf3map at 0c82fa4). For
 many saves run several at once, for example with `xargs -P4 -n4`.
 """
 import argparse
@@ -87,7 +84,6 @@ from mine_summary import (FIELDS, INDEX_COLS, OLD_SUMMARY_FILE, SCHEMA_URL, SCHE
 from script_commits import TOOLS_DIR, closure_commit  # noqa: E402
 
 SUMMARY_SCRIPT = "mine_summary.py"
-MAP_SCRIPT = "terrain_map.py"
 MAPPER_REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "..", "tf3-save-mapper"))
 
 
@@ -153,7 +149,7 @@ def up_to_date(d, path, commit):
 
 
 def map_up_to_date(d, path, commit):
-    """commit is the drawer's key: a commit for terrain_map.py, the `tf3map --version` text for tf3map."""
+    """commit is the drawer's key, the commit `tf3map --version` names."""
     if not commit or "-dirty" in commit:
         return False
     try:
@@ -239,25 +235,6 @@ def mask(text, path, dirs=()):
     return text.replace(home, "~") if home not in ("", "/") else text
 
 
-def run_python_map(tmp, path, game=None, mods=None):
-    """terrain_map.py with its defaults: (svg path or None, status, notes)."""
-    cmd = [sys.executable, "-I", os.path.join(TOOLS_DIR, MAP_SCRIPT), tmp, path]
-    cmd += ["--game", game] if game else []
-    cmd += ["--mods", mods] if mods else []
-    run = subprocess.run(cmd, capture_output=True, text=True)
-    made = [f for f in os.listdir(tmp) if f.endswith(".svg")]
-    if made:
-        return os.path.join(tmp, made[0]), "ok", run.stderr.splitlines()
-    lines = (run.stdout + run.stderr).splitlines()
-    for ln in lines:
-        if ln.startswith("REFUSED"):
-            return None, "refused: " + ln[len("REFUSED"):].strip(), []
-        if ln.startswith("FAILED"):
-            return None, "failed: " + ln[len("FAILED"):].strip(), []
-    err = run.stderr.strip().splitlines()                      # a traceback: its last line says what went wrong
-    return None, "failed: " + (err[-1] if err else "no picture written"), []
-
-
 def run_tf3map(tmp, path, binary, game=None, mods=None):
     """tf3map with its defaults: (svg path or None, status, notes). Exit 0 is a map, 3 a save the reader refused,
     1 any other failure, 2 wrong arguments; on non-zero the reason is the stderr line `tf3map: REASON`."""
@@ -277,15 +254,11 @@ def run_tf3map(tmp, path, binary, game=None, mods=None):
     return None, ("refused: " if run.returncode == 3 else "failed: ") + reason, notes
 
 
-def draw_map(d, path, commit, mapper="python", binary=None, game=None, mods=None):
-    """Draw one save's default map with the given drawer (python: terrain_map.py; tf3map: the binary) and put the
-    SVG in d as terrain-map.svg; commit is the drawer's key (see map_up_to_date). Records the outcome in
-    .map_state.json and returns an error text (`refused: ...` or `failed: ...`), or None when the map was drawn."""
+def draw_map(d, path, commit, binary, game=None, mods=None):
+    """Draw one save's default map with tf3map and put the SVG in d as terrain-map.svg; commit is the drawer's key
+    (see map_up_to_date). Records the outcome in .map_state.json and returns an error text (`refused: ...` or `failed: ...`), or None when the map was drawn."""
     with tempfile.TemporaryDirectory() as tmp:
-        if mapper == "tf3map":
-            made, status, notes = run_tf3map(tmp, path, binary, game, mods)
-        else:
-            made, status, notes = run_python_map(tmp, path, game, mods)
+        made, status, notes = run_tf3map(tmp, path, binary, game, mods)
         if made:
             shutil.move(made, os.path.join(d, MAP_FILE))
         dirs = ((tmp, "<tmp>"), (game, "<game>"), (mods, "<mods>"))
@@ -295,7 +268,7 @@ def draw_map(d, path, commit, mapper="python", binary=None, game=None, mods=None
     if error and os.path.exists(os.path.join(d, MAP_FILE)):
         os.remove(os.path.join(d, MAP_FILE))  # a stale picture from an older run
     with open(os.path.join(d, MAP_STATE_FILE), "w", encoding="utf-8") as f:
-        json.dump({"key": file_key(path, commit), "mapper": "tf3map" if mapper == "tf3map" else MAP_SCRIPT,
+        json.dump({"key": file_key(path, commit), "mapper": "tf3map",
                    "status": status, "error": error, "notes": notes}, f)
     return error
 
@@ -383,16 +356,12 @@ def parse_args(argv):
     ap.add_argument("saves", nargs="*", help=".sav files, mod.io mod directories or folders of .sav files")
     ap.add_argument("--no-maps", action="store_true", help="summaries only")
     ap.add_argument("--no-nice", action="store_true", help="keep the normal priority")
-    ap.add_argument("--mapper", choices=("python", "tf3map"), help="the map drawer (default tf3map)")
-    ap.add_argument("--tf3map", metavar="BIN", help="the tf3map binary (selects --mapper tf3map)")
+    ap.add_argument("--tf3map", metavar="BIN", help="the tf3map binary")
     ap.add_argument("--summary", choices=("rust", "python"), help="the summary reader (default rust)")
     ap.add_argument("--summary-bin", metavar="BIN", help="the mine-summary binary (selects --summary rust)")
     ap.add_argument("--game", metavar="DIR", help="the game's install folder, passed to the drawer and the summary reader")
     ap.add_argument("--mods", metavar="DIR", help="the mod.io game's mods folder, passed to the drawer")
     a = ap.parse_intermixed_args(argv)
-    if a.tf3map and a.mapper == "python":
-        ap.error("--tf3map names the tf3map drawer; leave out --mapper python")
-    a.mapper = "tf3map" if a.tf3map else (a.mapper or "tf3map")
     if a.summary_bin and a.summary == "python":
         ap.error("--summary-bin names the rust reader; leave out --summary python")
     a.summary = "rust" if a.summary_bin else (a.summary or "rust")
@@ -419,13 +388,11 @@ def summary_key(a):
 
 
 def mapper_key(a):
-    """(binary, key) of the drawer: tf3map's binary and --version text, or (None, terrain_map.py's commit)."""
-    if a.mapper == "python":
-        return None, closure_commit(MAP_SCRIPT)
+    """(binary, key) of the drawer: tf3map's binary and the commit its --version names."""
     binary = tf3map_binary(a.tf3map)
     if not binary:
         sys.exit("mine_saves.py: no tf3map found (give --tf3map BIN, set TF3MAP, put it on the PATH or build the "
-                 "sibling tf3-save-mapper with cargo build --release; or use --mapper python)")
+                 "sibling tf3-save-mapper with cargo build --release)")
     try:
         version = tf3map_version(binary)
     except (OSError, subprocess.CalledProcessError) as e:
@@ -501,7 +468,7 @@ def main():
                         json.dump(file_key(path, summary["tools_commit"]), f)
             if maps and readable and not map_up_to_date(d, path, mcommit):
                 print("drawing", os.path.basename(path), file=sys.stderr)
-                error = draw_map(d, path, mcommit, a.mapper, binary, a.game, a.mods)
+                error = draw_map(d, path, mcommit, binary, a.game, a.mods)
                 if error:
                     print("  no map:", error, file=sys.stderr)
                     unmapped += 1

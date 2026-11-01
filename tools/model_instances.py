@@ -4,8 +4,9 @@
 Usage:
   model_instances.py SAVE.sav [--near X,Y,R] [--prefix PATH] [--stream]
 
-Prints one line per instance: its slot (the instance's place among the instances of the chosen
-model paths, in stream order), the model path, the position (x, y, z in metres) and the facing (the first row of the
+Prints one line per instance: its slot (the instance's place among all the model instance records
+after the model table, in stream order, the preview block left out: the number tf3map's `data-slot` and
+`--name SLOT=TEXT` use), the model path, the position (x, y, z in metres) and the facing (the first row of the
 transform: the direction the model points along x and y). `--near X,Y,R` keeps the instances
 within R metres of the point, `--prefix` picks the model paths that start with it (default `vehicle/`;
 `characters/` for people, `animal/`, or empty for everything). Only reads: no save is written.
@@ -111,7 +112,8 @@ def _preview_block(matches):
 
 def read_instances(data, prefixes=("vehicle/",), table=None, keep_preview_block=False):
     """The model instances whose model path starts with one of `prefixes`, as dicts: `slot` (index
-    among the instances of those prefixes, in stream order), `model` (path), `x`, `y`, `z`
+    among all the instance records after the model table, in stream order, whatever `prefixes` asks for:
+    tf3map's `data-slot`), `model` (path), `x`, `y`, `z`
     (the translation), `fx`, `fy` (the first row of the transform: the facing) and `offset`.
     Pass `table=read_model_table(data)` to reuse a table already read. The model preview block of
     map editor saves (a copy of many models in a grid near 0,0, see `_preview_block`) is left out unless
@@ -130,7 +132,7 @@ def read_instances(data, prefixes=("vehicle/",), table=None, keep_preview_block=
         fx, fy = struct.unpack_from("<2f", m.group(2))
         if not all(math.isfinite(v) for v in (x, y, z, fx, fy)):
             continue
-        out.append({"slot": len(out), "model": by_id[mid], "x": x, "y": y, "z": z,
+        out.append({"slot": k, "model": by_id[mid], "x": x, "y": y, "z": z,
                     "fx": fx, "fy": fy, "offset": m.start()})
     return out
 
