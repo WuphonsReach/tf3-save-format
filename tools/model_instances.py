@@ -33,6 +33,7 @@ _INSTANCE = re.compile(rb"(....)(.{12}\x00\x00\x00\x00.{12}\x00\x00\x00\x00.{12}
                        rb"(.{12})\x00\x00\x80\x3f", re.S)
 
 
+TABLE_TRIES = 64     # `animal/` hits tried: the header holds a few at most, and an old save with no table can hold many in its instances
 _BLOCK_RUN = 6       # fewest records in a run to count as the preview block (its pages hold 6, 12 or 18 to 36: one or more columns of six cells)
 
 
@@ -50,10 +51,22 @@ def read_model_table(data):
     """(model paths in table order, offset just after the table); the paths are a `ModelPaths`. The table is
     the first thing after the header (docs/models.md): a u32 count, then per model a `str` source mod, a
     `str` path and a u32 id that starts at 0 and rises along the table (it equals the index until a mod's
-    models skip ahead). Found by the first `animal/` path, as the base game's table sorts them first."""
-    first = data.find(b"animal/")
-    if first < 0:
-        raise ValueError("no model table found")
+    models skip ahead). Found by its first `animal/` path, as the base game's table sorts them first. The header
+    before it can hold the same text (a mod's name or setting), so each `animal/` is tried in turn, at most
+    TABLE_TRIES, until a table reads in the 2000 bytes before one."""
+    hits, at = [], data.find(b"animal/")
+    while at >= 0 and len(hits) < TABLE_TRIES:
+        hits.append(at)
+        at = data.find(b"animal/", at + 1)
+    for first in hits:
+        table = _table_before(data, first)
+        if table:
+            return table
+    raise ValueError("no model table found")
+
+
+def _table_before(data, first):
+    """The model table as `read_model_table` returns it, starting in the 2000 bytes before `first`, or None."""
     for start in range(max(0, first - 2000), first):
         n = struct.unpack_from("<I", data, start)[0]
         if not 100 < n < 100000:
@@ -76,7 +89,7 @@ def read_model_table(data):
                 return ModelPaths(paths, ids), p
         except (struct.error, UnicodeDecodeError, MemoryError):
             continue
-    raise ValueError("no model table found")
+    return None
 
 
 def _preview_block(matches):

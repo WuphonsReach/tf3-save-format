@@ -51,6 +51,9 @@ _START = re.compile(rb"\.street(?=(....)(....)(.{12})(.{12})(.{12})(.{12}))", re
 _SUFFIX = b".street_template"
 CLUSTER_GAP = 1 << 20         # records less than this far apart belong to one table
 TEMPLATE_WINDOW = 800         # the type string ends within this many bytes of the record's start (441 the most seen)
+MOD_NAME_MAX, BASE_TYPE_MAX = 256, 512  # longest mod name and base type read after the street type
+RECORD_MAX = TEMPLATE_WINDOW + 4 + MOD_NAME_MAX + 4 + BASE_TYPE_MAX  # a record ends within this many bytes of its start
+FIXED_BYTES = 8 + 4 * 12      # the two node ids, the two positions and the two tangents
 TRAIN_MODES = (1 << 7) | (1 << 8)  # TRAIN and ELECTRIC_TRAIN, by their place in the game's TransportMode list
 MAX_ID = 1 << 24
 MAX_X, MAX_Y = 40000.0, 60000.0
@@ -97,26 +100,29 @@ def _lanes(data, start, tpl_at):
 
 
 def _record_type(data, start):
-    """(type, family, template, width) of the record whose first node id is at `start`, as `read_edges` describes
-    them, or four Nones. The street type is the record's first `.street_template` string after the tangents,
-    and the next two strings (a mod name and the base type) must follow it; no later string is tried, as that
-    is the next record's."""
-    j = data.find(_SUFFIX, start + 56, start + TEMPLATE_WINDOW)
+    """(type, family, template, width, end, tied) of the record whose first node id is at `start`: the first four
+    as `read_edges` describes them, `end` the offset just after the base type (where the next record starts) and
+    `tied` whether the lanes read, which ties the record to its start (the bytes from the tangents on lead exactly
+    to the street type); or six Nones. The street type is the record's first `.street_template` string after the
+    tangents, and the next two strings (a mod name and the base type) must follow it; no later string is tried, as
+    that is the next record's."""
+    none = None, None, None, None, None, None
+    j = data.find(_SUFFIX, start + FIXED_BYTES, start + TEMPLATE_WINDOW)
     if j < 0:
-        return None, None, None, None
+        return none
     end = j + len(_SUFFIX)
     q = j
     while q > start + 60 and data[q - 1] >= 0x20:  # back over the text to the length word, whose top byte is 0
         q -= 1
     q -= 4
     if _u32(data, q) != end - q - 4:
-        return None, None, None, None
+        return none
     mod = _u32(data, end)
-    if mod > 256:
-        return None, None, None, None
+    if mod > MOD_NAME_MAX:
+        return none
     base = _u32(data, end + 4 + mod)
-    if base > 512 or not data[end + 8 + mod:end + 8 + mod + base].endswith(b".street"):
-        return None, None, None, None
+    if base > BASE_TYPE_MAX or not data[end + 8 + mod:end + 8 + mod + base].endswith(b".street"):
+        return none
     path = data[q + 4:j].decode("utf-8", "replace")
     template = path[len("infrastructure/"):] if path.startswith("infrastructure/") else path
     lanes = _lanes(data, start, q)
@@ -125,7 +131,7 @@ def _record_type(data, start):
         family = "track" if modes & TRAIN_MODES else "street"
     else:
         family = template.split("/")[0] if path.startswith(("infrastructure/street/", "infrastructure/track/")) else None
-    return template.split("/")[-1], family, template, width
+    return template.split("/")[-1], family, template, width, end + 8 + mod + base, lanes is not None
 
 
 def _plausible(a, b, p0, p1, t0, t1):
@@ -163,7 +169,7 @@ def read_edges(data):
         if not _plausible(a, b, p0, p1, t0, t1):
             continue
         start = m.start() + len(b".street")
-        t, family, template, width = _record_type(data, start)
+        t, family, template, width, _, _ = _record_type(data, start)
         out.append({"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
                     "template": template, "width": width, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start})
     out = _largest_cluster(out)
@@ -172,34 +178,42 @@ def read_edges(data):
 
 
 def _parse_record(data, start):
-    """The record whose first node id is at `start`, as `read_edges` returns it, or None when the bytes
-    there do not read as one (same checks as `read_edges`, no `.street` needed before it)."""
+    """(the record whose first node id is at `start`, as `read_edges` returns it, the offset where it ends,
+    whether its lanes read), or None when the bytes there do not read as one with a type (same checks as
+    `read_edges`, no `.street` needed before it)."""
     a, b = struct.unpack_from("<II", data, start)
     p0, p1, t0, t1 = (_vec3(data[start + 8 + 12 * i:start + 20 + 12 * i]) for i in range(4))
     if not _plausible(a, b, p0, p1, t0, t1):
         return None
-    t, family, template, width = _record_type(data, start)
+    t, family, template, width, end, tied = _record_type(data, start)
+    if t is None:
+        return None
     return {"a": a, "b": b, "p0": p0, "p1": p1, "t0": t0, "t1": t1, "type": t, "family": family,
-            "template": template, "width": width, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}
+            "template": template, "width": width, "length": math.hypot(p1[0] - p0[0], p1[1] - p0[1]), "offset": start}, end, tied
 
 
 def _record_before(data, offset):
     """The table's first record. Every other record starts right after the previous record's last
     `.street`, which is what `read_edges` matches on; the first one follows other bytes (a run of
     small counters in the 604 save checked), so it is found from the second: a record that reads as
-    one, starts 250 to 400 bytes earlier and whose own last string ends exactly where the second
-    begins. Bytes at the wrong alignment can also pass the plausibility checks, so the candidates are
-    told apart by their tangents: the horizontal length of each is within 20 % of the edge's own
-    length (true of every edge checked, curved ones included). None if no candidate, or if more
-    than one remains."""
+    one, starts at most RECORD_MAX bytes earlier and whose base type ends exactly where the second
+    begins. Bytes a few places off can read as a record ending there too, as the type strings are
+    found by scanning, so a candidate whose lanes read (which ties it to its start) wins. Only when
+    no candidate's lanes read are they told apart by their tangents: the horizontal length of each is
+    within 20 % of the edge's own length (true of every edge checked, curved ones included). None if
+    no candidate, or if more than one remains."""
     if data[offset - len(b".street"):offset] != b".street":
         return None
     found = []
-    for start in range(max(0, offset - 400), offset - 250):
-        e = _parse_record(data, start)
-        if e and e["type"] and all(abs(math.hypot(t[0], t[1]) - e["length"]) < 0.2 * e["length"] for t in (e["t0"], e["t1"])):
-            found.append(e)
-    return found[0] if len(found) == 1 else None
+    for start in range(max(0, offset - RECORD_MAX), offset - FIXED_BYTES):
+        r = _parse_record(data, start)
+        if r and r[1] == offset:
+            found.append(r)
+    pick = [e for e, _, lanes in found if lanes]
+    if not pick:
+        pick = [e for e, _, _ in found
+                if all(abs(math.hypot(t[0], t[1]) - e["length"]) < 0.2 * e["length"] for t in (e["t0"], e["t1"]))]
+    return pick[0] if len(pick) == 1 else None
 
 
 def edge_bezier(e):
