@@ -23,6 +23,8 @@ Commands:
                 "Find by category" section and refreshes the csv. Rules: CATEGORY_RULES
   hud           DIR/hud.csv: game date, account, earnings, people delivered and cargo delivered (totals
                 since the game started) read off each shot's bottom bar
+  shrink-loads  list the load cards `ocr` marked that are still PNG; with --apply, replace each with a
+                JPG (quality 85, scaled down to 1080 rows), same name stem and file times (see below)
 
 Options:
   --work DIR      where labels.tsv, INDEX.md, hud.csv and the OCR cache live (or env
@@ -37,6 +39,7 @@ Options:
   --hud-engine E  tesseract (default) or rapidocr: the engine that reads the bottom bar in `ocr`
   --out DIR       where `sheets` writes
   --no-nice       keep the normal priority (see below)
+  --apply         let `shrink-loads` replace the PNGs (without it, it only lists them)
 
 Priority: the script lowers its own priority at start (nice 19, and idle I/O when `ionice` is installed; the
 tesseract and other child processes inherit it), so an `ocr` pass over thousands of 4K frames leaves the
@@ -79,11 +82,20 @@ bar of a full-screen game frame gives the HUD figures: treat them as OCR reads a
 before relying on a number. A pass that takes over 60 s (textured ground with no text) is skipped and the
 shot's cache entry says `slow`. A load card shows the save's real date, not the game date.
 
+Shrinking load cards: a 4K load card is about 9.5 MB as PNG and about 0.3 MB as a 1080-row JPG at quality
+85, and the cache keeps its entry, because the id comes from the file name's time, not its extension. On
+148 cards the 1080p JPG read the same title as the PNG on all but 6 (titles already misread), and the
+lower-right percentage or button differed on 41; that corner read is unsure on the PNGs too, so check a
+picture before relying on it. `classify` counts a scaled frame (same shape as the common size) as full
+screen. Only shots `ocr` has already marked as load cards are touched; the JPG is written and reopened
+before the PNG is removed.
+
 Privacy: shots show company names, install paths and account folders, and saves have names and
 write times. The OCR text is masked on the way in (paths become `<path>`, "<name> Transport" a company
 name) and the output prints no folder path, but INDEX.md and the cache are still private working files:
 keep DIR out of git, and never copy a company or account name from them into a note or commit.
-Reads screenshots and the saves' file times; writes only into DIR and --out.
+Reads screenshots and the saves' file times; writes only into DIR and --out, except `shrink-loads --apply`,
+which replaces load-card PNGs in the screenshot folder.
 """
 import argparse
 import bisect
@@ -837,7 +849,7 @@ def classify_all(work, shots):
     rows = []
     for s in shots:
         sz = sizes[s.id]
-        full = sz == full_size
+        full = sz == full_size or (sz[1] and sz[0] * full_size[1] == sz[1] * full_size[0])   # scaled frame
         cat, sub, panels = category_of(load_ocr(work, s.id) or {}, full)
         rows.append((s.id, "full screen" if full else "cropped", f"{sz[0]}x{sz[1]}", cat, sub, panels))
     with open(os.path.join(work, "categories.csv"), "w", newline="") as fh:
@@ -1077,9 +1089,52 @@ def cmd_sheets(shots, out, per=12, cols=4, tw=392, th=221):
     print("sheets written:", (len(shots) + per - 1) // per)
 
 
+SHRINK_ROWS = 1080   # load-card JPG height; the title still reads the same at this size
+SHRINK_QUALITY = 85
+
+
+def cmd_shrink_loads(work, shots, apply):
+    """Replace the load-card PNGs that `ocr` marked with 1080-row JPGs, or with apply False list them."""
+    try:
+        from PIL import Image
+    except ImportError:
+        die("shrink-loads needs Pillow (pip install pillow); see tools/README.md")
+    todo = [s for s in shots if s.path.lower().endswith(".png") and (load_ocr(work, s.id) or {}).get("loading")]
+    before = after = 0
+    for s in todo:
+        jpg = s.path[:-4] + ".jpg"
+        size = os.path.getsize(s.path)
+        before += size
+        if not apply:
+            print(f"{s.id}  {size / 1e6:6.1f} MB  {os.path.basename(s.path)}")
+            continue
+        if os.path.exists(jpg):
+            print(f"{s.id}  skipped: {os.path.basename(jpg)} exists")
+            continue
+        st = os.stat(s.path)
+        with Image.open(s.path) as im:
+            im = im.convert("RGB")
+            if im.height > SHRINK_ROWS:
+                im = im.resize((round(im.width * SHRINK_ROWS / im.height), SHRINK_ROWS), Image.LANCZOS)
+            part = jpg + ".part"
+            im.save(part, "JPEG", quality=SHRINK_QUALITY, optimize=True)
+        with Image.open(part) as check:
+            check.load()
+        os.utime(part, ns=(st.st_atime_ns, st.st_mtime_ns))
+        os.replace(part, jpg)
+        os.remove(s.path)
+        after += os.path.getsize(jpg)
+        print(f"{s.id}  {size / 1e6:6.1f} MB -> {os.path.getsize(jpg) / 1e6:4.2f} MB")
+    if apply:
+        print(f"load cards replaced: {len(todo)}, {before / 1e6:.0f} MB -> {after / 1e6:.0f} MB")
+    else:
+        print(f"load cards still PNG: {len(todo)}, {before / 1e6:.0f} MB; --apply replaces them with JPGs")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("command", choices=("ocr", "todo", "sheets", "build", "find", "check", "hud", "classify"))
+    ap.add_argument("command", choices=("ocr", "todo", "sheets", "build", "find", "check", "hud", "classify",
+                                            "shrink-loads"))
     ap.add_argument("terms", nargs="*", help="terms for `find`")
     ap.add_argument("--work")
     ap.add_argument("--shots")
@@ -1089,6 +1144,7 @@ def main():
     ap.add_argument("--out")
     ap.add_argument("--hud-engine", choices=("tesseract", "rapidocr"), default="tesseract")
     ap.add_argument("--no-nice", action="store_true")
+    ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
     if not a.no_nice:
         lower_priority()
@@ -1112,6 +1168,8 @@ def main():
         cmd_hud(work, shots)
     elif a.command == "classify":
         cmd_classify(work, list_shots(shots_dir(a.shots), set()), a.terms)
+    elif a.command == "shrink-loads":
+        cmd_shrink_loads(work, shots, a.apply)
 
 
 if __name__ == "__main__":

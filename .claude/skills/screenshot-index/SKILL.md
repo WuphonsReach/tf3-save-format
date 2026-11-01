@@ -36,6 +36,7 @@ What counts as a game shot (user's rule, 2026-10-17): everything labelled, loadi
 
 - Do not trust a thumbnail for numbers or names: a first read gave Chagford "255" for what is "251 ^". Zoom a crop and re-read before writing a figure; mark thumbnail-only reads `guess`. HUD figures are OCR reads too.
 - A load card shows the save's real date, not the game date; the index says "save-card date".
+- Load cards are low value: they only mark when a save was loaded, next to the settings shots before them (user, 2026-10-31). They are kept as 1080-row JPGs at quality 85 (user's choice, 2026-10-31; about 0.3 MB against 9.5 MB as 4K PNG, title OCR the same). After `ocr` has marked new cards, run `shrink-loads` to list them and `shrink-loads --apply` to replace the PNGs. The id and the cache entry stay.
 - Mask company names, account-derived names and install paths in labels (`<name> Transport`). The editor's import/export window shows a Steam path: describe it, do not copy it.
 - Use the game's internal words in labels, as `docs/glossary.md` has them.
 - OCR needs the `tesseract` program and Pillow; the other commands use only the standard library. `--hud-engine rapidocr` (optional, needs `pip install rapidocr onnxruntime`) reads the bottom bar with RapidOCR; a shot's cache entry keeps the engine that read it, and `ocr` redoes shots read by the other one.
