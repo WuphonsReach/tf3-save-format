@@ -307,17 +307,18 @@ STATION_KINDS = (
      True, "#a0622d", 0.65),
     ("station-rail-platforms", "Rail stations: platforms",
      tuple("rail/era_a/" + n for n in ("perron_5", "perron_10", "perron_5_underpass", "perron_5_head", "perron_5_head_con",
-                                       "station_3_perron_head", "station_3_perron_side", "station_3_perron_side_main")),
+                                       "station_3_perron_head", "station_3_perron_side", "station_3_perron_side_main"))
+     + tuple("rail/era_%s/perron_%s" % (e, w) for e in "bc" for w in ("5", "10")),
      False, "#8c8c8c", 0.85),
     ("station-street-platforms", "Street stations: platforms and stops",
-     tuple(_STREET_STATION + "%spltfrm_%s_%s" % (c, side, part) for c in ("", "cargo_") for side in "lr"
-           for part in ("rep",))
+     tuple(_STREET_STATION.replace("era_a", "era_" + e) + "%spltfrm_%s_%s" % (c, side, part) for e in "abc" for c in ("", "cargo_")
+           for side in "lr" for part in ("rep",))
      + ("street/small_stops/small_old", "street/small_stops/small_mid"),
      False, "#c8c8c8", 0.9),
     ("station-water-buildings", "Water stations: main buildings", ("water/models/main_building_s0", "water/models/main_building_s2"),
      False, "#5a3512", 0.85),
     ("station-rail-buildings", "Rail stations: buildings",
-     tuple("rail/%s/station_%d%s" % (folder, n, main) for folder in ("era_a", "cargo") for n in (1, 2, 3) for main in ("", "_main")),
+     tuple("rail/%s/station_%d%s" % (folder, n, main) for folder in ("era_a", "era_b", "era_c", "cargo") for n in (1, 2, 3) for main in ("", "_main")),
      True, "#4a4a4a", 0.9),
     ("station-street-buildings", "Street stations: buildings", (_STREET_STATION.replace("era_a/", "sidebuildings/") + "streetstation_sidebuilding_era_a_s2",),
      False, "#9a9a9a", 0.9),
@@ -1251,7 +1252,8 @@ def station_layers(mpp, fr, instances, boxes):
             d = "".join("M%.2f %.2f" % r[0] + "".join("L%.2f %.2f" % q for q in r[1:]) for r in outer)
             out_kind.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
                        ' stroke-linejoin="round"/>' % (d, STATION_OUTLINE * k))
-        out_kind.append("</g>")
+        if polys:
+            out_kind.append("</g>")                          # the platforms layer; a border with no platform tiles opened none
         if lid == "station-street-platforms" and border_loops:
             out_kind.append(layer("station-street-borders", "Street stations: border"))
             out_kind.append('<path class="station-outer" d="%s" fill="none" stroke="#000" stroke-width="%g" stroke-linecap="round"'
