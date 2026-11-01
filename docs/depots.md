@@ -6,10 +6,10 @@
 
 - **One instance per building (Observed, 604).** The instance's translation is the construction's origin, and its matrix gives the facing. The ground face is a rectangle off centre from the origin: 26.3 by 26.05 m for a maintenance building, 56.2 by 40.0 m for a road depot, 32.0 by 72.4 m for a tram depot (the tram depot unchecked). A ship depot stands out over the water past its face.
 - **Radius, pool and modes (from the construction scripts, 604).** Maintenance building 600 m, pool 16; road depot 400 m, pool 12; tram depot 400 m, pool 12; rail, ship and air kinds have their own. Only the maintenance building serves buses, trucks and trams together.
-- **Upkeep and build price (from the scripts, 605).** A depot costs 6 times its yearly upkeep to build; maintenance buildings cost 60,000 (road) or 240,000 (rail, water). The Infrastructure Upkeep setting scales the upkeep ([running-costs.md](running-costs.md)).
+- **Upkeep and build price (from the scripts, 605).** A depot costs 6 times its yearly upkeep to build; maintenance buildings cost 60,000 (road) or 240,000 (rail, water). The Infrastructure Upkeep setting and the year cost table scale the upkeep ([running-costs.md](running-costs.md), [inflation.md](inflation.md#the-year-cost-table)). Demolishing a mod depot refunded 75% of its placement price (Observed, 605, once).
 - **Which building maintains a vehicle is stored on the vehicle (Confirmed in the files; Observed, 605).** Each vehicle's `TRANSPORT_VEHICLE` component names its `maintenanceStation`. The game fills it within about a day when it is empty. A rebuild of the building empties it for every vehicle the building kept ([below](#which-building-maintains-a-vehicle)).
 - **A maintenance building is a depot with no in or out nodes (Confirmed in the files, 605).** Both carry a `VEHICLE_DEPOT` component on a subconstruction. In the old catalog save [6417707](https://mod.io/g/transportfever3/m/333151), first written by a pre-release build, 13 maintenance buildings list no depot in their construction (Observed, 605).
-- **The drawn ring (Observed, single pictures).** A maintenance building's ring reads 598 to 603 m round its origin. A ship depot's ring is not always centred on its origin, and the offset is no fixed local one.
+- **The drawn ring (Observed, single pictures).** A maintenance building's ring reads 598 to 603 m round its origin. The ring follows a rebuilt radius, and a 1 m radius draws none that can be seen. A ship depot's ring is not always centred on its origin, and the offset is no fixed local one.
 - **Open.** How the game picks the building a vehicle is assigned to, a road depot's exact radius, a ship maintenance building's water part, what a ship depot's ring is centred on, and the tram depot's footprint.
 
 ## Origin, facing and footprint
@@ -33,12 +33,15 @@
   | Rail maintenance building | 40,000 | 240,000 |
   | Water maintenance building | 40,000 | 240,000 |
 
-  The rail depot's upkeep and price are multiplied by its template's era coefficient (1, 3 or 9, in `rail/rail_depot.con.lua`), as the road depot's are ([running-costs.md](running-costs.md#a-road-depots-upkeep-against-its-window-604)). The charged figure is this times the Infrastructure Upkeep setting: at 125% the depot list showed $37,500 for a road depot and $12,500 for a road maintenance building (605, the Giga temperate game).
+  The rail depot's upkeep and price are multiplied by its template's era coefficient (1, 3 or 9, in `rail/rail_depot.con.lua`), as the road depot's are ([running-costs.md](running-costs.md#a-road-depots-upkeep-against-its-window-604)). The charged figure is this times the Infrastructure Upkeep setting and the year cost table: at 125% the depot list showed $37,500 for a road depot and $12,500 for a road maintenance building (605, the Giga temperate game in 1915), and at 100% in 2000 every building read five times its script cost ([inflation.md](inflation.md#depots-at-the-2000-step-605)).
+- **Demolishing refunds 75% of the placement price.** A levelled Grimes Buffer Stop Depot placed for $90,004 was refunded $67,503 when demolished; what a script had booked for it was not refunded (Observed, 605, one depot in a re-save of catalog save [6417707](https://mod.io/g/transportfever3/m/333151)).
+- **Mod depots set their own values.** The Grimes Buffer Stop Depot (`grimes_prellbockdepot::/rail/bumper_depot.con`) has pool 1, radius 1 m and a script upkeep of 3,000. The Roundhouse mod's depot has 800 m and a base of 60,000 ([construction-scripts.md](construction-scripts.md#modules)) (Observed, 605, from a mod's log).
 - **The modes are vehicle modes, not lane modes.** Street templates list `TRAM` and `ELECTRIC_TRAM` on tram lanes, and the rail track templates (`simple`, `standard`, `high_speed`, with catenary variants) list `TRAM_TRACK` and `ELECTRIC_TRAM_TRACK` beside `TRAIN`, so trams can run on rails. No depot script lists a `_TRACK` mode, so by the scripts a tram is served by mode and distance whichever it runs on. That the game really measures it so, and from the origin, is **Open**.
 
 ## The depot entity
 
 - **One component for both kinds.** The `VEHICLE_DEPOT` component (record `VehicleDepot` in `api/tealdef/api/engine.d.tl`) holds `maintenancePool`, `catchmentArea`, the in and out nodes and pool-use statistics (`maxPoolUsage`, `averagePoolUsage`). Depots and maintenance buildings both carry it; a maintenance building is a depot with no in or out nodes (`gui/entity_window/maintenance_station/maintenance_station.tl` in `gui.zip`). The window's "5 / 12" is the count of `transportVehicleSystem.getVehiclesForMaintenanceStation(depot)` against `maintenancePool` (`gui/entity_window/entity_window_util.tl`).
+- **The carrier comes from the modes.** The component's `carrier` field matched no value of the `Carrier` enum on any of 21 buildings (605). The base Depots list sorts by carrier through the depot's `transportModes`, mapped with `api.engine.util.transport.transportModesToCarriers` (`gui/statistics/statistic_depots.tl`). Read that way, ship depots and water maintenance buildings gave WATER, rail buildings RAIL and tram depots TRAM. A road maintenance building's modes map to both ROAD and TRAM. **Observed**, from a mod's log.
 - **The depot is a subconstruction.** The construction's `CONSTRUCTION` component lists it under `depots`, and `streetConnectorSystem.getConstructionEntityForDepot` or `getConstructionEntityForSubconstruction` lead back from it (`api/tealdef/api/engine/system.d.tl`).
 - **The `depots` list can be empty.** In catalog save [6417707](https://mod.io/g/transportfever3/m/333151) (`333`, read on 605) all 13 maintenance buildings opened (road, rail and water, built 1904 to 1998 by the game's date) list no depot. Its depots of the same years list theirs, and so does a maintenance building placed there on 605. The header's older format number says the game was started on pre-release 555 ([versions.md](versions.md)), the likely cause; which build placed each building is unknown. The base building window does not use the list: it goes through the construction's subconstructions and their `VEHICLE_DEPOT` component (`gui/entity_window/make_entity_window.tl`), so these buildings still show their pool. **Observed**, one save.
 
@@ -57,12 +60,15 @@
 - Whether a road depot's radius is exactly 400 m, and the water part of a ship maintenance building.
 - What a ship depot's ring is centred on (the script's `waterPoints` of 40 m does not fit).
 - The tram depot's footprint and which way a building's front faces.
+- Why a depot entity's id sits a few above its construction's when the building is new (168733 and 168738, 217297 and 217307) but far from it in older buildings, some below (88894 and 52483): reused free ids, or rebuilds by the game's tools.
 
 
 ## Evidence and tests
 ### Which building lists a vehicle
 
 In save `1930` two trucks stood in reach of two maintenance buildings (origins measured from the model instances). Truck A was 504 m from the building at the larger x (the one drawn at the top in a `--north sun` picture, the north one by the sun's frame) and 411 m from the other, truck B 319 m from the first and over 1,200 m from the second. The first building's window listed both trucks and the second's listed none, so both are inside the 600 m circle and listed there (**Observed**, 604, one game, two vehicles), while truck A, inside the south building's 600 m circle too, was not listed under it, so a circle does not decide by itself which building lists a vehicle. The farthest vehicle listed there was at 504 m, so the circle's edge was not tested by vehicles.
+
+Observed, 605, a re-save of catalog save [6417707](https://mod.io/g/transportfever3/m/333151): a Buffer Stop Depot rebuilt with radii of 1, 11, 21 ... 131 m had its ring drawn at 81 m and at 131 m as the levels were bought. At 1 m no ring could be seen, so after the window was closed and opened again the ring showed only from 11 m.
 
 ### The drawn circle's radius
 

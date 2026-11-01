@@ -8,7 +8,7 @@ The dated tests behind [finances.md](finances.md): what the Finances tab, the co
 - **A new game starts with no bookings (Observed)**; a loan is the first booking. Building while paused books at the paused tick (Observed, two sessions).
 - **Every tab row of a first build-out matched its bookings to the dollar (Observed).** Loan payments run on a fixed schedule; income is one booking per carrier per delivery.
 - **The bottom bar's Earnings is the current period's sum (Observed).**
-- **Open:** the depot booking's category value, why one cart model has two prices 0.015% apart, whether a depot for two carriers is always split in two, and how a delivery's pay is split.
+- **Open:** the depot booking's category value (a script's `CONSTRUCTION` / `DEPOT` booking lands in Infrastructure, [finances.md](finances.md#rows-against-the-booking-categories)), why one cart model has two prices 0.015% apart, whether a depot for two carriers is always split in two, and how a delivery's pay is split.
 
 ## A new game's journal
 

@@ -69,6 +69,8 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 - **The file index is `_content.json`.** The game builds a mod's file index from the list in `_content.json`, not from the folder. A file on disk that the list leaves out is not found (`module '<mod id>::/settings.tl' not found`). When a mod's first script fails that way the game answers "Could not initialize game: try removing the mod" and goes back to the main menu. The mod's first published file had that fault, and a list naming every file fixed it.
 - **A mod loads its own modules with `ug_require "<mod id>::/file.tl"`.** The shorthand `::/file.tl` does not resolve in `mod.script`, and a failing load there aborts initialisation the same way.
 - **Two copies with one id: the staging copy wins.** With a copy in the game's `staging_area` folder and a subscribed mod.io copy of the same id, the game logs `Multiple (2) mods with same id found <id>, the one from .../staging_area/<id>/ has been selected` and runs the staging copy. The Mods list shows one card (seen once).
+- **A subscribed catalog save is a mod named after the save.** Its mod id is `savegame_` plus the save's name, so subscribed saves with the same name share an id. The game logs, for example, `Multiple (6) mods with same id found savegame_新游戏, the one from <path>/mod.io/common/10640/mods/6417930/ has been selected` (the Chinese default name, "New Game"), and `Multiple (4)` for another name (605, the same lines at two starts). Whether the saves it did not select still show on the Load Game screen is Open.
+- **A changed script loads only at game start.** Loading a save again after a mod's script was edited ran the old code; the log showed the new code only after the game was restarted (605, seen once).
 - **The number on an activated mod's card is its activation order** on the Mods tab sorted by Activation Order.
 - **Publishing goes only through the game's uploader** (Mod Hub, My Mods), which reads `_metadata/modinfo.json`; the mod.io website refuses uploads for this game. mod.io labels every file uploaded this way "1.0", whatever the mod's `revision` (seen on three uploads); the game's log names the revision as `rev. <revision>`.
 
@@ -86,6 +88,7 @@ A mod with scripts keeps its state in the same layout as the game's scripts: the
 - Whether mods with models in use on the map drop out the way the no-option ones did (a mod with a game script did, on 605).
 - A deactivated mod with options was tested once, on 605 ([In short](#in-short)), a mod without a game script and with options not at all.
 - What a mod adds to the script states once it has run in the game. Whether any of the stream differences in the Overpass Builder test are mod related was not checked.
+- Whether subscribed catalog saves that share a name, and so a `savegame_` id, can all be loaded.
 - What the game stores for a mod whose `mod.json` has no `severityRemove` (two mods: 1 in our saves, 2 in one catalog save).
 
 ## Evidence and tests
