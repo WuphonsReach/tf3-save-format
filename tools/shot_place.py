@@ -26,7 +26,7 @@ The ranking is printed with the runners-up, so an ambiguous picture shows as clo
   --ui                   cover the right-hand building window, the top icon bar and the bottom bar
   --scale-range A,B      pixels per metre at the picture centre for a 3840-wide picture, scaled
                          with the picture's width (default 3.5,11)
-  --map PNG              a `terrain_map.py --png --mpp 1` picture that covers the view (its
+  --map PNG              a `tf3map --png --mpp 1` picture that covers the view (its
                          tf3map:view record gives the frame); without it the script draws one
                          around the best pairing (about a minute, needs the install for nothing)
   --pick N               use ranking row N (default 1) for the fit
@@ -53,7 +53,7 @@ water level). Anything above that plane (a viaduct, a roof, a hill) is shifted a
 about its height times the tangent of the camera's pitch, and the more the camera tilts the more it
 moves, so such things will not line up in the blend; use the coastline and things at the water.
 
-Needs numpy and Pillow (see tools/README.md); the map picture is made by terrain_map.py when not
+Needs numpy and Pillow (see tools/README.md); the map picture is made by tf3map when not
 given. Reads a save, a picture and the map picture; writes only into --out. The frame and the
 fitting functions come from town_centre.py.
 """
@@ -178,16 +178,21 @@ def hypotheses(cands, picks, size, hint, scale_range, in_frame, covered=()):
 
 
 def make_map(save, out_dir, centre, radius=800):
+    """Draw the crop with the Rust mapper `tf3map` (found as `mine_saves.tf3map_binary` does: $TF3MAP, the PATH, the
+    sibling tf3-save-mapper's build) and return the PNG's path."""
+    from mine_saves import tf3map_binary
+    binary = tf3map_binary(None)
+    if not binary:
+        sys.exit("shot_place.py: no tf3map found (set TF3MAP, put it on the PATH or build the sibling tf3-save-mapper "
+                 "with cargo build --release), or pass --map PNG")
     os.makedirs(out_dir, exist_ok=True)
-    here = os.path.dirname(os.path.abspath(__file__))
-    cmd = [sys.executable, "-I", os.path.join(here, "terrain_map.py"), out_dir, save,
-           "--crop", "%d,%d,%d" % (round(centre[0]), round(centre[1]), radius), "--mpp", "1",
-           "--png"]
+    out = os.path.join(out_dir, "%s-crop%d_%d_%d.png" % (os.path.splitext(os.path.basename(save))[0].replace(" ", "_"),
+                                                        round(centre[0]), round(centre[1]), radius))
+    cmd = [binary, "--crop", "%d,%d,%d" % (round(centre[0]), round(centre[1]), radius), "--mpp", "1", "--png", "-o", out, save]
     res = subprocess.run(cmd, capture_output=True, text=True)
     if res.returncode:
-        sys.exit("terrain_map.py failed: " + res.stderr.strip()[-300:])
-    line = [ln for ln in res.stdout.splitlines() if ln.strip()][-1]
-    return line.split("  ")[0].strip()
+        sys.exit("tf3map failed: " + res.stderr.strip()[-300:])
+    return out
 
 
 def load_map(path):
