@@ -21,6 +21,7 @@ These are gaps in the repo's tools and worked examples, not in the format.
 ## Tool defects
 
 - **`KNOWN_IDS` in `tools/tf3save.py` is wrong for games with cargo mods** Cargo ids are positions in the save's own cargo list; `tf3save.cargo_list` reads that list, `KNOWN_IDS` does not. Home: [cargo-ids.md](../cargo-ids.md). Needs: check each caller, then switch them to the save's list; keep function names and return shapes stable (private scripts import them).
+- **`street_edges.py` lists removed industries' roads as live** It drops nothing by the lane test, and `lane_paths.py` finds the table by known rail heads (no hit in a save without rail) and reads kind 2 only. `tf3map` drops edges with no lanes at either end. Home: [lane-paths.md](../lane-paths.md#the-records), [town-leftovers.md](../town-leftovers.md#removed-industries-the-lane-test). Needs: an anchor search in `lane_paths.py` and a lane option in `street_edges.py`.
 - **`items_lists.py` against a mod game's ids** The lists store each cargo id; whether the script labels them from the save's list in a game with a cargo mod was not tested. Home: [cargo-ids.md](../cargo-ids.md). Needs: a save from the sugar mod game (mod.io 6436164).
 
 
