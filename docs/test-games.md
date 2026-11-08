@@ -8,7 +8,7 @@ This note is a log by nature: each of our own test games described once, so anot
 
 - **Small subarctic game:** the game most notes use (typed seed, seven mods, three towns, played from 1900).
 - **Map-format tests:** a series of new games with every option set by hand and saved at once.
-- **Editor games** (Tiny flat, Giant temperate): maps the editor built, edited one change per save.
+- **Editor games** (Tiny flat, Giant temperate, Giga dry): maps the editor built, edited one change per save.
 - **Catalog games we re-saved:** mod.io saves that became test maps when we re-saved them.
 
 ## Small subarctic game
@@ -95,6 +95,11 @@ The towns on the screens matched the saves in all of today's games; the industri
 - Saves of 24 October 2026 (clock times of the save names): `1939` (16 July 1918, a mod's ticket answers running), `2036` (15 February 1919, ticket billing, holds one mod warning notification and does not load without the mod), `2203` (the same date with that mod's warnings switched off, its option stored as 1), `2235` (6 July 1919, played without the mod, which is gone from the header), plus autosaves of the `2203` game.
 - Save of 25 October 2026: `1974-test 1025-1103` (18 June 1974, 54 lines), read against a mod's delivery log of the session before it and a `lineName` log of the session after it.
 - The 1900 to 2032 run (25 October 2026): `1918 1024-2036` loaded on Hard and on Easy at 1919 (the difficulty test), `1919 1025-0722` and its copy `1900 1025-0722`, whose day table and header date were shifted back to 1900 outside the game with the clock left alone ([calendar.md](calendar.md#the-day-table)); a second copy, `1920 1025-0722`, had only the table's last entry and the header date moved. The 1900 copy was played at calendar speed 4x to 1973; `1974-test 1025-1103` was then played on from June 1974 and saved at the end as `2032-test 1025-1342` (30 April 2032), with a mod logging the delivery time per cargo and every delivered unit. The run's autosaves are not listed: the game keeps 20 autosaves across all games and prunes the oldest.
+
+## Giga dry editor map (WR26B)
+
+- Seed `V7Jv2KYnbU`, dry climate and economy, US names, Gigantomaniac 1 : 3 (16384 x 49152 m, header `map.size` 8), start year 1900, a map editor save on format 605, one mod. Saves named `WR26B Giga Dry v1 1108-<time>`, made on 8 November 2026 while the map was built: towns, terrain, then `1336` (industries placed, two of them already deleted), `1359` (Main Connections generated) and `1439` (two farms deleted, a farm and a brickworks added), each followed by a Towns / Industries export.
+- Used for: deleted industries ([industry-records.md](industry-records.md#deleted-industries)).
 
 ## Very Hard income game
 

@@ -3,7 +3,8 @@
 //! Copied from tf3-save-mapper's `crates/tf3-save-mapper-core/src/instances.rs` at commit bfe77c7 (same author,
 //! MIT OR Apache-2.0), with its preview-block and subnormal-position rules of commits be123ed and 57cdfa8, and
 //! changed to what the summary needs: the table's lookup returns `Option`, and
-//! `Instances` keeps the record scan so several prefixes are listed from one scan, with the model path only.
+//! `Instances` keeps the record scan so several prefixes are listed from one scan, with the model path and,
+//! for the industry count, the x and y.
 //!
 //! The model table comes right after the header: a u32 count, then per model a `str` source mod, a `str` path
 //! and a u32 id that starts at 0 and rises along the table (it skips ahead where a mod's models are). An
@@ -173,6 +174,19 @@ impl Instances {
     }
 
     pub fn models<'t>(&self, data: &[u8], table: &'t ModelTable, prefix: &str) -> Vec<&'t str> {
+        self.placed(data, table, prefix)
+            .into_iter()
+            .map(|(m, _, _)| m)
+            .collect()
+    }
+
+    /// As `models`, with each instance's x and y (the transform's translation).
+    pub fn placed<'t>(
+        &self,
+        data: &[u8],
+        table: &'t ModelTable,
+        prefix: &str,
+    ) -> Vec<(&'t str, f32, f32)> {
         let wanted: HashMap<u32, &str> = table
             .paths
             .iter()
@@ -199,7 +213,7 @@ impl Instances {
             if [m[12], m[13], m[14]].iter().any(|v| v.is_subnormal()) {
                 continue;
             }
-            out.push(*model);
+            out.push((*model, m[12], m[13]));
         }
         out
     }

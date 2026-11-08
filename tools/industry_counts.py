@@ -7,6 +7,9 @@ An industry is one model instance of the kind's main model, `industries/<key>/<k
 excavator, which has none, its `_particles.mdl`; `industry_compass.main_models`). Where that model has no
 instance but the key's own `<key>.mdl` has, that one counts (a sand excavator whose `_sm` model is placed only
 in the preview block). Its other instances (cranes, sheds, particles) are not counted. A mod's industry that has no such model is missed.
+An industry deleted in the map editor keeps its construction record and its model instances; its main
+instance is left out when every entity id its record lists is in the free-id list
+(`industry_compass.dead_industries`, docs/industry-records.md#deleted-industries).
 
 Result: `count`, and `by_key` (industry key to count, keys sorted); null where the save has no readable model
 table (the reader raises ValueError).
@@ -19,7 +22,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from industry_compass import main_models  # noqa: E402
+from industry_compass import live_main_instances, main_models  # noqa: E402
 from model_instances import read_instances, read_model_table  # noqa: E402
 from tf3save import decompress  # noqa: E402
 
@@ -31,7 +34,7 @@ def count_industries(data):
         return None
     placed = read_instances(data, ("industries/",), table)
     mains = main_models(table[0], {i["model"] for i in placed})
-    by_key = collections.Counter(mains[i["model"]] for i in placed if i["model"] in mains)
+    by_key = collections.Counter(mains[i["model"]] for i in live_main_instances(data, placed, mains))
     return {"count": sum(by_key.values()), "by_key": dict(sorted(by_key.items()))}
 
 

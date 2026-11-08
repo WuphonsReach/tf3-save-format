@@ -9,6 +9,7 @@ Everything here is **Open**, seen on 604 and often in one game.
 - Most entries need a new save pair around one event: an offer's lifetime, a closure, a rank claim, a calendar-speed change, a year step in the cost table.
 - Inflation: whether Passenger Income has its own factor, the Cargo Income steps and running costs under the Inflation option are untested.
 - Subsidies, industry spawning and company offers: what decides them is not read, only observed once.
+- Deleted industries (605): whether their record and instances ever leave, and whether a closure in play leaves a record too.
 - A few close from saves we hold or the game's base files: the closing record's third value, `revision.num`, notification layouts, why `level` lags `potentialLevel`.
 - The balloon and the UFO need unpaused saves a few seconds apart.
 
@@ -27,6 +28,11 @@ Everything here is **Open**, seen on 604 and often in one game.
 - **The closing record's third value** (604) 1 for a processing industry and 5 for a primary one. Home: [industries.md](../industries.md). Needs: existing saves.
 - **Whether a closed industry leaves its lists behind** (604) The game was not played through a closure. Home: [industries.md](../industries.md). Needs: new save after a closure.
 - **The cement plant's list start** (604, one game) The list begins one tick before 1,948,000, not on a half-year boundary; it was probably created when stone first reached the plant. Home: [industries.md](../industries.md). Needs: existing saves.
+- **Whether a deleted industry's record and model instances ever leave** (605, one editor map) Four deleted industries kept both through three saves; only their ids in the free-id list mark them. Home: [industry-records.md](../industry-records.md#deleted-industries). Needs: new save (load the last save of the map and save it unchanged, then one more road edit).
+- **Whether an industry that closes in play leaves its construction record** (604, 605) 27 records in six played catalog saves have all their ids free and no main instance left; whether those industries closed was not checked. Home: [industry-records.md](../industry-records.md#deleted-industries). Needs: existing saves (a save from before and after a closure notification, such as the Small subarctic game's).
+- **Why a Towns / Industries export listed no industries** (605, once) Made straight after an editor save with 22 live industries; the next save's export listed them and the records had not changed. Home: [industry-records.md](../industry-records.md#deleted-industries-in-the-giga-dry-editor-map-605). Needs: new save (export again from the same save).
+- **Whether the game sees one industry where several records are stacked** (601 to 605, catalog maps) Older copies at a live industry's spot keep their own main instance, and the count includes them; a lone record with some ids free is also unexplained. Home: [industry-records.md](../industry-records.md#stacked-records-at-one-spot). Needs: new save (rebuild an industry in the editor, then save and export), or a catalog map's export.
+- **What the construction record's `i64` and most of its id lists hold** (568 to 605) The first list holds a node of the industry's road; the rest is unknown. Home: [industry-records.md](../industry-records.md#the-construction-record). Needs: existing saves.
 - **Why a stock of 300 sits with 6 destroyed units at the start** (604) Home: [industries.md](../industries.md). Needs: new save at the very start of a game.
 - **What the climate changes beyond the economy** (Observed) Terrain, vegetation, which industries spawn. Home: [climates-economies.md](../climates-economies.md#open). Needs: new save (same seed, another climate).
 

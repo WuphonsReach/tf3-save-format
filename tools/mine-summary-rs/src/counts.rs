@@ -42,16 +42,130 @@ fn main_models<'t>(table: &'t ModelTable, placed: &BTreeSet<&str>) -> HashMap<&'
     out
 }
 
-/// `count`, and `by_key` (industry key to count, keys sorted).
-pub fn count_industries(data: &[u8], table: &ModelTable, inst: &Instances) -> Value {
-    let models = inst.models(data, table, "industries/");
-    let placed: BTreeSet<&str> = models.iter().copied().collect();
-    let mains = main_models(table, &placed);
-    let mut by_key: BTreeMap<&str, u64> = BTreeMap::new();
-    for m in models {
-        if let Some(k) = mains.get(m) {
-            *by_key.entry(k.as_str()).or_default() += 1;
+/// An industry construction record (`industry_compass.read_industry_constructions`,
+/// `docs/industry-records.md#the-construction-record`): the industry folder, the transform's x and y, and the entity
+/// ids of the seven `vec<u32>` after the transform and an i64.
+struct Construction {
+    key: String,
+    x: f32,
+    y: f32,
+    ids: Vec<u32>,
+}
+
+/// A longer id list is not this record's.
+const IDS_MAX: usize = 100_000;
+const CON_START: &[u8] = b"industries/";
+
+/// The path `industries/<chars>.con` starting at `at` (`industry_compass._CON_PATH`: the shortest run of
+/// `[A-Za-z0-9_./-]`, at least one, followed by `.con`), as its end offset.
+fn con_path_end(data: &[u8], at: usize) -> Option<usize> {
+    let ok = |b: u8| b.is_ascii_alphanumeric() || b"_./-".contains(&b);
+    let mut p = at + CON_START.len();
+    while p < data.len() && ok(data[p]) {
+        p += 1;
+        if data.get(p..p + 4) == Some(b".con") {
+            return Some(p + 4);
         }
+    }
+    None
+}
+
+fn read_construction(data: &[u8], start: usize, end: usize) -> Option<Construction> {
+    let u32_at = |p: usize| {
+        data.get(p..p + 4)
+            .map(|b| u32::from_le_bytes(b.try_into().unwrap()))
+    };
+    if start < 4 || u32_at(start - 4)? as usize != end - start {
+        return None;
+    }
+    let (_, q) = crate::lua::pairs(data, end, 0).ok()?;
+    let f = |i: usize| {
+        data.get(q + 4 * i..q + 4 * i + 4)
+            .map(|b| f32::from_le_bytes(b.try_into().unwrap()))
+    };
+    if f(3)? != 0.0 || f(7)? != 0.0 || f(11)? != 0.0 || f(15)? != 1.0 {
+        return None;
+    }
+    let (x, y) = (f(12)?, f(13)?);
+    let mut p = q + 64 + 8; // the transform, then an i64 (0 in editor maps)
+    let mut ids = Vec::new();
+    for _ in 0..7 {
+        let n = u32_at(p)? as usize;
+        if n > IDS_MAX {
+            return None;
+        }
+        let list = data.get(p + 4..p + 4 + 4 * n)?;
+        ids.extend(
+            list.as_chunks::<4>()
+                .0
+                .iter()
+                .map(|b| u32::from_le_bytes(*b)),
+        );
+        p += 4 + 4 * n;
+    }
+    let path = std::str::from_utf8(&data[start..end]).ok()?;
+    Some(Construction {
+        key: path.split('/').nth(1)?.to_owned(),
+        x,
+        y,
+        ids,
+    })
+}
+
+/// The construction records of industries deleted in the map editor: every id the record lists is in the
+/// free-id list (`industry_compass.dead_industries`). Empty when the save has no readable list.
+fn dead_industries(data: &[u8]) -> Vec<Construction> {
+    let Some(free) = crate::free_ids::read_free_ids(data).filter(|f| !f.is_empty()) else {
+        return Vec::new();
+    };
+    let mut out = Vec::new();
+    let mut next_free = 0;
+    for at in memchr::memmem::find_iter(data, CON_START) {
+        if at < next_free {
+            continue;
+        }
+        let Some(end) = con_path_end(data, at) else {
+            continue;
+        };
+        next_free = end;
+        if let Some(c) = read_construction(data, at, end)
+            && !c.ids.is_empty()
+            && c.ids.iter().all(|i| free.contains(i))
+        {
+            out.push(c);
+        }
+    }
+    out
+}
+
+/// `count`, and `by_key` (industry key to count, keys sorted). One main instance of the same key within 1 m of
+/// each deleted industry's record is left out (`industry_compass.live_main_instances`).
+pub fn count_industries(data: &[u8], table: &ModelTable, inst: &Instances) -> Value {
+    let all = inst.placed(data, table, "industries/");
+    let placed: BTreeSet<&str> = all.iter().map(|(m, _, _)| *m).collect();
+    let mains = main_models(table, &placed);
+    let mut live: Vec<(&str, f32, f32)> = all
+        .into_iter()
+        .filter_map(|(m, x, y)| Some((mains.get(m)?.as_str(), x, y)))
+        .collect();
+    for r in dead_industries(data) {
+        let dist = |&(_, x, y): &(&str, f32, f32)| {
+            (f64::from(x) - f64::from(r.x)).hypot(f64::from(y) - f64::from(r.y))
+        };
+        let mut nearest: Option<(usize, f64)> = None;
+        for (i, item) in live.iter().enumerate() {
+            let d = dist(item);
+            if item.0 == r.key && d <= 1.0 && nearest.is_none_or(|(_, b)| d < b) {
+                nearest = Some((i, d));
+            }
+        }
+        if let Some((i, _)) = nearest {
+            live.remove(i);
+        }
+    }
+    let mut by_key: BTreeMap<&str, u64> = BTreeMap::new();
+    for (k, _, _) in live {
+        *by_key.entry(k).or_default() += 1;
     }
     let mut out = Obj::new();
     out.set("count", by_key.values().sum::<u64>());

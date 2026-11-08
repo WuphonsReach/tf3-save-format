@@ -4,6 +4,7 @@
 
 mod counts;
 mod entities;
+mod free_ids;
 mod header;
 mod journal;
 mod json;

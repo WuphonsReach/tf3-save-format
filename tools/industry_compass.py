@@ -17,7 +17,8 @@ The save keeps no town position. A town's centre is the mean of the end points o
 street edges, taken per connected group (a group is one town). Which group is which town comes from
 the industry names: an industry's name starts with a town's name, and each town's count of
 industries per kind has to match its group's. An industry's position is the origin of the main
-model of its kind (`industries/KEY/KEY_sm.mdl`, or the first `*_particles.mdl` of the folder). The
+model of its kind (`industries/KEY/KEY_sm.mdl`, or the first `*_particles.mdl` of the folder), less
+those of industries deleted in the map editor (`dead_industries`). The
 name table does not say which instance carries which name, so a compass name is tied to an
 instance by its sector, and only where exactly one same-kind instance near the town lies there.
 
@@ -29,13 +30,14 @@ import collections
 import math
 import os
 import re
+import struct
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import tf3save as t  # noqa: E402
 from model_instances import read_instances, read_model_table  # noqa: E402
 from save_header import read_header  # noqa: E402
-from street_edges import read_edges  # noqa: E402
+from street_edges import read_edges, read_free_ids  # noqa: E402
 
 # the label the game puts in a name, where it is not the key in title case (docs/glossary.md)
 LABELS = {"saw_mill": "Saw Mill", "food_factory": "Canning Factory", "farm": "Crop Farm", "forest": "Logging Camp",
@@ -100,6 +102,65 @@ def main_models(paths, placed=None):
     return found
 
 
+# an industry's construction record starts with its `.con` path as a `str` (docs/industry-records.md)
+_CON_PATH = re.compile(rb"industries/[A-Za-z0-9_./-]+?\.con")
+_IDS_MAX = 100000      # a longer id list is not this record's
+
+
+def read_industry_constructions(data):
+    """The industry construction records (docs/industry-records.md#the-construction-record), as dicts: `key` (the
+    industry folder), `path`, `x`, `y` (the transform's translation), `ids` (the entity ids in the six
+    lists and the list that follow the transform, in stream order) and `offset` (of the path's length word).
+    A match that does not read as a record (a Lua table, a transform with floats 3, 7, 11 at 0 and 15 at 1,
+    an i64, then seven `vec<u32>`) is skipped."""
+    out = []
+    for m in _CON_PATH.finditer(data):
+        p = m.start() - 4
+        if p < 0 or struct.unpack_from("<I", data, p)[0] != m.end() - m.start():
+            continue
+        try:
+            _, q = t._lua_pairs(data, m.end())
+            mat = struct.unpack_from("<16f", data, q)
+            if mat[3] or mat[7] or mat[11] or mat[15] != 1.0:
+                continue
+            q += 64 + 8                                   # the transform, then an i64 (0 in editor maps)
+            ids = []
+            for _ in range(7):
+                n = struct.unpack_from("<I", data, q)[0]
+                if n > _IDS_MAX:
+                    raise ValueError("id list too long")
+                ids += struct.unpack_from("<%dI" % n, data, q + 4)
+                q += 4 + 4 * n
+        except (ValueError, TypeError, struct.error, IndexError, RecursionError):
+            continue
+        path = m.group().decode()
+        out.append({"key": path.split("/")[1], "path": path, "x": mat[12], "y": mat[13], "ids": ids, "offset": p})
+    return out
+
+
+def dead_industries(data, records=None):
+    """The industry construction records of industries that were deleted: every entity id the record lists is
+    in the free-id list (docs/industry-records.md#deleted-industries). A map editor delete leaves the record and the
+    industry's model instances in the save; a live industry has none of its ids free. [] when the save has no
+    readable free-id list."""
+    free = read_free_ids(data)
+    if not free:
+        return []
+    recs = read_industry_constructions(data) if records is None else records
+    return [r for r in recs if r["ids"] and all(i in free for i in r["ids"])]
+
+
+def live_main_instances(data, placed, mains, near=1.0):
+    """The instances of `placed` whose model is in `mains` (main_models), less one instance of the same key
+    within `near` metres of each deleted industry's record (dead_industries)."""
+    out = [i for i in placed if i["model"] in mains]
+    for r in dead_industries(data):
+        hit = [i for i in out if mains[i["model"]] == r["key"] and math.hypot(i["x"] - r["x"], i["y"] - r["y"]) <= near]
+        if hit:
+            out.remove(min(hit, key=lambda i: math.hypot(i["x"] - r["x"], i["y"] - r["y"])))
+    return out
+
+
 def town_clusters(edges):
     """One dict per connected group of `town_*` street edges: centre, node count, its edges."""
     use = [e for e in edges if (e["type"] or "").startswith("town_")]
@@ -131,7 +192,7 @@ def read(path, stream=False):
     table = read_model_table(data)
     placed = read_instances(data, ("industries/",), table)
     mains = main_models(table[0], {i["model"] for i in placed})
-    inds = [{"kind": label(mains[i["model"]]), "x": i["x"], "y": i["y"]} for i in placed if i["model"] in mains]
+    inds = [{"kind": label(mains[i["model"]]), "x": i["x"], "y": i["y"]} for i in live_main_instances(data, placed, mains)]
     inds += [{"kind": BUILDINGS[i["model"]], "x": i["x"], "y": i["y"]}
              for i in read_instances(data, tuple(BUILDINGS), table) if i["model"] in BUILDINGS]
     clusters = town_clusters(read_edges(data))
