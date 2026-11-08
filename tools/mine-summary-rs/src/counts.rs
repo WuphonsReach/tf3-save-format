@@ -9,8 +9,9 @@ use crate::reader::instances::{Instances, ModelTable};
 use crate::reader::zip::Archive;
 
 /// {model path: industry key}: the main model of each industry folder, `industries/<key>/<key>_sm.mdl`, else
-/// the first `_particles.mdl` of the folder (`industry_compass.main_models`).
-fn main_models(table: &ModelTable) -> HashMap<&str, String> {
+/// the first `_particles.mdl` of the folder; where that model has no instance in `placed` but the key's own
+/// `<key>.mdl` has, that one too (`industry_compass.main_models`).
+fn main_models<'t>(table: &'t ModelTable, placed: &BTreeSet<&str>) -> HashMap<&'t str, String> {
     let paths: BTreeSet<&str> = table.paths.values().map(String::as_str).collect();
     let keys: BTreeSet<&str> = paths
         .iter()
@@ -20,26 +21,34 @@ fn main_models(table: &ModelTable) -> HashMap<&str, String> {
     let mut out = HashMap::new();
     for key in keys {
         let sm = format!("industries/{key}/{key}_sm.mdl");
-        if let Some(p) = paths.get(sm.as_str()) {
-            out.insert(*p, key.to_owned());
-            continue;
-        }
         let folder = format!("industries/{key}/");
-        if let Some(p) = paths
-            .iter()
-            .find(|p| p.starts_with(&folder) && p.ends_with("_particles.mdl"))
-        {
-            out.insert(*p, key.to_owned());
+        let main = paths.get(sm.as_str()).copied().or_else(|| {
+            paths
+                .iter()
+                .find(|p| p.starts_with(&folder) && p.ends_with("_particles.mdl"))
+                .copied()
+        });
+        let Some(main) = main else {
+            continue;
+        };
+        let own = format!("industries/{key}/{key}.mdl");
+        if !placed.contains(main) {
+            if let Some(p) = paths.get(own.as_str()).filter(|p| placed.contains(**p)) {
+                out.insert(*p, key.to_owned());
+            }
         }
+        out.insert(main, key.to_owned());
     }
     out
 }
 
 /// `count`, and `by_key` (industry key to count, keys sorted).
 pub fn count_industries(data: &[u8], table: &ModelTable, inst: &Instances) -> Value {
-    let mains = main_models(table);
+    let models = inst.models(data, table, "industries/");
+    let placed: BTreeSet<&str> = models.iter().copied().collect();
+    let mains = main_models(table, &placed);
     let mut by_key: BTreeMap<&str, u64> = BTreeMap::new();
-    for m in inst.models(data, table, "industries/") {
+    for m in models {
         if let Some(k) = mains.get(m) {
             *by_key.entry(k.as_str()).or_default() += 1;
         }

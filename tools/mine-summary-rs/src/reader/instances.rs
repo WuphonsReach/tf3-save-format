@@ -1,7 +1,8 @@
 //! The model table and model instances (`docs/models.md` in tf3-save-format).
 //!
 //! Copied from tf3-save-mapper's `crates/tf3-save-mapper-core/src/instances.rs` at commit bfe77c7 (same author,
-//! MIT OR Apache-2.0) and changed to what the summary needs: the table's lookup returns `Option`, and
+//! MIT OR Apache-2.0), with its preview-block and subnormal-position rules of commits be123ed and 57cdfa8, and
+//! changed to what the summary needs: the table's lookup returns `Option`, and
 //! `Instances` keeps the record scan so several prefixes are listed from one scan, with the model path only.
 //!
 //! The model table comes right after the header: a u32 count, then per model a `str` source mod, a `str` path
@@ -106,35 +107,34 @@ pub fn find_records(data: &[u8], from: usize) -> Vec<usize> {
     out
 }
 
-/// The indexes (into `matches`) of the records of the map editor's model preview block
-/// (`docs/editor-saves.md`): pages of records exactly 68 bytes apart with no rotation and ids rising by one,
-/// at least `BLOCK_RUN` long, and a shorter page next to such a page with at most 200 bytes between them.
+/// The indexes (into `matches`) of the records of the model preview block (`docs/editor-saves.md`): pages of
+/// records exactly 68 bytes apart with ids rising by one, whatever their transform (a real instance has more
+/// after its transform, so two never sit that close; a lone record counts only if it has no rotation), at
+/// least `BLOCK_RUN` long, and a shorter page next to such a page with at most 200 bytes between them. Some
+/// saves' pages are tilted and scaled (tf3-save-mapper commit be123ed).
 fn preview_block(data: &[u8], matches: &[usize]) -> BTreeSet<usize> {
     let mut pages: Vec<Vec<usize>> = Vec::new();
     let mut run: Vec<usize> = Vec::new();
     let mut prev: Option<(usize, u32)> = None;
-    for (k, &at) in matches.iter().enumerate() {
-        let (id, m) = record(data, at);
-        let plain = [1, 2, 4, 6, 8, 9].iter().all(|&i| m[i] == 0.0);
-        if plain
-            && prev.is_some_and(|(p, pid)| {
-                at - p == RECORD_BYTES && u64::from(id) == u64::from(pid) + 1
-            })
-        {
-            run.push(k);
-        } else {
-            if !run.is_empty() {
-                pages.push(std::mem::take(&mut run));
-            }
-            if plain {
-                run.push(k);
-            }
+    let plain = |at: usize| {
+        let (_, m) = record(data, at);
+        [1, 2, 4, 6, 8, 9].iter().all(|&i| m[i] == 0.0)
+    };
+    let flush = |run: &mut Vec<usize>, pages: &mut Vec<Vec<usize>>| {
+        let page = std::mem::take(run);
+        if page.len() > 1 || page.first().is_some_and(|&k| plain(matches[k])) {
+            pages.push(page);
         }
+    };
+    for (k, &at) in matches.iter().enumerate() {
+        let (id, _) = record(data, at);
+        if !prev.is_some_and(|(p, pid)| at - p == RECORD_BYTES && u64::from(id) == u64::from(pid) + 1) {
+            flush(&mut run, &mut pages);
+        }
+        run.push(k);
         prev = Some((at, id));
     }
-    if !run.is_empty() {
-        pages.push(run);
-    }
+    flush(&mut run, &mut pages);
     let mut keep: Vec<bool> = pages.iter().map(|p| p.len() >= BLOCK_RUN).collect();
     let near = |a: usize, b: usize| {
         let gap = matches[pages[b][0]] as i64
@@ -157,7 +157,7 @@ fn preview_block(data: &[u8], matches: &[usize]) -> BTreeSet<usize> {
 }
 
 /// The model paths of the instances whose path starts with one of `prefixes`, in stream order, with the
-/// preview block left out and records with a non-finite position or facing dropped (`read_instances` in
+/// preview block left out and records with a non-finite position or facing, or a subnormal position, dropped (`read_instances` in
 /// model_instances.py). The record scan is shared by the callers: pass `records = find_records(...)` and
 /// `skip = preview_block(...)` once.
 pub struct Instances {
@@ -192,6 +192,11 @@ impl Instances {
                 .iter()
                 .all(|v| v.is_finite())
             {
+                continue;
+            }
+            // Another structure's bytes fit the pattern with a subnormal position, which reads as 0,0
+            // (tf3-save-mapper commit 57cdfa8); only the position is checked, as a turn can hold one.
+            if [m[12], m[13], m[14]].iter().any(|v| v.is_subnormal()) {
                 continue;
             }
             out.push(*model);

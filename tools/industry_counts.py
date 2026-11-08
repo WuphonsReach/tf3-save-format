@@ -4,8 +4,9 @@
 Usage: industry_counts.py SAVE.sav      (prints the counts as JSON)
 
 An industry is one model instance of the kind's main model, `industries/<key>/<key>_sm.mdl` (or, for the sand
-excavator, which has none, its `_particles.mdl`; `industry_compass.main_models`). Its other instances (cranes,
-sheds, particles) are not counted. A mod's industry that has no such model is missed.
+excavator, which has none, its `_particles.mdl`; `industry_compass.main_models`). Where that model has no
+instance but the key's own `<key>.mdl` has, that one counts (a sand excavator whose `_sm` model is placed only
+in the preview block). Its other instances (cranes, sheds, particles) are not counted. A mod's industry that has no such model is missed.
 
 Result: `count`, and `by_key` (industry key to count, keys sorted); null where the save has no readable model
 table (the reader raises ValueError).
@@ -28,9 +29,9 @@ def count_industries(data):
         table = read_model_table(data)
     except ValueError:
         return None
-    mains = main_models(table[0])
-    by_key = collections.Counter(mains[i["model"]] for i in read_instances(data, ("industries/",), table)
-                                 if i["model"] in mains)
+    placed = read_instances(data, ("industries/",), table)
+    mains = main_models(table[0], {i["model"] for i in placed})
+    by_key = collections.Counter(mains[i["model"]] for i in placed if i["model"] in mains)
     return {"count": sum(by_key.values()), "by_key": dict(sorted(by_key.items()))}
 
 

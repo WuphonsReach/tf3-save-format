@@ -77,18 +77,26 @@ def sector(dx, dy, frame):
     return ("E" if east > 0 else "W") if abs(east) >= abs(north) else ("N" if north > 0 else "S")
 
 
-def main_models(paths):
-    """{model path: industry key}: the main model of each industry folder."""
+def main_models(paths, placed=None):
+    """{model path: industry key}: the main model of each industry folder, `<key>/<key>_sm.mdl`, else the
+    folder's first `_particles.mdl`. With `placed` (the set of model paths that have an instance), a key whose
+    main model has none but whose own `<key>/<key>.mdl` has gets that one too: in some saves a sand
+    excavator's `_sm` model is placed only in the preview block (tf3-save-mapper's `industry_models`)."""
     keys = {p.split("/")[1] for p in paths if p.startswith("industries/") and p.count("/") >= 2}
     found = {}
     for k in sorted(keys):
         sm = "industries/%s/%s_sm.mdl" % (k, k)
         if sm in paths:
-            found[sm] = k
-            continue
-        part = sorted(p for p in paths if p.startswith("industries/%s/" % k) and p.endswith("_particles.mdl"))
-        if part:
-            found[part[0]] = k
+            main = sm
+        else:
+            part = sorted(p for p in paths if p.startswith("industries/%s/" % k) and p.endswith("_particles.mdl"))
+            if not part:
+                continue
+            main = part[0]
+        own = "industries/%s/%s.mdl" % (k, k)
+        if placed is not None and main not in placed and own in placed:
+            found[own] = k
+        found[main] = k
     return found
 
 
@@ -121,9 +129,9 @@ def read(path, stream=False):
     names = t.entity_names(data)
     towns = t.town_names(data)
     table = read_model_table(data)
-    mains = main_models(table[0])
-    inds = [{"kind": label(mains[i["model"]]), "x": i["x"], "y": i["y"]}
-            for i in read_instances(data, ("industries/",), table) if i["model"] in mains]
+    placed = read_instances(data, ("industries/",), table)
+    mains = main_models(table[0], {i["model"] for i in placed})
+    inds = [{"kind": label(mains[i["model"]]), "x": i["x"], "y": i["y"]} for i in placed if i["model"] in mains]
     inds += [{"kind": BUILDINGS[i["model"]], "x": i["x"], "y": i["y"]}
              for i in read_instances(data, tuple(BUILDINGS), table) if i["model"] in BUILDINGS]
     clusters = town_clusters(read_edges(data))

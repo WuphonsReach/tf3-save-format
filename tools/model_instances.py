@@ -14,10 +14,10 @@ within R metres of the point, `--prefix` picks the model paths that start with i
 A model instance is the record of docs/models.md: a model id, then a 4 x 4 `f32` transform with
 floats 3, 7 and 11 equal to 0 and float 15 equal to 1. The scan looks for that pattern after the
 model table, so it can also hit a stray match in other data; the model id has to be inside the
-table. It reads the whole stream (about 20 s for a 700 MB stream). A vehicle's own entity id and
-its name (`Train 18`) are not next to its instance (docs/entity-names.md), so the output names a
-vehicle by model and slot. The slot changes when instances come and go, so it is only good within
-one save.
+table, and a match with a subnormal position is dropped. It reads the whole stream (about 20 s for
+a 700 MB stream). A vehicle's own entity id and its name (`Train 18`) are not next to its instance
+(docs/entity-names.md), so the output names a vehicle by model and slot. The slot changes when
+instances come and go, so it is only good within one save.
 """
 import argparse
 import math
@@ -35,6 +35,7 @@ _INSTANCE = re.compile(rb"(....)(.{12}\x00\x00\x00\x00.{12}\x00\x00\x00\x00.{12}
 
 TABLE_TRIES = 64     # `animal/` hits tried: the header holds a few at most, and an old save with no table can hold many in its instances
 _BLOCK_RUN = 6       # fewest records in a run to count as the preview block (its pages hold 6, 12 or 18 to 36: one or more columns of six cells)
+_F32_MIN_NORMAL = 1.1754944e-38   # a match whose x, y or z is a subnormal f32 is not an instance (docs/models.md)
 
 
 class ModelPaths(list):
@@ -93,27 +94,34 @@ def _table_before(data, first):
 
 
 def _preview_block(matches):
-    """The indexes (into `matches`) of the records of the model preview block that map editor saves carry
-    (docs/editor-saves.md). A page is a run of instances exactly 68 bytes apart (nothing between them) whose
-    matrix has no rotation (only the diagonal and the translation are non-zero) and whose model ids rise by one.
-    The block is pages of at least `_BLOCK_RUN` records, and a shorter page (the last of a group) joins it
-    when it sits next to a block page with only a short trailer (at most 200 bytes) between them. It is a
-    registry of models laid out in cells near 0,0, not anything the game draws. No other page like it was
-    found in the saves checked, in any position."""
-    pages, run, prev = [], [], None
-    for k, m in enumerate(matches):
+    """The indexes (into `matches`) of the records of the model preview block (docs/editor-saves.md). A page
+    is a run of instances exactly 68 bytes apart (nothing between them) whose model ids rise by one, whatever
+    their transform: a real instance has more bytes after its matrix, so two never sit that close. A lone
+    record counts as a page only if its matrix has no rotation (only the diagonal and the translation are
+    non-zero). The block is pages of at least `_BLOCK_RUN` records, and a shorter page (the last of a group)
+    joins it when it sits next to a block page with only a short trailer (at most 200 bytes) between them.
+    It is a registry of models laid out near 0,0, not anything the game draws. Most pages have no rotation;
+    some saves also hold long pages of tilted and scaled records in rows along x near the origin.
+    Same rule as tf3-save-mapper's `instances::preview_block` (its commit be123ed)."""
+
+    def plain(m):
         f = struct.unpack("<12f", m.group(2))                       # rows 1 to 3 of the matrix, four floats each
-        plain = all(f[i] == 0 for i in (1, 2, 4, 6, 8, 9))
+        return all(f[i] == 0 for i in (1, 2, 4, 6, 8, 9))
+
+    pages, run, prev = [], [], None
+
+    def flush():
+        if len(run) > 1 or (run and plain(matches[run[0]])):
+            pages.append(list(run))
+        run.clear()
+
+    for k, m in enumerate(matches):
         mid = struct.unpack("<I", m.group(1))[0]
-        if plain and prev is not None and m.start() - prev[0] == 68 and mid == prev[1] + 1:
-            run.append(k)
-        else:
-            if run:
-                pages.append(run)
-            run = [k] if plain else []
+        if not (prev is not None and m.start() - prev[0] == 68 and mid == prev[1] + 1):
+            flush()
+        run.append(k)
         prev = (m.start(), mid)
-    if run:
-        pages.append(run)
+    flush()
     keep = [len(pg) >= _BLOCK_RUN for pg in pages]
     near = lambda a, b: 0 < matches[pages[b][0]].start() - matches[pages[a][-1]].start() - 68 <= 200
     for i in range(1, len(pages)):                                  # forwards, then backwards: a short page next to a block page
@@ -130,7 +138,9 @@ def read_instances(data, prefixes=("vehicle/",), table=None, keep_preview_block=
     (the translation), `fx`, `fy` (the first row of the transform: the facing) and `offset`.
     Pass `table=read_model_table(data)` to reuse a table already read. The model preview block of
     map editor saves (a copy of many models in a grid near 0,0, see `_preview_block`) is left out unless
-    `keep_preview_block` is true."""
+    `keep_preview_block` is true. A match whose x, y or z is a subnormal f32 is left out (another
+    structure's bytes that fit the pattern, docs/models.md); its slot still counts, so slots stay the index
+    among all matches."""
     paths, end = table or read_model_table(data)
     by_id = getattr(paths, "by_id", None) or dict(enumerate(paths))
     wanted = {i for i, p in by_id.items() if p.startswith(tuple(prefixes))}
@@ -145,6 +155,8 @@ def read_instances(data, prefixes=("vehicle/",), table=None, keep_preview_block=
         fx, fy = struct.unpack_from("<2f", m.group(2))
         if not all(math.isfinite(v) for v in (x, y, z, fx, fy)):
             continue
+        if any(0 < abs(v) < _F32_MIN_NORMAL for v in (x, y, z)):
+            continue                                                # another structure's bytes: position reads as 0,0
         out.append({"slot": k, "model": by_id[mid], "x": x, "y": y, "z": z,
                     "fx": fx, "fy": fy, "offset": m.start()})
     return out
