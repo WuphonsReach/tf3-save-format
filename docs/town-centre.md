@@ -9,6 +9,7 @@ Everything here is **Observed** (seen in test pictures, not confirmed by a secon
 - **The label hangs above the centre (Observed, 604, four towns in three games).** A town's name label is the only measure of its centre that has worked. Its bottom edge sits about 15 to 17 m from the centre, in the direction that is up in the picture, on the ground plane. The centre is found from a series of near-top-down pictures registered to the street edges, whose anchor points lie on a circle ([town_centre.py](../tools/town_centre.py)).
 - **Street clusters do not track it (Observed).** The mean of the street nodes lies 45 to 56 m from these centres, the four-edge nodes 100 to 124 m.
 - **Strong tilt moves the label's ground position 20 to 50 m (Observed),** which a label hanging at a height above the centre explains; near-top-down pictures are good to about 3 to 5 m.
+- **A point from the save alone** is the mean of the town's building parcels, 12 to 128 m from the editor export's position ([town-places.md](town-places.md), Observed, 604 and 605); it has not been compared with the centres below.
 - **Open.** Whether the point is the game's own town centre, the label's height, the camera's lowest tilt, and any stored position.
 
 ## The label hangs a fixed distance above the centre (Observed, 604, four towns in three games)

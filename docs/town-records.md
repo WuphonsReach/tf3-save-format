@@ -2,15 +2,15 @@
 
 Each town has a record in the entity data, far into the stream (about 390 MB into a 400 MB stream on a giant map). Checked on 604, editor saves and played saves.
 
-The record has no name, id or position. To tie a record to a town, match its capacities and cargo ids against the map editor's Towns export of the same save. Two towns can share capacities, but in every case seen their cargo told them apart. Records are in entity order, not alphabetical.
+The record has no name, id or position. Its row is named by the town's entry in the [entity table](entity-table.md), which also gives the town's name and id ([town-places.md](town-places.md)). Without that, a record can be matched by its capacities and cargo ids against the map editor's Towns export of the same save: two towns can share capacities, but in every case seen their cargo told them apart. Records are not in id or name order; a deleted town's row is reused by the next town placed.
 
 ## In short
 
 - **Layout (Observed, 604).** Town records sit in one run after four `u32`s whose last is the town count. A starting record is 78 bytes: three target capacities (residential, commercial, industrial), four floats, a commercial and an industrial cargo list of `(id, weight)` pairs, and 17 trailing bytes. A longer cargo list makes a longer record.
-- **No name, id or position.** A record is tied to a town by its capacities and cargo ids against the editor's Towns export.
+- **No name, id or position in the record (Observed, 604 and 605).** The town's entity entry points at the record's row and at its name ([town-places.md](town-places.md)); the Towns export's capacities and cargo are a cross-check.
 - **Editing (Confirmed, one editor map).** Changing the cargo ids and weights in place changes the towns' starting cargo, but not the buildings that already exist ([building-stocks.md](building-stocks.md)).
 - **Live values (Observed, three towns).** Capacities are fixed targets; the second float follows population over the first residential capacity (floor 1.0). A town that gains a commercial cargo grows its record.
-- **Open.** The first three table header values, the other floats, the last 8 bytes of the record, and the Towns tab columns.
+- **Open.** The first table header value, the other floats, the last 8 bytes of the record, and the Towns tab columns.
 
 ## Table header
 
@@ -21,7 +21,7 @@ The records sit in one contiguous run, after four u32s. The last is the town cou
 | 18-town giant editor map of ours | 12800, 29, 0, 18 |
 | Catalog save [6421140](https://mod.io/g/transportfever3/m/marschbahn-westerland-niebll-ohne-mods) | 4096, 24, 0, 27 |
 
-The first three values are **open**.
+The second value is the town component's type id in the [entity table](entity-table.md#the-arrays-type-free-list-count), and the third is the count of a free-slot list that follows it: in our 605 dry editor map the header read `12288, 27, 0, 11` when fresh and `12288, 27, 1, 7, 12` after deletions, row 7 being a deleted town's record that no entity points at (**Observed**). The first value is **open**.
 
 ## Starting layout (78 bytes)
 

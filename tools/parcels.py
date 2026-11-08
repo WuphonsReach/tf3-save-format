@@ -86,7 +86,7 @@ def _chain(data, s):
     try:
         for i in range(n):
             edge, left, curve, nf = HEAD.unpack_from(data, p)
-            if edge >= MAX_EDGE or left > 1 or not 0.0 <= curve <= 1.0001 or not 1 <= nf <= 8:
+            if edge >= MAX_EDGE or left > 1 or not 0.0 <= curve <= 1.0001 or not 0 <= nf <= 8:
                 return None
             p += HEAD.size
             faces = []

@@ -7,7 +7,8 @@ The strips of ground along town streets where the town developer can put a build
 - **The table (Observed, 604, eight saves of one game).** One list holds every parcel: the street edge it runs along, a side, a position along the edge and one to four faces of 8 by 8 m cells, stacked away from the street. A normal 88 m edge has 22 parcels, 11 a side. It grew in the tests and never lost a row.
 - **The flag word (Observed).** Bit 0 means something stands on the cell (a building, and sometimes something else). Bit 1 means another parcel overlaps it; that is a fit, not a one-variable test.
 - **Deleting a building (Observed, 604, six deletions and two on an editor map).** It clears bit 0 on the cells of its footprint, yard included. The building record, its flags and its ground-texture polygons stay in the save.
-- **Open.** Which table position a parcel id is, the zone of an unbuilt parcel, what the trailing `8.0` or `7.0` is, whether deleting a road removes parcels, and whether other versions match.
+- **A parcel id's table row is in the entity table (Observed, 601 to 605).** The parcel entity's one pair holds its row, top bit masked ([entity-table.md](entity-table.md)); [town-places.md](town-places.md) uses it to place towns.
+- **Open.** The zone of an unbuilt parcel, what the trailing `8.0` or `7.0` is, whether deleting a road removes parcels, and whether other versions match.
 
 ## The parcel table (604)
 
@@ -19,7 +20,7 @@ n x
   u32  edge             entity id of the street edge the parcel runs along
   u8   left             1 = on the left of the edge, 0 = on the right
   f32  curve            position along the edge, 0 to 1
-  u32  nFaces           4 for 7,282 of 7,327 parcels, 1 to 3 for the rest
+  u32  nFaces           4 for 7,282 of 7,327 parcels, 1 to 3 for the rest; 0 in some 601 to 605 catalog saves
   nFaces x
     u32  4              point count of the face
     4 x (f32 x, f32 y, f32 z)    the corners, in map metres
@@ -45,7 +46,7 @@ n x
 
 ## Parcel ids and the building records
 
-The `parcels` list of a building record ([town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)) holds parcel entity ids. Which table position an id is stands **Open**; what is known:
+The `parcels` list of a building record ([town-buildings.md](town-buildings.md#the-record-and-how-to-list-it)) holds parcel entity ids. **Observed** (601 to 605, our editor maps, a played game and catalog saves): the id's entry in the [entity table](entity-table.md) is one pair whose slot, with the top bit (`0x40000000`) masked, is the parcel's row in this table. In a fresh editor map the parcel type was on 14,915 entities and the table had 14,915 rows, and the parcels of 2,013 of 2,213 multi-parcel buildings fell on one edge. What was known before, without that table:
 
 - **An id is not a table position.** In the first save the building records name parcel ids from 6,544 to 26,038 for a table of 2,543 parcels, and no constant turns an id into a position over the whole table.
 - **Inside a normal run the ids look consecutive.** On the four edges examined by hand, with a start chosen to make it work, a building's ids are consecutive numbers (ascending or descending) on one side of one edge, and no building's ids run over the break from one side to the other. That fits ids handed out in a block per run, with the block starting at `b` and the position within the run being `id - b`. The start `b` differs between runs: from the edge id it was +2 on one edge and, as candidates, about +4 on a second and +32 on a third, so it follows no rule from the edge id (the larger node id of the edge plus one fitted 65 of 388 parcel edges, 26 of those failing a position check, so it is not a rule).
@@ -55,7 +56,6 @@ The `parcels` list of a building record ([town-buildings.md](town-buildings.md#t
 
 ## Open
 
-- **Which table position a parcel id is,** for all runs. A direct test is a deletion on a normal 22-parcel run beside a building whose record can be named, or a game where the town developer builds a single building between two saves.
 - **Zone type per parcel** (residential, commercial, industrial): nothing stores it with a parcel. A building's zone is in its construction path ([building-construction-paths.md](building-construction-paths.md#the-zone-and-footprint-from-the-construction-path-604)), and a record names its parcels, so a built parcel's zone follows from that; an unbuilt parcel has none. The polygon names can still not be paired with a record.
 - **What the second flag bit (`Parcel`) clears with,** and whether overlapped cells ever clear together.
 - **What `tail` is** (8 or 7) and what chooses it, and whether `left` 1 is the left side of the edge as the API says. One edge was checked.
