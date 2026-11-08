@@ -11,7 +11,7 @@ This is a log by nature: one catalog save (6425796) plus one Tiny game on 604, a
 - **Cargo-unit records link a line to its vehicles** (line id, vehicle id, 0, origin industry id, a clock value; the third word was 1 in the 605 game), but only while the vehicles carry cargo. A line's id also sits in each of its vehicles' records, which works before any cargo is loaded (604, one Tiny game; the record's shape was not found in the 605 Giga game).
 - **Name slots do not give the link;** a line and its vehicles share a run only when made together.
 - **The stop record ends in a 37-byte vector** with one byte per cargo-list entry; 1 means the stop loads it.
-- **Open.** What a cargo-unit record counts, which entity a stop record belongs to, and whether a lower load percentage changes the vector.
+- **Open.** What a cargo-unit record counts, which entity a stop record belongs to, whether a lower load percentage changes the vector, and whether the [entity table](entity-table.md) gives a line's name slot from its id, as it does for towns ([town-places.md](town-places.md)); untested, and the 26 named lines of the 605 game below are the check.
 
 ## What was found
 
