@@ -471,8 +471,9 @@ def cmd_ocr(work, shots, jobs, engine="tesseract"):
             or (load_ocr(work, s.id) or {}).get("hud_engine", "tesseract") != engine]
 
     def work_one(s):
-        d = ocr_one(s.path, os.path.join(cache, f"_tmp_{s.id}.png"), engine)
-        os.remove(os.path.join(cache, f"_tmp_{s.id}.png"))
+        # uncompressed grey temp file: a PNG of the upscaled 4K frame took 1-3 s to write, tesseract reads both alike
+        d = ocr_one(s.path, os.path.join(cache, f"_tmp_{s.id}.pgm"), engine)
+        os.remove(os.path.join(cache, f"_tmp_{s.id}.pgm"))
         with open(os.path.join(cache, s.id + ".json"), "w") as fh:
             json.dump(d, fh)
 
@@ -486,7 +487,7 @@ def cmd_ocr(work, shots, jobs, engine="tesseract"):
     def mark(s):
         d = load_ocr(work, s.id)
         d["load_v"] = LOAD_VERSION
-        tmp = os.path.join(cache, f"_tmp_{s.id}.png")
+        tmp = os.path.join(cache, f"_tmp_{s.id}.pgm")
         found = detect_loading(s.path, tmp)
         if os.path.exists(tmp):
             os.remove(tmp)
