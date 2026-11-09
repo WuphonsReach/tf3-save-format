@@ -4,7 +4,7 @@ The table that says which components each entity has and where each component's 
 
 ## In short
 
-- **One table, one entry per entity id (Observed, 568 to 605).** `u32 n`, then n entries, then `u32 n` again. An entry is `u32 k` and k pairs `(u32 type, u32 slot)`. The id is the entry's index: the town ids that building records carry are the indexes of the town entries (Observed, seven games, every live town).
+- **One table, one entry per entity id (Observed, 568 to 605).** `u32 n`, then n entries, then `u32 n` again. An entry is `u32 k` and k pairs `(u32 type, u32 slot)`. The id is the entry's index: the town ids that building records carry are the indexes of the town entries (Observed, seven games, every live town), and the line and vehicle ids of notifications and a mod's log are the indexes of entries whose name slot holds that line's or vehicle's name (Observed, 604 and 605, two games, [line-ids.md](line-ids.md#the-entity-table-names-every-line-604-and-605)).
 - **A free id is one pair `(ffffffff, ffffffff)` (Observed).** A deleted town's id reads so, while its buildings and roads stay in the save.
 - **A slot is a row of that type's array (Observed).** The town slot is the town record's row, the name slot the names table's, the parcel slot the parcel table's, the edge slot the street-edge table's. Some types always set the top bit of the slot (`0x40000000`): mask it with `0x3fffffff`.
 - **Type ids are numbers per save, not fixed (Observed).** The town type was 27 and the name type 16 in our 605 editor maps, 25 and 22 in a played 604 game with seven mods. Read them from the arrays, not from a list.
@@ -43,6 +43,7 @@ Numbers from one fresh 605 editor map (11 towns, 753 street edges, 617 nodes, 14
 | 10 | 7,181 | Towns, edges, some buildings and named entities; an array holding statistic names (`townResidentialCount`, `roadTotalLength`) has this type and count |
 
 - A town entry had four pairs in every save read: town, name, and the types numbered 0 and 10 in the table above.
+- A line's entry had six pairs, one of them of a type that only lines carried, in a 604 and a 605 game; vehicles carried 8 to 10 types ([line-ids.md](line-ids.md#the-entity-table-names-every-line-604-and-605)).
 - In the played game (seven mods, 604) the three towns were `{25: record, 22: name, 0, 10, 54}`, the company just before them with the name slot 0, and the parcel type was 45 in a 605 catalog save. So the numbers move with the game's contents.
 
 ## The arrays: type, free list, count
