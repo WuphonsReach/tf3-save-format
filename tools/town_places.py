@@ -51,8 +51,9 @@ def _entity_end(data, q, n_max=None):
     return q + 4 + 8 * k
 
 
-# What followed the table's closing count in every save read (editor maps and a played game).
-_TABLE_TRAILER = re.compile(rb"(?s)(.{4})\x01\0\0\0\x01\0\0\0\0\0\0\0\x01\0\0\0\x01\0\0\0\0\0\0\0\x01\0\0\0")
+# What followed the table's closing count: u32 1, 1, x, 1, 1, y, 1. x and y were 0 in most saves
+# read (editor maps, played games) and other values in two catalog saves.
+_TABLE_TRAILER = re.compile(rb"(?s)(.{4})\x01\0\0\0\x01\0\0\0.{4}\x01\0\0\0\x01\0\0\0.{4}\x01\0\0\0")
 
 
 def _parses_to(data, q, n, end):
@@ -98,12 +99,14 @@ def read_entities(data, start, n):
     return out
 
 
-def names_table(data):
+def names_table(data, ents=None):
     """(names, type id, set of free slots) of the entity names table, or None.
 
     In front of the table's `u32 n` is the component's type id and a `vec<u32>` of free slots
-    (docs/entity-names.md). A free slot keeps the text its last owner had. The longest vec that
-    ends at `n` and holds only distinct slots below n is taken.
+    (docs/entity-names.md). A free slot keeps the text its last owner had. Several vecs can end at
+    `n` and hold only distinct slots below n, since the type id and the words before it can parse
+    as one. With `ents` (from read_entities), the vec is taken whose type id is carried by exactly
+    n minus its length entities; without, or if none fits, the longest.
     """
     names = tf3save.entity_names(data)
     if not names:
@@ -111,7 +114,7 @@ def names_table(data):
     first = struct.pack("<I", len(names[0].encode())) + names[0].encode()
     nat = data.find(first) - 4
     n = struct.unpack_from("<I", data, nat)[0]
-    best = None
+    found = []
     for f in range(0, n + 1):
         q = nat - 4 - 4 * f
         if q < 4:
@@ -119,9 +122,18 @@ def names_table(data):
         if struct.unpack_from("<I", data, q)[0] == f:
             v = struct.unpack_from("<%dI" % f, data, q + 4)
             if all(x < n for x in v) and len(set(v)) == f:
-                best = (struct.unpack_from("<I", data, q - 4)[0], set(v))
-    if best is None:
+                found.append((struct.unpack_from("<I", data, q - 4)[0], set(v)))
+    if not found:
         return None
+    if ents is not None:
+        carried = {}
+        for e in ents:
+            if e:
+                for t in e:
+                    carried[t] = carried.get(t, 0) + 1
+        fits = [c for c in found if carried.get(c[0], 0) == n - len(c[1])]
+        found = fits or found
+    best = found[-1]
     return names[:n], best[0], best[1]
 
 
@@ -159,12 +171,14 @@ def read_export(path):
 
 def town_places(data):
     """One dict per live town: id, name_slot, name, record, buildings, parcels, x, y, spread."""
-    nt = names_table(data)
     table = find_entity_table(data)
-    if nt is None or table is None:
+    if table is None:
+        return None
+    ents = read_entities(data, *table)
+    nt = names_table(data, ents)
+    if nt is None:
         return None
     names, name_type, free = nt
-    ents = read_entities(data, *table)
     blds = building_records(data)
     owners = {t for t, _ in blds if t < len(ents) and ents[t] and name_type in ents[t]}
     if not owners:
