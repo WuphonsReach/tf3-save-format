@@ -1,9 +1,10 @@
-//! The summary of one save, field for field as `summarise_save` in mine_summary.py writes it (schema v8,
-//! `tools/schema/tf3-save-summary.v8.schema.json`). Every key is written, in the schema's order; where the save
+//! The summary of one save, field for field as `summarise_save` in mine_summary.py writes it (schema v9,
+//! `tools/schema/tf3-save-summary.v9.schema.json`). Every key is written, in the schema's order; where the save
 //! cannot be read, the save-derived keys are null and `error` says why (`TypeName: message`).
 
 use std::path::Path;
 
+use crate::entities::{EntitySummary, entity_summary};
 use crate::header::{HVal, Header, read_header};
 use crate::json::{Obj, Value, whole_float};
 use crate::reader::instances::{Instances, read_model_table};
@@ -12,11 +13,11 @@ use crate::stream::{
 };
 use crate::{counts, journal, states};
 
-pub const SCHEMA_VERSION: u32 = 8;
-pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v8.schema.json";
+pub const SCHEMA_VERSION: u32 = 9;
+pub const SCHEMA_URL: &str = "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v9.schema.json";
 
 /// Every key, in the order written.
-pub const FIELDS: [&str; 41] = [
+pub const FIELDS: [&str; 43] = [
     "$schema",
     "schema_version",
     "name",
@@ -54,6 +55,8 @@ pub const FIELDS: [&str; 41] = [
     "town_states",
     "town_records",
     "towns",
+    "lines",
+    "entities",
     "settings",
     "mods",
     "cargo_list",
@@ -354,7 +357,11 @@ fn calendar(data: &[u8]) -> Result<Value, String> {
     Ok(o.into())
 }
 
-fn town_records(data: &[u8], recs: &[TownRecord], cargo: Option<&[String]>) -> Value {
+fn town_records(
+    recs: &[TownRecord],
+    cargo: Option<&[String]>,
+    es: Option<&EntitySummary>,
+) -> Value {
     let start: Vec<&TownRecord> = recs.iter().filter(|r| r.floats == [1.0; 4]).collect();
     let (mut run, mut best) = (0usize, 0usize);
     for w in recs.windows(2) {
@@ -369,14 +376,18 @@ fn town_records(data: &[u8], recs: &[TownRecord], cargo: Option<&[String]>) -> V
     o.set("records", recs.len());
     o.set("starting_layout", start.len());
     o.set("longest_78_byte_run", best);
-    o.set(
-        "table_count",
-        Value::opt(
-            recs.first()
-                .filter(|r| r.offset >= 4)
-                .map(|r| u32::from_le_bytes(data[r.offset - 4..r.offset].try_into().unwrap())),
-        ),
-    );
+    let header = es.and_then(|e| e.town_header.as_ref()).map(|h| {
+        let mut o = Obj::new();
+        o.set("first_word", h.first_word);
+        o.set("type", h.kind);
+        o.set(
+            "free",
+            Value::List(h.free.iter().map(|&f| Value::from(f)).collect()),
+        );
+        o.set("rows", h.rows);
+        Value::from(o)
+    });
+    o.set("header", Value::opt(header));
     if !start.is_empty() {
         for (kind, pick) in [
             ("com", (|r: &TownRecord| r.com) as fn(&TownRecord) -> u32),
@@ -475,20 +486,64 @@ fn read_fields(data: &[u8], opts: &Options) -> Result<Vec<(&'static str, Value)>
     f.push(("subsidies", st.subsidies));
     f.push(("town_states", Value::opt(st.town_states)));
     let recs = scan_records(data)?;
+    let es = entity_summary(data, recs.first().map(|r| r.offset));
     f.push((
         "town_records",
-        town_records(data, &recs, cargo_names.as_deref()),
+        town_records(&recs, cargo_names.as_deref(), es.as_ref()),
     ));
-    let towns = town_names(data, recs.len().max(st.town_states.unwrap_or(0))).map(|names| {
+    let towns = match es.as_ref().filter(|e| !e.towns.is_empty()) {
+        Some(e) => {
+            let name = |t: &crate::entities::Town| Value::opt(t.name.clone());
+            let places: Vec<Value> = e
+                .towns
+                .iter()
+                .map(|t| {
+                    let mut o = Obj::new();
+                    o.set("id", t.id);
+                    o.set("name", name(t));
+                    o.set("record", t.record);
+                    o.set("buildings", t.buildings);
+                    o.set(
+                        "x",
+                        Value::opt(t.mean.map(|m| m.0.round_ties_even() as i64)),
+                    );
+                    o.set(
+                        "y",
+                        Value::opt(t.mean.map(|m| m.1.round_ties_even() as i64)),
+                    );
+                    Value::from(o)
+                })
+                .collect();
+            let mut o = Obj::new();
+            o.set("count", e.towns.len());
+            o.set("source", "entity_table");
+            o.set("names", Value::List(e.towns.iter().map(name).collect()));
+            o.set("places", Value::List(places));
+            Some(Value::from(o))
+        }
+        None => town_names(data, recs.len().max(st.town_states.unwrap_or(0))).map(|names| {
+            let mut o = Obj::new();
+            o.set("count", names.len());
+            o.set("source", "name_run");
+            o.set(
+                "names",
+                Value::List(names.into_iter().map(Value::Str).collect()),
+            );
+            o.set("places", Value::Null);
+            Value::from(o)
+        }),
+    };
+    f.push(("towns", Value::opt(towns)));
+    f.push(("lines", Value::opt(es.as_ref().and_then(|e| e.lines))));
+    let entities = es.as_ref().map(|e| {
         let mut o = Obj::new();
-        o.set("count", names.len());
-        o.set(
-            "names",
-            Value::List(names.into_iter().map(Value::Str).collect()),
-        );
+        o.set("count", e.count);
+        o.set("free", e.free);
+        o.set("name_type", Value::opt(e.name_type));
+        o.set("town_type", Value::opt(e.town_type));
         Value::from(o)
     });
-    f.push(("towns", Value::opt(towns)));
+    f.push(("entities", Value::opt(entities)));
     let settings = if h.settings.is_empty() {
         Value::Null
     } else {

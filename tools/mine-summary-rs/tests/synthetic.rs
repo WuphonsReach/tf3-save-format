@@ -212,7 +212,10 @@ fn stream() -> Vec<u8> {
     }
     s.extend_from_slice(&[0xee; 8]);
 
-    // Two town records 78 bytes apart.
+    // The town array's header (first word, type 27, no free row, two rows), then two town records 78 bytes apart.
+    for w in [12288u32, 27, 0, 2] {
+        u32s(&mut s, w);
+    }
     for (caps, f) in [([100u32, 200, 300], 1.0f32), ([10, 20, 30], 1.5)] {
         let at = s.len();
         for c in caps {
@@ -231,7 +234,10 @@ fn stream() -> Vec<u8> {
     }
     s.extend_from_slice(&[0xee; 8]);
 
-    // The entity names table.
+    // The entity names table: its type (16), a free list of one slot (5) and the count, then the names.
+    for w in [16u32, 1, 5, 6] {
+        u32s(&mut s, w);
+    }
     for n in [
         "<name> Transport",
         "Alpha",
@@ -277,6 +283,71 @@ fn stream() -> Vec<u8> {
     ] {
         instance(&mut s, id, x, -x);
         s.extend_from_slice(&[0x33; 3]);
+    }
+    s.extend_from_slice(&[0xee; 16]);
+
+    // Two building records: town entity 1 on parcel entity 4, town 2 on parcel 5.
+    for (town, parcel) in [(1u32, 4u32), (2, 5)] {
+        for w in [500u32, 500, 1, 0] {
+            u32s(&mut s, w);
+        }
+        s.push(0);
+        u32s(&mut s, 1);
+        u32s(&mut s, parcel);
+        u32s(&mut s, 1);
+        s.extend_from_slice(&10.0f32.to_le_bytes());
+        u32s(&mut s, town);
+        s.extend_from_slice(&0u64.to_le_bytes());
+    }
+    s.extend_from_slice(&[0xee; 8]);
+
+    // The parcel table: two parcels, the first with four faces (centre 100, 200), the second with one (-50.5, 30.25).
+    u32s(&mut s, 2);
+    for (faces, cx, cy) in [(4u32, 100.0f32, 200.0f32), (1, -50.5, 30.25)] {
+        u32s(&mut s, 7);
+        s.push(1);
+        s.extend_from_slice(&0.5f32.to_le_bytes());
+        u32s(&mut s, faces);
+        for _ in 0..faces {
+            u32s(&mut s, 4);
+            for (dx, dy) in [(-4.0f32, -4.0f32), (4.0, -4.0), (4.0, 4.0), (-4.0, 4.0)] {
+                for v in [cx + dx, cy + dy, 0.0] {
+                    s.extend_from_slice(&v.to_le_bytes());
+                }
+            }
+            u32s(&mut s, 1);
+        }
+        s.extend_from_slice(&8.0f32.to_le_bytes());
+    }
+    s.extend_from_slice(&[0xee; 8]);
+
+    // The entity table: the company, two towns, a free id, two parcels, a line and a named station, then free
+    // entries up to 1,000, the count again and the trailer.
+    let ents: [&[(u32, u32)]; 8] = [
+        &[(0, 0), (16, 0)],
+        &[(27, 0), (16, 1), (0, 1), (10, 0)],
+        &[(27, 1), (16, 2), (0, 2), (10, 1)],
+        &[(0xffff_ffff, 0xffff_ffff)],
+        &[(34, 0x4000_0000)],
+        &[(34, 0x4000_0001)],
+        &[(10, 2), (16, 3), (17, 0), (18, 0), (72, 0), (75, 0)],
+        &[(16, 4), (0, 3)],
+    ];
+    u32s(&mut s, 1000);
+    for i in 0..1000 {
+        let e: &[(u32, u32)] = ents
+            .get(i)
+            .copied()
+            .unwrap_or(&[(0xffff_ffff, 0xffff_ffff)]);
+        u32s(&mut s, e.len() as u32);
+        for &(t, slot) in e {
+            u32s(&mut s, t);
+            u32s(&mut s, slot);
+        }
+    }
+    u32s(&mut s, 1000);
+    for w in [1u32, 1, 0, 1, 1, 0, 1] {
+        u32s(&mut s, w);
     }
     s.extend_from_slice(&[0xee; 16]);
     s

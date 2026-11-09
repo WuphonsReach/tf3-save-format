@@ -197,6 +197,11 @@ fn str_before(data: &[u8], p: usize) -> Option<usize> {
 /// walk back `str` by `str` to the start of the run, keep the longest run (the first on a tie), then read
 /// forward from its start for as long as strings read.
 pub fn entity_names(data: &[u8]) -> Option<Vec<String>> {
+    entity_names_at(data).map(|(_, names)| names)
+}
+
+/// (offset of the table's first string, names) as `entity_names` finds them (`tf3save.entity_names_at`).
+pub fn entity_names_at(data: &[u8]) -> Option<(usize, Vec<String>)> {
     let mut no_name = 7u32.to_le_bytes().to_vec();
     no_name.extend_from_slice(b"no name");
     let mut best: Option<(usize, usize)> = None;
@@ -210,16 +215,16 @@ pub fn entity_names(data: &[u8]) -> Option<Vec<String>> {
             best = Some((n, p));
         }
     }
-    let (n, mut p) = best?;
+    let (n, start) = best?;
     if n < 3 {
         return None;
     }
-    let mut names = Vec::new();
+    let (mut names, mut p) = (Vec::new(), start);
     while let Some((text, end)) = str_at(data, p) {
         names.push(text.to_owned());
         p = end;
     }
-    Some(names)
+    Some((start, names))
 }
 
 fn town_run(names: &[String], strict: bool) -> Vec<String> {

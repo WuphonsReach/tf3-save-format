@@ -157,6 +157,12 @@ def entity_names(data):
     run of the first few `no name` hits. The list can end in the two empty strings that follow
     the table.
     """
+    found = entity_names_at(data)
+    return found[1] if found else None
+
+
+def entity_names_at(data):
+    """(offset of the table's first string, names) as entity_names finds them, or None."""
     best = None
     i = -1
     for _ in range(6):
@@ -174,7 +180,7 @@ def entity_names(data):
     while (r := _str_at(data, p)):
         names.append(r[0])
         p = r[1]
-    return names
+    return best[1], names
 
 
 def _town_run(names, strict):

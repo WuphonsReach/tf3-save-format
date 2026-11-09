@@ -1,8 +1,9 @@
 //! mine-summary: print the JSON summary of one Transport Fever 3 save, the same as `tools/mine_summary.py`
-//! writes it (schema v8). Reads the save and, for the vehicle classes, the game install's model files; writes
+//! writes it (schema v9). Reads the save and, for the vehicle classes, the game install's model files; writes
 //! nothing but standard output. The Python is the reference; see README.md.
 
 mod counts;
+mod entities;
 mod header;
 mod journal;
 mod json;

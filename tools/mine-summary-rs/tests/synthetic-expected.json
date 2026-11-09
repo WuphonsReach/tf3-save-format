@@ -1,15 +1,15 @@
 {
-  "$schema": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v8.schema.json",
-  "schema_version": 8,
+  "$schema": "https://raw.githubusercontent.com/WuphonsReach/tf3-save-format/main/tools/schema/tf3-save-summary.v9.schema.json",
+  "schema_version": 9,
   "name": "synthetic",
   "mod_id": null,
   "kind": "savegame",
   "source_name": "synthetic.tf3",
-  "source_size": 1506,
+  "source_size": 1711,
   "author": null,
   "tags": [],
   "url": null,
-  "tools_commit": "0a02f59",
+  "tools_commit": "0723833-dirty",
   "error": null,
   "version": 604,
   "first_version": 601,
@@ -24,7 +24,7 @@
   "name_list": "::/names/europe/europe.names",
   "is_map_editor": false,
   "header_partial": null,
-  "stream_bytes": 5473,
+  "stream_bytes": 18085,
   "calendar": {
     "date": "1900-01-03",
     "start_date": "1900-01-01",
@@ -95,7 +95,12 @@
     "records": 2,
     "starting_layout": 1,
     "longest_78_byte_run": 2,
-    "table_count": 4008636142,
+    "header": {
+      "first_word": 12288,
+      "type": 27,
+      "free": [],
+      "rows": 2
+    },
     "com_cargo": {
       "fish": 1
     },
@@ -110,10 +115,36 @@
   },
   "towns": {
     "count": 2,
+    "source": "entity_table",
     "names": [
       "Alpha",
       "Beta"
+    ],
+    "places": [
+      {
+        "id": 1,
+        "name": "Alpha",
+        "record": 0,
+        "buildings": 1,
+        "x": 100,
+        "y": 200
+      },
+      {
+        "id": 2,
+        "name": "Beta",
+        "record": 1,
+        "buildings": 1,
+        "x": -50,
+        "y": 30
+      }
     ]
+  },
+  "lines": 1,
+  "entities": {
+    "count": 1000,
+    "free": 993,
+    "name_type": 16,
+    "town_type": 27
   },
   "settings": {
     "advancedOptions.cargoIncome": 2.5,

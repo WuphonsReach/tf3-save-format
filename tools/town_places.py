@@ -108,12 +108,15 @@ def names_table(data, ents=None):
     as one. With `ents` (from read_entities), the vec is taken whose type id is carried by exactly
     n minus its length entities; without, or if none fits, the longest.
     """
-    names = tf3save.entity_names(data)
-    if not names:
+    found = tf3save.entity_names_at(data)
+    if not found:
         return None
-    first = struct.pack("<I", len(names[0].encode())) + names[0].encode()
-    nat = data.find(first) - 4
+    nat, names = found[0] - 4, found[1]
+    if nat < 0:
+        return None
     n = struct.unpack_from("<I", data, nat)[0]
+    if n > len(names):
+        return None
     found = []
     for f in range(0, n + 1):
         q = nat - 4 - 4 * f
@@ -178,19 +181,28 @@ def town_places(data):
     nt = names_table(data, ents)
     if nt is None:
         return None
-    names, name_type, free = nt
+    towns = _towns(data, ents, *nt)[0]
+    for t in towns:
+        t.pop("_mean", None)
+    return towns
+
+
+def _towns(data, ents, names, name_type, free):
+    """(towns as town_places gives them, the town type id or None)."""
     blds = building_records(data)
     owners = {t for t, _ in blds if t < len(ents) and ents[t] and name_type in ents[t]}
     if not owners:
-        return []
+        return [], None
     # The town type: on every building owner, and on the fewest entities of all such types.
     shared = set.intersection(*(set(ents[t]) for t in owners)) - {name_type}
+    if not shared:
+        return [], None
     count = {t: 0 for t in shared}
     for e in ents:
         if e:
             for t in shared & e.keys():
                 count[t] += 1
-    town_type = min(shared, key=lambda t: count[t])
+    town_type = min(sorted(shared), key=lambda t: count[t])   # the lowest id on a tie
     # The parcel type: the one type of the entities a building lists as its parcels.
     kinds = {}
     for _, ps in blds[:500]:
@@ -221,9 +233,68 @@ def town_places(data):
         if pts:
             x = sum(p[0] for p in pts) / len(pts)
             y = sum(p[1] for p in pts) / len(pts)
-            t.update(x=round(x, 1), y=round(y, 1), spread=round(max(math.hypot(p[0] - x, p[1] - y) for p in pts), 1))
+            t.update(x=round(x, 1), y=round(y, 1), spread=round(max(math.hypot(p[0] - x, p[1] - y) for p in pts), 1),
+                     _mean=(x, y))
         towns.append(t)
-    return towns
+    return towns, town_type
+
+
+def line_count(ents, name_type):
+    """The number of lines: entities with exactly six types, among them 10 and the name type N, N + 1
+    and N + 2 (docs/line-ids.md, Observed 601 to 605)."""
+    want = {10, name_type, name_type + 1, name_type + 2}
+    return sum(1 for e in ents if e and len(e) == 6 and want <= e.keys())
+
+
+def town_table_header(data, town_type, live, before=None):
+    """The town array's header (docs/town-records.md#table-header) as a dict, or None.
+
+    The header is `u32 word, u32 type, vec<u32> free, u32 n`. It is found as `type, f, f slots, n`
+    where n = len(live) + f and the free slots are exactly the rows no live town uses (`live`: the
+    town entities' record slots). Of several matches, the last one before `before` (the first town
+    record found by scan_records) is taken, else the first.
+    """
+    live = set(live)
+    pat = struct.pack("<I", town_type)
+    hits = []
+    p = data.find(pat, 4)
+    while p >= 0:
+        f = struct.unpack_from("<I", data, p + 4)[0] if p + 8 <= len(data) else None
+        if f is not None and f <= 4096 and p + 12 + 4 * f <= len(data):
+            n = struct.unpack_from("<I", data, p + 8 + 4 * f)[0]
+            if n == len(live) + f:
+                slots = struct.unpack_from("<%dI" % f, data, p + 8)
+                if len(set(slots)) == f and set(slots) == set(range(n)) - live:
+                    hits.append((p, slots, n))
+        p = data.find(pat, p + 1)
+    if not hits:
+        return None
+    early = [h for h in hits if before is not None and h[0] < before]
+    p, slots, n = early[-1] if early else hits[0]
+    return {"first_word": struct.unpack_from("<I", data, p - 4)[0], "type": town_type,
+            "free": sorted(slots), "rows": n}
+
+
+def entity_summary(data, first_record=None):
+    """What the mined summary takes from the entity table (tools/mine_summary.py), or None when no
+    table is found: entity counts, the name type, the line count, the towns and the town array header.
+    `first_record` is the offset of the first town record scan_records found, to pick the header."""
+    table = find_entity_table(data)
+    if table is None:
+        return None
+    ents = read_entities(data, *table)
+    out = {"count": len(ents), "free": sum(1 for e in ents if e is None),
+           "name_type": None, "lines": None, "towns": None, "town_type": None, "town_header": None}
+    nt = names_table(data, ents)
+    if nt is None:
+        return out
+    out["name_type"] = nt[1]
+    out["lines"] = line_count(ents, nt[1])
+    towns, town_type = _towns(data, ents, *nt)
+    out["towns"], out["town_type"] = towns, town_type
+    if town_type is not None and towns:
+        out["town_header"] = town_table_header(data, town_type, [t["record"] & SLOT for t in towns], first_record)
+    return out
 
 
 def main():
