@@ -10,7 +10,7 @@ All 604, Tiny 1 : 4 (2048 x 6144 m) unless a line says otherwise; one save per c
 - **The heightmap is a `u16` grid per 256 m tile, 65 x 65 points on a 4 m grid, tiles in rows along x (Observed, 18 saves and 12 catalog saves from 568 to 604).** Neighbouring tiles repeat their shared edge exactly (352 of 352 matches). z = `offsetZ` + v x 0.05 m, so v = 2000 is the water level; grid point (c, r) is at x = -1024 + 4c, y = -3072 + 4r on a Tiny map, the centre being 0, 0, not flipped. The count times the tile size lands on the next structure.
 - **The sliders are not stored in the save;** only their effect in the generated data is (Observed on desert, temperate and subarctic). The same seed and sliders give the same bulk (92% of bytes equal), and a moved slider changes nearly all of it. Mountains Scattered against Sparse changes 45% of the heights.
 - **Lakes did nothing on a desert map and changed 10.8 KB of data on a temperate one (Observed, one pair each);** what the extra bytes are is Open. Time changes only simulation state (four arrays of tiny floats).
-- **Mapzilla's generators add `mz_*` slider keys to the game's user settings, and installing the mod added nothing to the save (Observed, one save).**
+- **Mapzilla's generators add `mz_*` slider keys to the game's user settings ([game-profile.md](game-profile.md#mainmenustate)), and installing the mod added nothing to the save (Observed, one save).**
 - **Open:** what `baseLevels` and `highLevels` mean, the float-like records 1.5 to 6.1 MB after the header, the list after the heightmap (a 78-byte record, 2 to 38 times), what each data map does, and whether the seed alone at default sliders reproduces the New Game map.
 
 ## The terrain record

@@ -40,6 +40,7 @@ Everything here is **Open**, seen on 604 unless a range is given.
 - **Whether setting changes act in play** (604) For example on buildings that already exist. See also [vehicles-and-costs.md](vehicles-and-costs.md#running-costs-and-upkeep). Home: [settings.md](../settings.md#open). Needs: new save.
 - **Whether a loaded save stays byte for byte as it was** (604) The first test save was not hashed before its load. Home: [settings.md](../settings.md#open). Needs: new save (hash first, load, hash the same file again).
 - **What `sensitivityUrbanCare`, `cargoNeedsPerTown` and `trafficSpeedSensitivityScale` appear as on a screen** (604) `sensitivityUrbanCare` is the unverified pairing for the Reputation toggle. Home: [settings.md](../settings.md#open). Needs: new save with the toggle changed.
+- **When the game writes the remembered New Game choices, and which mods get an entry** (605, one profile) The profile kept options for one mod of 26 and one active mod id; whether it keeps only changed values, and whether Load Game or Load Preset writes it, is untested. Home: [game-profile.md](../game-profile.md#open). Needs: game window (a mod option changed in the New Game gear dialog, the profile read before and after the start, then a Load Preset).
 - **Whether the other presets change the sliders at 100%** (604) Population, passenger and cargo income stayed at 100% across all four presets, and only Easy moved them. Home: [settings.md](../settings.md). Needs: game window.
 
 ## Calendar and clock
