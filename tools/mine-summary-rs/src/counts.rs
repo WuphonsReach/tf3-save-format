@@ -1,7 +1,7 @@
 //! The industry and vehicle counts made from the model instances (`industry_counts.py`, `vehicle_counts.py`,
 //! `docs/vehicle-classes.md`).
 
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
 use crate::json::{Obj, Value};
@@ -45,6 +45,7 @@ fn main_models<'t>(table: &'t ModelTable, placed: &BTreeSet<&str>) -> HashMap<&'
 /// An industry construction record (`industry_compass.read_industry_constructions`,
 /// `docs/industry-records.md#the-construction-record`): the industry folder, the transform's x and y, and the entity
 /// ids of the seven `vec<u32>` after the transform and an i64.
+#[derive(Clone)]
 struct Construction {
     key: String,
     x: f32,
@@ -112,12 +113,8 @@ fn read_construction(data: &[u8], start: usize, end: usize) -> Option<Constructi
     })
 }
 
-/// The construction records of industries deleted in the map editor: every id the record lists is in the
-/// free-id list (`industry_compass.dead_industries`). Empty when the save has no readable list.
-fn dead_industries(data: &[u8]) -> Vec<Construction> {
-    let Some(free) = crate::free_ids::read_free_ids(data).filter(|f| !f.is_empty()) else {
-        return Vec::new();
-    };
+/// Every industry construction record (`industry_compass.read_industry_constructions`).
+fn read_constructions(data: &[u8]) -> Vec<Construction> {
     let mut out = Vec::new();
     let mut next_free = 0;
     for at in memchr::memmem::find_iter(data, CON_START) {
@@ -128,18 +125,54 @@ fn dead_industries(data: &[u8]) -> Vec<Construction> {
             continue;
         };
         next_free = end;
-        if let Some(c) = read_construction(data, at, end)
-            && !c.ids.is_empty()
-            && c.ids.iter().all(|i| free.contains(i))
-        {
+        if let Some(c) = read_construction(data, at, end) {
             out.push(c);
         }
     }
     out
 }
 
+fn dist(ax: f32, ay: f32, bx: f32, by: f32) -> f64 {
+    (f64::from(ax) - f64::from(bx)).hypot(f64::from(ay) - f64::from(by))
+}
+
+/// The records of industries deleted in the map editor (`industry_compass.dead_industries`: every id free) and
+/// the older copies of a live record (`industry_compass.older_copies`: some ids free, the rest listed by a live
+/// record of the same key within 1 m). Both empty when the save has no readable free-id list.
+fn dead_and_copies(data: &[u8]) -> (Vec<Construction>, Vec<Construction>) {
+    let Some(free) = crate::free_ids::read_free_ids(data).filter(|f| !f.is_empty()) else {
+        return (Vec::new(), Vec::new());
+    };
+    let recs = read_constructions(data);
+    let nfree = |c: &Construction| c.ids.iter().filter(|i| free.contains(i)).count();
+    let live: Vec<(&Construction, HashSet<u32>)> = recs
+        .iter()
+        .filter(|c| !c.ids.is_empty() && nfree(c) == 0)
+        .map(|c| (c, c.ids.iter().copied().collect()))
+        .collect();
+    let mut dead = Vec::new();
+    let mut copies = Vec::new();
+    for c in &recs {
+        let k = nfree(c);
+        if c.ids.is_empty() || k == 0 {
+            continue;
+        }
+        if k == c.ids.len() {
+            dead.push(c.clone());
+        } else if live.iter().any(|(l, ids)| {
+            l.key == c.key
+                && dist(l.x, l.y, c.x, c.y) <= 1.0
+                && c.ids.iter().all(|i| free.contains(i) || ids.contains(i))
+        }) {
+            copies.push(c.clone());
+        }
+    }
+    (dead, copies)
+}
+
 /// `count`, and `by_key` (industry key to count, keys sorted). One main instance of the same key within 1 m of
-/// each deleted industry's record is left out (`industry_compass.live_main_instances`).
+/// each deleted industry's record is left out, then one for each older copy while more than one is left there
+/// (`industry_compass.live_main_instances`).
 pub fn count_industries(data: &[u8], table: &ModelTable, inst: &Instances) -> Value {
     let all = inst.placed(data, table, "industries/");
     let placed: BTreeSet<&str> = all.iter().map(|(m, _, _)| *m).collect();
@@ -148,20 +181,30 @@ pub fn count_industries(data: &[u8], table: &ModelTable, inst: &Instances) -> Va
         .into_iter()
         .filter_map(|(m, x, y)| Some((mains.get(m)?.as_str(), x, y)))
         .collect();
-    for r in dead_industries(data) {
-        let dist = |&(_, x, y): &(&str, f32, f32)| {
-            (f64::from(x) - f64::from(r.x)).hypot(f64::from(y) - f64::from(r.y))
-        };
+    let (dead, copies) = dead_and_copies(data);
+    let mut remove_one = |r: &Construction, min_left: usize| {
+        let mut hits = 0;
         let mut nearest: Option<(usize, f64)> = None;
-        for (i, item) in live.iter().enumerate() {
-            let d = dist(item);
-            if item.0 == r.key && d <= 1.0 && nearest.is_none_or(|(_, b)| d < b) {
-                nearest = Some((i, d));
+        for (i, &(k, x, y)) in live.iter().enumerate() {
+            let d = dist(x, y, r.x, r.y);
+            if k == r.key && d <= 1.0 {
+                hits += 1;
+                if nearest.is_none_or(|(_, b)| d < b) {
+                    nearest = Some((i, d));
+                }
             }
         }
-        if let Some((i, _)) = nearest {
+        if hits > min_left
+            && let Some((i, _)) = nearest
+        {
             live.remove(i);
         }
+    };
+    for r in &dead {
+        remove_one(r, 0);
+    }
+    for r in &copies {
+        remove_one(r, 1);
     }
     let mut by_key: BTreeMap<&str, u64> = BTreeMap::new();
     for (k, _, _) in live {

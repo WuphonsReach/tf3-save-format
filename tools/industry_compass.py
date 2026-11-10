@@ -138,26 +138,63 @@ def read_industry_constructions(data):
     return out
 
 
-def dead_industries(data, records=None):
+def dead_industries(data, records=None, free=None):
     """The industry construction records of industries that were deleted: every entity id the record lists is
     in the free-id list (docs/industry-records.md#deleted-industries). A map editor delete leaves the record and the
     industry's model instances in the save; a live industry has none of its ids free. [] when the save has no
     readable free-id list."""
-    free = read_free_ids(data)
+    free = read_free_ids(data) if free is None else free
     if not free:
         return []
     recs = read_industry_constructions(data) if records is None else records
     return [r for r in recs if r["ids"] and all(i in free for i in r["ids"])]
 
 
+def older_copies(data, records=None, free=None, near=1.0):
+    """The industry construction records that are older copies of a live one (docs/industry-records.md#stacked-
+    records-at-one-spot): some, not all, of the record's ids are free, and a live record (no id free) of the same
+    key within `near` metres lists every id of it that is not free. [] without a readable free-id list."""
+    free = read_free_ids(data) if free is None else free
+    if not free:
+        return []
+    recs = read_industry_constructions(data) if records is None else records
+    live = [r for r in recs if r["ids"] and not any(i in free for i in r["ids"])]
+    out = []
+    for r in recs:
+        kept = [i for i in r["ids"] if i not in free]
+        if not kept or len(kept) == len(r["ids"]):
+            continue
+        for lv in live:
+            if lv["key"] == r["key"] and math.hypot(lv["x"] - r["x"], lv["y"] - r["y"]) <= near and set(kept) <= set(lv["ids"]):
+                out.append(r)
+                break
+    return out
+
+
 def live_main_instances(data, placed, mains, near=1.0):
     """The instances of `placed` whose model is in `mains` (main_models), less one instance of the same key
-    within `near` metres of each deleted industry's record (dead_industries)."""
+    within `near` metres of each deleted industry's record (dead_industries), and less one for each older copy
+    of a live record (older_copies) while more than one is left at that spot."""
     out = [i for i in placed if i["model"] in mains]
-    for r in dead_industries(data):
-        hit = [i for i in out if mains[i["model"]] == r["key"] and math.hypot(i["x"] - r["x"], i["y"] - r["y"]) <= near]
+    free = read_free_ids(data)
+    if not free:
+        return out
+    recs = read_industry_constructions(data)
+
+    def hits(r):
+        return [i for i in out if mains[i["model"]] == r["key"] and math.hypot(i["x"] - r["x"], i["y"] - r["y"]) <= near]
+
+    def drop(hit, r):
+        out.remove(min(hit, key=lambda i: math.hypot(i["x"] - r["x"], i["y"] - r["y"])))
+
+    for r in dead_industries(data, recs, free):
+        hit = hits(r)
         if hit:
-            out.remove(min(hit, key=lambda i: math.hypot(i["x"] - r["x"], i["y"] - r["y"])))
+            drop(hit, r)
+    for r in older_copies(data, recs, free, near):
+        hit = hits(r)
+        if len(hit) > 1:
+            drop(hit, r)
     return out
 
 

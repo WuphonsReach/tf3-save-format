@@ -9,7 +9,8 @@ instance but the key's own `<key>.mdl` has, that one counts (a sand excavator wh
 in the preview block). Its other instances (cranes, sheds, particles) are not counted. A mod's industry that has no such model is missed.
 An industry deleted in the map editor keeps its construction record and its model instances; its main
 instance is left out when every entity id its record lists is in the free-id list
-(`industry_compass.dead_industries`, docs/industry-records.md#deleted-industries).
+(`industry_compass.dead_industries`, docs/industry-records.md#deleted-industries). Older copies of a live
+record at the same spot (`industry_compass.older_copies`) count once with it.
 
 Result: `count`, and `by_key` (industry key to count, keys sorted); null where the save has no readable model
 table (the reader raises ValueError).
