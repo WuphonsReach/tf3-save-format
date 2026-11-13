@@ -85,7 +85,7 @@ A cargo is a possible town cargo when its category has a district type. The tier
 
 - What the weight, order and nearby requirement do when the map places industries ([industry-chains.md](industry-chains.md#which-climates-have-which-industry) has the file-side Open items). A guess is that a heavier weight is placed more often, a lower order earlier, and a processing industry only near one of the named ones; none of that is tested.
 - Whether a new map actually spawns every industry in a climate's column. The only count we have is [industry-lifecycle.md](industry-lifecycle.md#the-industry-count-on-the-new-game-screen-and-in-the-save-604) (eight Tiny and Small games); a count of industry kinds per climate across the catalog saves is not done.
-- The `biome0` to `biome4` weights each industry carries in the shared table: they name the biome data maps of the terrain ([terrain.md](terrain.md)), but how strongly each steers placement, and which terrain each map stands for, is not read.
+- The `biome0` to `biome4` weights each industry carries in the shared table: they name the biome data maps of the terrain ([terrain.md](terrain.md)), but how strongly each steers placement is not read. On generated maps the biomes are mostly height bands, biome 0 under water and 4 the highest (Observed, [biome-grid.md](biome-grid.md)).
 - Why the dry and subarctic economy files remove `wool`, which is not in the shared category table (so the removal does nothing we can see), and why paper, which also has no category there, still turns up in town records of subarctic and all-industries games.
 
 ## Evidence and tests

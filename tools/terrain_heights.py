@@ -4,13 +4,15 @@
 Usage:
   terrain_heights.py SAVE.sav [NEW.sav] [--stream]
 
-With one save it prints the terrain record (tiles, offsetZ, metres per height unit, waterLevel) and the lowest and
-highest ground. With two it compares the grids point by point (docs/terrain-edits.md): how many points changed, the
-box they lie in (in map metres, the centre 0, 0) and the smallest and largest change in metres. `--stream` takes
+With one save it prints the terrain record (tiles, offsetZ, metres per height unit, waterLevel), the lowest and
+highest ground, and the biome and layer grid (docs/biome-grid.md): the share of points per biome and per layer bit.
+With two it compares the grids point by point (docs/terrain-edits.md): how many points changed, the
+box they lie in (in map metres, the centre 0, 0) and the smallest and largest change in metres, and how many points
+of the biome grid changed. `--stream` takes
 streams already decompressed. Only reads: no save is written. The layout is in docs/terrain.md; drawing the
 terrain is tf3map's job (the tf3-save-mapper repo).
 
-`read_terrain` and `read_heightmap` are the readers other scripts import.
+`read_terrain`, `read_heightmap` and `read_biome_grid` are the readers other scripts import.
 """
 import argparse
 import os
@@ -68,6 +70,39 @@ def read_heightmap(data, tiles_x, tiles_y):
     return rows
 
 
+def read_biome_grid(data, tiles_x, tiles_y):
+    """(offset of the header, rows) of the biome and layer grid (docs/biome-grid.md), or None when the save
+    has none. One `u16` per heightmap point in a single grid, not in tiles: rows as in `read_heightmap`
+    (row r, y rising with r, of 64 * tiles_x + 1 points, x rising along the row). Found by its header, the
+    width, the height and their product as three `u32`. The low four bits of a value are the biome id, bit
+    4 + n is the climate's data layer with id n."""
+    width, height = 64 * tiles_x + 1, 64 * tiles_y + 1
+    pos = data.find(struct.pack("<III", width, height, width * height))
+    if pos < 0 or pos + 12 + 2 * width * height > len(data):
+        return None
+    grid = array("H")
+    grid.frombytes(data[pos + 12:pos + 12 + 2 * width * height])
+    if sys.byteorder == "big":
+        grid.byteswap()
+    return pos, [grid[r * width:(r + 1) * width] for r in range(height)]
+
+
+def grid_shares(rows):
+    """({biome id: share}, {layer id: share}) over all points of a biome grid."""
+    counts = {}
+    for r in rows:
+        for v in set(r):
+            counts[v] = counts.get(v, 0) + r.count(v)
+    total = sum(counts.values())
+    biomes, layers = {}, {}
+    for v, k in counts.items():
+        biomes[v & 15] = biomes.get(v & 15, 0) + k / total
+        for n in range(12):
+            if v >> (4 + n) & 1:
+                layers[n] = layers.get(n, 0) + k / total
+    return dict(sorted(biomes.items())), dict(sorted(layers.items()))
+
+
 def load(path, stream):
     raw = open(path, "rb").read()
     data = raw if stream else decompress(raw)
@@ -81,13 +116,31 @@ def main():
     ap.add_argument("new", nargs="?")
     ap.add_argument("--stream", action="store_true", help="the files are decompressed streams")
     args = ap.parse_args()
-    (tx, ty, off_z, unit, water), rows = load(args.save, args.stream)
+    raw = open(args.save, "rb").read()
+    data = raw if args.stream else decompress(raw)
+    del raw
+    tx, ty, off_z, unit, water = read_terrain(data)
+    rows = read_heightmap(data, tx, ty)
+    grid = read_biome_grid(data, tx, ty)
+    del data
     print("tiles %d x %d  offsetZ %.2f  unit %.3f m  waterLevel %.2f" % (tx, ty, off_z, unit, water))
     if not args.new:
         lo, hi = min(min(r) for r in rows), max(max(r) for r in rows)
         print("ground %.1f to %.1f m" % (off_z + lo * unit, off_z + hi * unit))
+        if grid is None:
+            print("biome grid: none")
+        else:
+            biomes, layers = grid_shares(grid[1])
+            print("biome grid: biomes " + "  ".join("%d %.1f%%" % (b, 100 * x) for b, x in biomes.items())
+                  + ";  layers " + ("  ".join("%d (bit %d) %.1f%%" % (n, 4 + n, 100 * x) for n, x in layers.items()) or "none"))
         return
-    (tx2, ty2, _, _, _), new = load(args.new, args.stream)
+    raw = open(args.new, "rb").read()
+    data = raw if args.stream else decompress(raw)
+    del raw
+    tx2, ty2, _, _, _ = read_terrain(data)
+    new = read_heightmap(data, tx2, ty2)
+    grid2 = read_biome_grid(data, tx2, ty2)
+    del data
     if (tx2, ty2) != (tx, ty):
         sys.exit("terrain_heights.py: the saves have %d x %d and %d x %d tiles" % (tx, ty, tx2, ty2))
     half_w, half_h = 128 * tx, 128 * ty                     # 64 points of 4 m a tile
@@ -106,6 +159,11 @@ def main():
     if box:
         print("box x %d to %d, y %d to %d m; change %+.2f to %+.2f m" % (box[0], box[2], box[1], box[3],
                                                                           lo * unit, hi * unit))
+    if grid is None or grid2 is None:
+        print("biome grid: %s" % ("none in either save" if grid is grid2 else "in one save only"))
+    else:
+        diff = sum(sum(1 for u, v in zip(a, b) if u != v) for a, b in zip(grid[1], grid2[1]) if a != b)
+        print("biome grid: %d of %d points changed" % (diff, total))
 
 
 if __name__ == "__main__":

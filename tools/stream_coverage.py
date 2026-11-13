@@ -4,7 +4,7 @@
 Each known structure is found with the reader that already exists for it, and its byte range is
 put in one of two tiers:
 
-- `read`: a reader parses the fields (header, model table, terrain record and heightmap, the
+- `read`: a reader parses the fields (header, model table, terrain record, heightmap and biome grid, the
   fields of each model instance and street edge, road strips, parcels, building and town records,
   the entity table, the names table, the `items*` statistics lists, the script states).
 - `located`: the notes place the structure and say what it holds, but no reader parses it byte
@@ -140,6 +140,11 @@ def find_all(data):
         if h < 0:
             raise ValueError("no heightmap")
         c.add("read", "heightmap", h, h + len(key) + tx * ty * (4 + 2 * TILE_POINTS))
+        grid = terrain_heights.read_biome_grid(data, tx, ty)
+        if grid is None:
+            c.notes.append("biome grid: none")
+        else:
+            c.add("read", "biome grid", grid[0], grid[0] + 12 + 2 * (64 * tx + 1) * (64 * ty + 1))
 
     def instances():
         end = table_end[0][1] if table_end[0] else 0

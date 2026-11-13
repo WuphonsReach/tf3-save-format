@@ -11,7 +11,8 @@ All 604, Tiny 1 : 4 (2048 x 6144 m) unless a line says otherwise; one save per c
 - **The sliders are not stored in the save;** only their effect in the generated data is (Observed on desert, temperate and subarctic). The same seed and sliders give the same bulk (92% of bytes equal), and a moved slider changes nearly all of it. Mountains Scattered against Sparse changes 45% of the heights.
 - **Lakes did nothing on a desert map and changed 10.8 KB of data on a temperate one (Observed, one pair each);** what the extra bytes are is Open. Time changes only simulation state (four arrays of tiny floats).
 - **Mapzilla's generators add `mz_*` slider keys to the game's user settings ([game-profile.md](game-profile.md#mainmenustate)), and installing the mod added nothing to the save (Observed, one save).**
-- **Open:** what `baseLevels` and `highLevels` mean, the float-like records 1.5 to 6.1 MB after the header, the list after the heightmap (a 78-byte record, 2 to 38 times), what each data map does, and whether the seed alone at default sliders reproduces the New Game map.
+- **A second grid on the heightmap's points holds the biome id and the climate's layer flags per point (Observed, 601 to 605);** it is as large as the heightmap and is described in [biome-grid.md](biome-grid.md).
+- **Open:** what `baseLevels` and `highLevels` mean, the float-like records 1.5 to 6.1 MB after the header, the list after the heightmap (a 78-byte record, 2 to 38 times), what each data map does (the biome and layer maps match the grid in [biome-grid.md](biome-grid.md)), and whether the seed alone at default sliders reproduces the New Game map.
 
 ## The terrain record
 
